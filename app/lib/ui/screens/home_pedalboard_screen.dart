@@ -99,6 +99,22 @@ class HomePedalboardScreen extends StatelessWidget {
 
   Widget _buildConnectionBadge(BuildContext context, MidiService midi) {
     final connected = midi.isConnected;
+    final isConnecting = midi.connectionState == MidiConnectionState.connecting;
+
+    Color badgeColor = Colors.red;
+    String badgeText = 'Desconectada';
+    IconData badgeIcon = Icons.usb_off;
+
+    if (connected) {
+      badgeColor = Colors.green;
+      badgeText = midi.connectedDeviceName;
+      badgeIcon = Icons.usb;
+    } else if (isConnecting) {
+      badgeColor = Colors.amber;
+      badgeText = 'Conectando...';
+      badgeIcon = Icons.sync;
+    }
+
     return GestureDetector(
       onTap: () {
         if (connected) {
@@ -110,24 +126,26 @@ class HomePedalboardScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: connected ? Colors.green.withOpacity(0.15) : Colors.red.withOpacity(0.15),
+          color: badgeColor.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: connected ? Colors.green : Colors.red, width: 1),
+          border: Border.all(color: badgeColor, width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              connected ? Icons.usb : Icons.usb_off,
-              size: 14,
-              color: connected ? Colors.green : Colors.red,
-            ),
-            const SizedBox(width: 4),
+            isConnecting
+                ? const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber),
+                  )
+                : Icon(badgeIcon, size: 14, color: badgeColor),
+            const SizedBox(width: 6),
             Text(
-              connected ? midi.connectedDeviceName : 'Desconectada',
+              badgeText,
               style: TextStyle(
                 fontSize: 12,
-                color: connected ? Colors.green : Colors.red,
+                color: badgeColor,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -249,11 +267,22 @@ class HomePedalboardScreen extends StatelessWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.usb, color: Color(0xFF00ADB5)),
-              title: const Text('Cable USB OTG'),
-              subtitle: const Text('Conexión directa por cable'),
-              onTap: () {
+              title: const Text('Cable USB (OTG / Directo)'),
+              subtitle: const Text('Conexión directa USB MIDI (SysEx)'),
+              onTap: () async {
                 Navigator.pop(ctx);
-                midi.connect(type: ConnectionType.usbOtg);
+                final ok = await midi.connect(type: ConnectionType.usbOtg);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(ok
+                          ? '✅ Conectado exitosamente con ${midi.connectedDeviceName}'
+                          : '⚠️ No se pudo conectar con la Boss GT-1B. Verifica el cable USB y que no esté abierta otra app (como GT-1BFxFloorBoard).'),
+                      backgroundColor: ok ? Colors.teal : Colors.deepOrange,
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
+                }
               },
             ),
             const Divider(color: Colors.white12),
@@ -261,9 +290,20 @@ class HomePedalboardScreen extends StatelessWidget {
               leading: const Icon(Icons.bluetooth, color: Colors.blueAccent),
               title: const Text('Bluetooth Inalámbrico'),
               subtitle: const Text('Puente ESP32-S3 / HC-06'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(ctx);
-                midi.connect(type: ConnectionType.bluetoothBle);
+                final ok = await midi.connect(type: ConnectionType.bluetoothBle);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(ok
+                          ? '✅ Conectado vía Bluetooth: ${midi.connectedDeviceName}'
+                          : '⚠️ No se detectó puente Bluetooth BLE activo.'),
+                      backgroundColor: ok ? Colors.teal : Colors.deepOrange,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
               },
             ),
           ],
