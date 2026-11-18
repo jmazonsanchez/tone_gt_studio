@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Boss GT-1B (Bass): Vendor ID 0x0582 (1410), Product ID 0x01F3 (500) -->
+    <usb-device vendor-id="1410" product-id="500" />
+    <!-- Boss GT-1 (Guitar): Vendor ID 0x0582 (1410), Product ID 0x01E5 (485) -->
+    <usb-device vendor-id="1410" product-id="485" />
+    <!-- Generic USB MIDI class devices (Audio Class 1, MIDI Subclass 3) -->
+    <usb-device class="1" subclass="3" />
+</resources>

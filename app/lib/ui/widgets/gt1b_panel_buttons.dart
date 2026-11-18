@@ -79,13 +79,13 @@ class Gt1bPanelButtons extends StatelessWidget {
                       width: 58,
                       height: 52,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
+                        gradient: const LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            const Color(0xFF2A2A34),
-                            const Color(0xFF181820),
-                            const Color(0xFF121216),
+                            Color(0xFF2A2A34),
+                            Color(0xFF181820),
+                            Color(0xFF121216),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(8),
