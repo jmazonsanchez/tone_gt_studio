@@ -44,3 +44,6 @@ build/
 *.tar.gz
 *.bin
 *.exe
+
+# Codegraph database
+.codegraph/

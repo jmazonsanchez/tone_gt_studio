@@ -47,56 +47,49 @@ window.toneMidiBridge = {
     return devices;
   },
 
+  _isMatchingPort(portName, target) {
+    if (!target) return true;
+    const lower = (portName || "").toLowerCase();
+    const targetLower = target.toLowerCase();
+    return lower.includes(targetLower) ||
+           lower.includes("gt-1") ||
+           lower.includes("gt-1b") ||
+           lower.includes("boss") ||
+           lower.includes("roland");
+  },
+
+  _findMatchingPort(map, targetName) {
+    if (!map || map.size === 0) return null;
+    for (let entry of map.entries()) {
+      const port = entry[1];
+      if (this._isMatchingPort(port.name, targetName)) {
+        return port;
+      }
+    }
+    return map.values().next().value || null;
+  },
+
+  _bindInput(input) {
+    if (!input) return;
+    input.onmidimessage = (event) => {
+      if (this.messageCallback && event.data) {
+        this.messageCallback(Array.from(event.data));
+      }
+    };
+  },
+
   connect(targetName) {
     if (!this.midiAccess) return false;
 
-    this.selectedOutput = null;
-    this.selectedInput = null;
+    this.selectedOutput = this._findMatchingPort(this.midiAccess.outputs, targetName);
+    this.selectedInput = this._findMatchingPort(this.midiAccess.inputs, targetName);
 
-    const lowerTarget = (targetName || "").toLowerCase();
-
-    // 1. Search matching output
-    for (let entry of this.midiAccess.outputs.entries()) {
-      const output = entry[1];
-      const outName = (output.name || "").toLowerCase();
-      if (!targetName || outName.includes(lowerTarget) || outName.includes("gt-1") || outName.includes("gt-1b") || outName.includes("boss") || outName.includes("roland")) {
-        this.selectedOutput = output;
-        console.log("✅ Connected to MIDI Output:", output.name);
-        break;
-      }
+    if (this.selectedOutput) {
+      console.log("✅ Connected to MIDI Output:", this.selectedOutput.name);
     }
-
-    // 2. Search matching input
-    for (let entry of this.midiAccess.inputs.entries()) {
-      const input = entry[1];
-      const inName = (input.name || "").toLowerCase();
-      if (!targetName || inName.includes(lowerTarget) || inName.includes("gt-1") || inName.includes("gt-1b") || inName.includes("boss") || inName.includes("roland")) {
-        this.selectedInput = input;
-        console.log("✅ Connected to MIDI Input:", input.name);
-
-        input.onmidimessage = (event) => {
-          if (this.messageCallback && event.data) {
-            this.messageCallback(Array.from(event.data));
-          }
-        };
-        break;
-      }
-    }
-
-    // 3. Fallback to first available output if not found
-    if (!this.selectedOutput && this.midiAccess.outputs.size > 0) {
-      this.selectedOutput = this.midiAccess.outputs.values().next().value;
-      console.log("ℹ️ Fallback connected to MIDI Output:", this.selectedOutput.name);
-    }
-
-    if (!this.selectedInput && this.midiAccess.inputs.size > 0) {
-      this.selectedInput = this.midiAccess.inputs.values().next().value;
-      this.selectedInput.onmidimessage = (event) => {
-        if (this.messageCallback && event.data) {
-          this.messageCallback(Array.from(event.data));
-        }
-      };
-      console.log("ℹ️ Fallback connected to MIDI Input:", this.selectedInput.name);
+    if (this.selectedInput) {
+      this._bindInput(this.selectedInput);
+      console.log("✅ Connected to MIDI Input:", this.selectedInput.name);
     }
 
     return this.selectedOutput !== null;
