@@ -75,6 +75,62 @@ class GtSysEx {
     ]);
   }
 
+  /// Request patch name for user patch [patchIndex] (0..98 -> U01..U99).
+  /// Address: [0x10, patchIndex, 0x00, 0x00], Size: [0x00, 0x00, 0x00, 0x10] (16 bytes)
+  static Uint8List buildPatchNameRequest(int patchIndex, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    assert(patchIndex >= 0 && patchIndex <= 98, 'Patch index must be 0..98');
+    return buildRq1Message(
+      address: [0x10, patchIndex, 0x00, 0x00],
+      size: [0x00, 0x00, 0x00, 0x10],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Request active patch buffer data (address 60 00 00 00, size 127 bytes).
+  static Uint8List buildActivePatchDataRequest({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildRq1Message(
+      address: [0x60, 0x00, 0x00, 0x00],
+      size: [0x00, 0x00, 0x00, 0x7F],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Parse patch name from an incoming Roland DT1 packet.
+  static String? parsePatchName(Uint8List packet) {
+    if (packet.length < 28) return null;
+    if (packet[0] != 0xF0 || packet[1] != rolandManufacturerId || packet[7] != commandDt1) {
+      return null;
+    }
+    // Check if address starts with 0x10 (user patch list) or 0x60 (temporary patch)
+    if (packet[8] != 0x10 && packet[8] != 0x60) return null;
+    final nameBytes = packet.sublist(12, 28);
+    final chars = nameBytes.map((b) => (b >= 32 && b <= 126) ? String.fromCharCode(b) : ' ').join();
+    return chars.trim();
+  }
+
+  /// Get the patch index (0..98) if packet is from user patch list (address 10 [idx] 00 00)
+  static int? parsePatchIndex(Uint8List packet) {
+    if (packet.length < 12 || packet[8] != 0x10) return null;
+    return packet[9];
+  }
+
+  /// Parse active effect switches from a 60 00 00 00 DT1 response
+  static Map<EffectCategory, bool>? parseActiveEffectSwitches(Uint8List packet) {
+    if (packet.length < 95) return null;
+    if (packet[0] != 0xF0 || packet[7] != commandDt1 || packet[8] != 0x60 || packet[9] != 0x00) {
+      return null;
+    }
+    // Base payload starts at index 12 (Address 60 00 00 00)
+    const base = 12;
+    return {
+      EffectCategory.comp: packet[base + 0x20] != 0x00,
+      EffectCategory.odDs: packet[base + 0x30] != 0x00,
+      EffectCategory.preamp: packet[base + 0x50] != 0x00,
+    };
+  }
+
   /// Build Roland SysEx DT1 Patch Change for User Patches (U01 - U99).
   /// [patchIndex] ranges from 0 (U01) to 98 (U99).
   /// Format: Address 00 01 00 00, Data [00, patchIndex]

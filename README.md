@@ -27,13 +27,14 @@ Open-source patch editor, librarian, and controller for **Boss GT-1B** (Bass) an
 | **Protocolo SysEx** | Tramas DT1 (Data Set) y RQ1 (Data Request) | ✅ Completado | Tramas con Device ID `0x00`, Model ID `00 00 00 3E` verificadas en hardware real. |
 | **Protocolo SysEx** | Cambio de Presets (Patch Change) | ✅ Completado | SysEx DT1 a `00 01 00 00` con 2 bytes de índice (`00 00` = U01, `00 01` = U02, etc.). Probado con éxito en GT-1B. |
 | **Protocolo SysEx** | Control de Afinador (Tuner / Mute) | ✅ Completado | Dirección `7F 00 00 02` (`01` = Tuner, `00` = Play). La pedalera responde transmitiendo pitch en tiempo real. |
+| **Protocolo SysEx** | Lectura de Presets y Parámetros en vivo (RQ1) | ✅ Completado | Peticiones RQ1 a `10 [patch] 00 00` para leer los 99 nombres reales y `60 00 00 00` para estados de efectos en vivo. |
 | **Protocolo SysEx** | Conmutación de efectos (Stompbox ON/OFF) | ✅ Completado | Verificado en hardware real: OD/DS (`60 00 00 30`), COMP (`60 00 00 20`), DELAY (`60 00 05 60`), etc. |
 | **Protocolo SysEx** | Mapeo de memoria oficial GT-1B | ✅ Completado | Extraído en `docs/gt1b_addressmap.json` desde el instalador oficial de Boss Tone Studio. |
-| **Interfaz Móvil (UI)** | Tablero de cadena de pedales (Stompboxes) | ✅ Completado | Tarjetas interactivas con conmutadores y LEDs luminosos de estado. |
+| **Interfaz Móvil (UI)** | Mini-Pedales Boutique interactivos (Stompboxes) | ✅ Completado | Widget `MiniPedalCard` con chasis esmaltado, Jewel LED 3D, mini-knobs rotativos y footswitch metálico cromado. |
 | **Interfaz Móvil (UI)** | Potenciómetros rotativos interactivos (Knobs) | ✅ Completado | Widget `ParameterKnob` con física de arrastre táctil vertical y lectura numérica. |
 | **Interfaz Móvil (UI)** | Editor modal de parámetros de cada efecto | ✅ Completado | Edición en vivo de Gain, Bass, Level, Time, Feedback, etc. vía SysEx. |
 | **Interfaz Móvil (UI)** | Modal de Afinador cromático en vivo | ✅ Completado | Pantalla con aguja gráfica de afinación, nota detectada y botón Mute. |
-| **Interfaz Móvil (UI)** | Selector y buscador de 99 patches de usuario | ✅ Completado | Modal `PatchListModal` con búsqueda en vivo y salto instantáneo de patch. |
+| **Interfaz Móvil (UI)** | Sincronización y lector de 99 patches de usuario | ✅ Completado | Botón de sincronización con barra de progreso interactiva y lectura directa de la memoria de la GT-1B. |
 | **Interfaz Móvil (UI)** | Reordenamiento de la cadena de efectos | ⏳ Pendiente | Drag-and-drop para mover pedales antes/después del preamp o EQ. |
 | **Interfaz Móvil (UI)** | Editor de asignaciones (EXP Pedal / CTL1) | ⏳ Pendiente | Configuración de rangos mínimos/máximos del pedal de expresión y switches auxiliares. |
 | **Conectividad** | Script de verificación interactiva de hardware (PC) | ✅ Completado | `tools/test_gt1b_hardware.sh` con detección de bloqueo de puertos y prueba en vivo de parches, afinador y efectos. |

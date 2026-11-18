@@ -18,6 +18,7 @@ enum ConnectionType {
 /// MIDI Service for Boss GT-1B and GT-1 communication
 class MidiService extends ChangeNotifier {
   final MidiDriver _driver = MidiDriver();
+  final _sysExController = StreamController<Uint8List>.broadcast();
 
   MidiConnectionState _connectionState = MidiConnectionState.disconnected;
   ConnectionType _connectionType = ConnectionType.usbOtg;
@@ -27,13 +28,22 @@ class MidiService extends ChangeNotifier {
   ConnectionType get connectionType => _connectionType;
   String get connectedDeviceName => _connectedDeviceName;
   bool get isConnected => _connectionState == MidiConnectionState.connected;
+  Stream<Uint8List> get onSysExReceived => _sysExController.stream;
 
   MidiService() {
     _driver.setOnDataReceived(_handleIncomingMidi);
   }
 
+  @override
+  void dispose() {
+    _sysExController.close();
+    super.dispose();
+  }
+
   void _handleIncomingMidi(Uint8List data) {
-    debugPrint('SysEx Received (${data.length} bytes): ${data.map((b) => b.toRadixString(16).padLeft(2, "0")).join(" ")}');
+    if (data.isNotEmpty) {
+      _sysExController.add(data);
+    }
   }
 
   /// Discover available MIDI devices
@@ -79,8 +89,41 @@ class MidiService extends ChangeNotifier {
   /// Send raw SysEx packet
   Future<void> sendSysEx(Uint8List data) async {
     if (!isConnected) return;
-    debugPrint('SysEx Sent (${data.length} bytes): ${data.map((b) => b.toRadixString(16).padLeft(2, "0")).join(" ")}');
     await _driver.send(data);
+  }
+
+  /// Send an RQ1 SysEx request and wait for the matching DT1 reply packet
+  Future<Uint8List?> sendSysExRequest(
+    Uint8List request, {
+    Duration timeout = const Duration(milliseconds: 600),
+  }) async {
+    if (!isConnected) return null;
+    final completer = Completer<Uint8List?>();
+
+    assert(request.length >= 12, 'Request must contain address bytes');
+    final reqAddress = request.sublist(8, 12);
+
+    final sub = onSysExReceived.listen((packet) {
+      if (packet.length >= 12 && packet[0] == 0xF0 && packet[7] == GtSysEx.commandDt1) {
+        // Compare address prefix
+        if (packet[8] == reqAddress[0] && packet[9] == reqAddress[1]) {
+          if (!completer.isCompleted) {
+            completer.complete(packet);
+          }
+        }
+      }
+    });
+
+    await sendSysEx(request);
+
+    try {
+      final reply = await completer.future.timeout(timeout);
+      return reply;
+    } catch (_) {
+      return null;
+    } finally {
+      await sub.cancel();
+    }
   }
 
   /// Change Patch (U01 - U99) using Roland SysEx DT1

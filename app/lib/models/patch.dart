@@ -12,4 +12,16 @@ class Patch {
   });
 
   String get displayNumber => 'U${(index + 1).toString().padLeft(2, '0')}';
+
+  Patch copyWith({
+    int? index,
+    String? name,
+    List<EffectBlock>? effects,
+  }) {
+    return Patch(
+      index: index ?? this.index,
+      name: name ?? this.name,
+      effects: effects ?? this.effects,
+    );
+  }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/midi_service.dart';
 import '../../services/patch_service.dart';
-import '../widgets/stompbox_card.dart';
+import '../widgets/mini_pedal_card.dart';
 import '../widgets/effect_detail_modal.dart';
 import '../widgets/patch_list_modal.dart';
 import '../widgets/tuner_modal.dart';
@@ -15,6 +15,10 @@ class HomePedalboardScreen extends StatelessWidget {
     final midi = context.watch<MidiService>();
     final patchService = context.watch<PatchService>();
     final current = patchService.currentPatch;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Responsive columns for mini-pedalboard
+    final int crossAxisCount = screenWidth > 950 ? 4 : (screenWidth > 550 ? 3 : 2);
 
     return Scaffold(
       appBar: AppBar(
@@ -36,43 +40,83 @@ class HomePedalboardScreen extends StatelessWidget {
           // Patch Selector Header (Tap center to open full 99 patches list)
           _buildPatchHeader(context, patchService, current),
 
+          // Real-time Sync Progress Banner (when reading from GT-1B)
+          if (patchService.isSyncing)
+            Container(
+              color: const Color(0xFF00ADB5).withValues(alpha: 0.15),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00ADB5)),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      patchService.syncStatusText,
+                      style: const TextStyle(fontSize: 12, color: Color(0xFF00ADB5), fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // Pedalboard Effect Chain
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'CADENA DE EFECTOS (GT-1B)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white54,
-                        letterSpacing: 1.2,
-                      ),
+                    const Row(
+                      children: [
+                        Icon(Icons.developer_board, size: 16, color: Color(0xFF00ADB5)),
+                        SizedBox(width: 6),
+                        Text(
+                          'PEDALBOARD BOUTIQUE (GT-1B)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white54,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      'Toca para editar perillas',
-                      style: TextStyle(fontSize: 11, color: Colors.white38),
+                    TextButton.icon(
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (ctx) => const PatchListModal(),
+                        );
+                      },
+                      icon: const Icon(Icons.sync, size: 14, color: Color(0xFF00ADB5)),
+                      label: const Text(
+                        'Leer Presets',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF00ADB5), fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 2.1,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: 0.70, // Authentic boutique mini-pedal ratio
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
                   ),
                   itemCount: current.effects.length,
                   itemBuilder: (context, index) {
                     final effect = current.effects[index];
-                    return StompboxCard(
+                    return MiniPedalCard(
                       effect: effect,
                       onToggle: () => patchService.toggleEffect(effect),
                       onOpenDetail: () {
@@ -158,7 +202,7 @@ class HomePedalboardScreen extends StatelessWidget {
   Widget _buildPatchHeader(BuildContext context, PatchService patchService, dynamic current) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       color: const Color(0xFF191921),
       child: Row(
         children: [
@@ -186,7 +230,7 @@ class HomePedalboardScreen extends StatelessWidget {
                         Text(
                           current.displayNumber,
                           style: const TextStyle(
-                            fontSize: 32,
+                            fontSize: 30,
                             fontWeight: FontWeight.w900,
                             color: Color(0xFF00ADB5),
                             letterSpacing: 2.0,
@@ -277,7 +321,7 @@ class HomePedalboardScreen extends StatelessWidget {
                     SnackBar(
                       content: Text(ok
                           ? '✅ Conectado exitosamente con ${midi.connectedDeviceName}'
-                          : '⚠️ No se pudo conectar con la Boss GT-1B. Verifica el cable USB y que no esté abierta otra app (como GT-1BFxFloorBoard).'),
+                          : '⚠️ No se pudo conectar con la Boss GT-1B. Verifica el cable USB y permisos MIDI.'),
                       backgroundColor: ok ? Colors.teal : Colors.deepOrange,
                       duration: const Duration(seconds: 4),
                     ),
