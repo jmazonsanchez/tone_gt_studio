@@ -10,6 +10,7 @@ enum EffectCategory {
   delay,
   chorus,
   reverb,
+  pedalFx, // WAH / Pedal Bend / Expression Footswitch
 }
 
 class EffectBlock {

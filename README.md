@@ -30,6 +30,8 @@ Open-source patch editor, librarian, and controller for **Boss GT-1B** (Bass) an
 | **Protocolo SysEx** | Lectura de Presets y Parámetros en vivo (RQ1) | ✅ Completado | Peticiones RQ1 a `10 [patch] 00 00` para leer los 99 nombres reales y `60 00 00 00` para estados de efectos en vivo. |
 | **Protocolo SysEx** | Conmutación de efectos (Stompbox ON/OFF) | ✅ Completado | Verificado en hardware real: OD/DS (`60 00 00 30`), COMP (`60 00 00 20`), DELAY (`60 00 05 60`), etc. |
 | **Protocolo SysEx** | Mapeo de memoria oficial GT-1B | ✅ Completado | Extraído en `docs/gt1b_addressmap.json` desde el instalador oficial de Boss Tone Studio. |
+| **Interfaz Móvil (UI)** | Botones frontales negros GT-1B (Retroiluminados) | ✅ Completado | Fila física de botones táctiles negros con ranuras LED rojas (`COMP`, `OD/DS`, `PREAMP`, `FX1`, `FX2`, `DELAY`, `REV`, `WAH`). |
+| **Interfaz Móvil (UI)** | Pedal de Expresión y Footswitch WAH | ✅ Completado | Widget `WahExpressionCard` con pisador de punta (Toe Switch), LED de estado y deslizador de barrido en tiempo real (`60 00 06 20` / `27`). |
 | **Interfaz Móvil (UI)** | Mini-Pedales Boutique interactivos (Stompboxes) | ✅ Completado | Widget `MiniPedalCard` con chasis esmaltado, Jewel LED 3D, mini-knobs rotativos y footswitch metálico cromado. |
 | **Interfaz Móvil (UI)** | Potenciómetros rotativos interactivos (Knobs) | ✅ Completado | Widget `ParameterKnob` con física de arrastre táctil vertical y lectura numérica. |
 | **Interfaz Móvil (UI)** | Editor modal de parámetros de cada efecto | ✅ Completado | Edición en vivo de Gain, Bass, Level, Time, Feedback, etc. vía SysEx. |

@@ -3,12 +3,15 @@ import '../models/effect_block.dart';
 import '../models/effect_parameter.dart';
 import '../models/patch.dart';
 import '../protocol/gt_sysex.dart';
+import '../protocol/gt1b_addresses.dart';
 import 'midi_service.dart';
 
 class PatchService extends ChangeNotifier {
   final MidiService midiService;
   int _currentPatchIndex = 0;
   bool _isTunerActive = false;
+  bool _isWahActive = false;
+  int _wahPosition = 50;
 
   bool _isSyncing = false;
   double _syncProgress = 0.0;
@@ -38,14 +41,17 @@ class PatchService extends ChangeNotifier {
   Future<void> _autoSyncFromHardware() async {
     // 1. Ask GT-1B what patch is currently selected physically
     await syncCurrentPatchNumber();
-    // 2. Fetch the active patch settings and effect states
+    // 2. Fetch the active patch settings, effect states and WAH status
     await syncActivePatchFromPedal();
+    await syncWahStateFromPedal();
     // 3. Fetch all 99 preset names from the physical pedal in background
     await syncAllPatchesFromPedal();
   }
 
   int get currentPatchIndex => _currentPatchIndex;
   bool get isTunerActive => _isTunerActive;
+  bool get isWahActive => _isWahActive;
+  int get wahPosition => _wahPosition;
   bool get isSyncing => _isSyncing;
   double get syncProgress => _syncProgress;
   String get syncStatusText => _syncStatusText;
@@ -56,8 +62,6 @@ class PatchService extends ChangeNotifier {
   final List<Patch> _patches = [];
 
   void _initializeDefaultPatches() {
-    // Neutral placeholder presets; all actual preset names are always
-    // dynamically read directly from the physical Boss GT-1B pedal.
     for (int i = 0; i < 99; i++) {
       final numberStr = (i + 1).toString().padLeft(2, '0');
       _patches.add(
@@ -113,7 +117,7 @@ class PatchService extends ChangeNotifier {
       EffectBlock(
         id: 'fx1',
         name: 'FX1',
-        subtitle: 'Sub Wah',
+        subtitle: 'Sub Wah / Filter',
         category: EffectCategory.fx1,
         accentColor: const Color(0xFF8E24AA), // Purple
         isEnabled: false,
@@ -125,7 +129,7 @@ class PatchService extends ChangeNotifier {
       EffectBlock(
         id: 'fx2',
         name: 'FX2',
-        subtitle: 'Bass Octaver',
+        subtitle: 'Bass Octaver / Mod',
         category: EffectCategory.fx2,
         accentColor: const Color(0xFF3949AB), // Cobalt Indigo
         isEnabled: false,
@@ -170,6 +174,18 @@ class PatchService extends ChangeNotifier {
         parameters: [
           EffectParameter(id: 'rev_time', name: 'Time', address: [0x60, 0x00, 0x06, 0x12], value: 45),
           EffectParameter(id: 'rev_level', name: 'Level', address: [0x60, 0x00, 0x06, 0x18], value: 40),
+        ],
+      ),
+      EffectBlock(
+        id: 'pedal_fx',
+        name: 'PEDAL FX',
+        subtitle: 'Wah / Foot Bend',
+        category: EffectCategory.pedalFx,
+        accentColor: const Color(0xFFFF5722), // Deep Flame Orange
+        isEnabled: false,
+        parameters: [
+          EffectParameter(id: 'pdl_pos', name: 'Pedal Pos', address: [0x60, 0x00, 0x06, 0x27], value: 50),
+          EffectParameter(id: 'pdl_level', name: 'Effect Level', address: [0x60, 0x00, 0x06, 0x2A], value: 80),
         ],
       ),
     ];
@@ -235,8 +251,8 @@ class PatchService extends ChangeNotifier {
         await Future.delayed(const Duration(milliseconds: 30));
       }
 
-      // Also refresh active patch parameters
       await syncActivePatchFromPedal();
+      await syncWahStateFromPedal();
     } finally {
       _isSyncing = false;
       _syncProgress = 1.0;
@@ -276,15 +292,61 @@ class PatchService extends ChangeNotifier {
     }
   }
 
+  /// Query live WAH / Pedal FX state (60 00 06 20)
+  Future<void> syncWahStateFromPedal() async {
+    if (!midiService.isConnected) return;
+    try {
+      final req = GtSysEx.buildRq1Message(
+        address: Gt1bAddresses.pedalFxSwitch,
+        size: [0x00, 0x00, 0x00, 0x01],
+      );
+      final reply = await midiService.sendSysExRequest(
+        req,
+        timeout: const Duration(milliseconds: 350),
+      );
+      if (reply != null && reply.length >= 13) {
+        _isWahActive = reply[12] != 0x00;
+        final wahBlock = currentPatch.effects.where((e) => e.category == EffectCategory.pedalFx).firstOrNull;
+        if (wahBlock != null) {
+          wahBlock.isEnabled = _isWahActive;
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error syncing WAH state: $e');
+    }
+  }
+
+  /// Toggle WAH / Expression Footswitch
+  Future<void> toggleWah() async {
+    _isWahActive = !_isWahActive;
+    final wahBlock = currentPatch.effects.where((e) => e.category == EffectCategory.pedalFx).firstOrNull;
+    if (wahBlock != null) {
+      wahBlock.isEnabled = _isWahActive;
+    }
+    notifyListeners();
+    final msg = GtSysEx.buildPedalFxToggle(_isWahActive);
+    await midiService.sendSysEx(msg);
+  }
+
+  /// Sweep WAH position in real time (0..100)
+  Future<void> setWahPosition(int pos) async {
+    _wahPosition = pos.clamp(0, 100);
+    notifyListeners();
+    final msg = GtSysEx.buildPedalFxWahPosition(_wahPosition);
+    await midiService.sendSysEx(msg);
+  }
+
   Future<void> selectPatch(int index) async {
     if (index < 0 || index >= _patches.length) return;
     _currentPatchIndex = index;
     notifyListeners();
     await midiService.changePatch(index);
 
-    // Give the GT-1B DSP 150ms to load buffer, then sync effect states
+    // Give the GT-1B DSP 150ms to load buffer, then sync effect states & WAH
     await Future.delayed(const Duration(milliseconds: 150));
     await syncActivePatchFromPedal();
+    await syncWahStateFromPedal();
   }
 
   Future<void> nextPatch() async {
@@ -302,6 +364,9 @@ class PatchService extends ChangeNotifier {
   Future<void> toggleEffect(EffectBlock effect) async {
     final newState = !effect.isEnabled;
     effect.isEnabled = newState;
+    if (effect.category == EffectCategory.pedalFx) {
+      _isWahActive = newState;
+    }
     notifyListeners();
     await midiService.toggleEffect(effect.category, newState);
   }

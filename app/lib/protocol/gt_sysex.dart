@@ -212,11 +212,35 @@ class GtSysEx {
       case EffectCategory.reverb:
         address = Gt1bAddresses.reverbSwitch;
         break;
+      case EffectCategory.pedalFx:
+        address = Gt1bAddresses.pedalFxSwitch;
+        break;
     }
 
     return buildDt1Message(
       address: address,
       data: [isEnabled ? 0x01 : 0x00],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Toggle WAH / Pedal FX Footswitch (Toe Switch)
+  static Uint8List buildPedalFxToggle(bool isEnabled, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildDt1Message(
+      address: Gt1bAddresses.pedalFxSwitch,
+      data: [isEnabled ? 0x01 : 0x00],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Set WAH pedal sweep position (0..100)
+  static Uint8List buildPedalFxWahPosition(int position, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    assert(position >= 0 && position <= 100, 'Position must be 0..100');
+    return buildDt1Message(
+      address: Gt1bAddresses.pedalFxWahPosition,
+      data: [position.clamp(0, 100)],
       modelId: modelId,
       deviceId: deviceId,
     );
