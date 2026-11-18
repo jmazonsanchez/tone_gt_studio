@@ -13,9 +13,35 @@ class PatchService extends ChangeNotifier {
   bool _isSyncing = false;
   double _syncProgress = 0.0;
   String _syncStatusText = '';
+  bool _wasConnected = false;
 
   PatchService(this.midiService) {
     _initializeDefaultPatches();
+    midiService.addListener(_onMidiStateChanged);
+  }
+
+  @override
+  void dispose() {
+    midiService.removeListener(_onMidiStateChanged);
+    super.dispose();
+  }
+
+  void _onMidiStateChanged() {
+    if (midiService.isConnected && !_wasConnected) {
+      _wasConnected = true;
+      _autoSyncFromHardware();
+    } else if (!midiService.isConnected) {
+      _wasConnected = false;
+    }
+  }
+
+  Future<void> _autoSyncFromHardware() async {
+    // 1. Ask GT-1B what patch is currently selected physically
+    await syncCurrentPatchNumber();
+    // 2. Fetch the active patch settings and effect states
+    await syncActivePatchFromPedal();
+    // 3. Fetch all 99 preset names from the physical pedal in background
+    await syncAllPatchesFromPedal();
   }
 
   int get currentPatchIndex => _currentPatchIndex;
@@ -30,25 +56,14 @@ class PatchService extends ChangeNotifier {
   final List<Patch> _patches = [];
 
   void _initializeDefaultPatches() {
-    final List<String> presetNames = [
-      'ADORACION!',
-      'ALABANZAS!',
-      'ALABANZAS WHA',
-      'DISTORCION LOW',
-      'SOLO #1',
-      'GARAGE ROCK',
-      'FLAT',
-      'ACUSTICA',
-      'ATMOSPHERE',
-      'Slap & Funk Bass',
-    ];
-
+    // Neutral placeholder presets; all actual preset names are always
+    // dynamically read directly from the physical Boss GT-1B pedal.
     for (int i = 0; i < 99; i++) {
-      final name = i < presetNames.length ? presetNames[i] : 'User Patch ${i + 1}';
+      final numberStr = (i + 1).toString().padLeft(2, '0');
       _patches.add(
         Patch(
           index: i,
-          name: name,
+          name: 'Patch U$numberStr',
           effects: _createDefaultEffects(i),
         ),
       );
@@ -63,7 +78,7 @@ class PatchService extends ChangeNotifier {
         subtitle: 'Limiter / Comp',
         category: EffectCategory.comp,
         accentColor: const Color(0xFF1E88E5), // Blue boutique
-        isEnabled: true,
+        isEnabled: false,
         parameters: [
           EffectParameter(id: 'comp_tone', name: 'Tone', address: [0x60, 0x00, 0x00, 0x24], value: 50),
           EffectParameter(id: 'comp_level', name: 'Level', address: [0x60, 0x00, 0x00, 0x25], value: 65),
@@ -75,7 +90,7 @@ class PatchService extends ChangeNotifier {
         subtitle: 'Bass Overdrive',
         category: EffectCategory.odDs,
         accentColor: const Color(0xFFFB8C00), // Amber Gold
-        isEnabled: patchIdx % 2 == 1,
+        isEnabled: false,
         parameters: [
           EffectParameter(id: 'od_drive', name: 'Drive', address: [0x60, 0x00, 0x00, 0x32], value: 45),
           EffectParameter(id: 'od_tone', name: 'Tone', address: [0x60, 0x00, 0x00, 0x34], value: 50),
@@ -125,7 +140,7 @@ class PatchService extends ChangeNotifier {
         subtitle: 'Tape Echo',
         category: EffectCategory.delay,
         accentColor: const Color(0xFF00897B), // Teal
-        isEnabled: patchIdx % 3 == 0,
+        isEnabled: false,
         parameters: [
           EffectParameter(id: 'dly_time', name: 'Time', address: [0x60, 0x00, 0x05, 0x62], value: 40, unit: 'ms'),
           EffectParameter(id: 'dly_feedback', name: 'F.Back', address: [0x60, 0x00, 0x10, 0x72], value: 35),
@@ -138,7 +153,7 @@ class PatchService extends ChangeNotifier {
         subtitle: 'Stereo Chorus',
         category: EffectCategory.chorus,
         accentColor: const Color(0xFF00ACC1), // Cyan
-        isEnabled: patchIdx % 4 == 0,
+        isEnabled: false,
         parameters: [
           EffectParameter(id: 'cho_rate', name: 'Rate', address: [0x60, 0x00, 0x07, 0x12], value: 40),
           EffectParameter(id: 'cho_depth', name: 'Depth', address: [0x60, 0x00, 0x07, 0x14], value: 60),
@@ -151,7 +166,7 @@ class PatchService extends ChangeNotifier {
         subtitle: 'Plate Reverb',
         category: EffectCategory.reverb,
         accentColor: const Color(0xFF5E35B1), // Deep Violet
-        isEnabled: true,
+        isEnabled: false,
         parameters: [
           EffectParameter(id: 'rev_time', name: 'Time', address: [0x60, 0x00, 0x06, 0x12], value: 45),
           EffectParameter(id: 'rev_level', name: 'Level', address: [0x60, 0x00, 0x06, 0x18], value: 40),
@@ -160,12 +175,33 @@ class PatchService extends ChangeNotifier {
     ];
   }
 
+  /// Query GT-1B setup buffer to determine which patch is currently selected physically (00 01 00 00)
+  Future<void> syncCurrentPatchNumber() async {
+    if (!midiService.isConnected) return;
+    try {
+      final req = GtSysEx.buildCurrentPatchNumberRequest();
+      final reply = await midiService.sendSysExRequest(
+        req,
+        timeout: const Duration(milliseconds: 400),
+      );
+      if (reply != null) {
+        final patchIdx = GtSysEx.parseCurrentPatchNumber(reply);
+        if (patchIdx != null && patchIdx >= 0 && patchIdx < _patches.length) {
+          _currentPatchIndex = patchIdx;
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error syncing current patch number: $e');
+    }
+  }
+
   /// Synchronize all 99 user patch names from Boss GT-1B hardware via SysEx RQ1
   Future<void> syncAllPatchesFromPedal() async {
     if (_isSyncing || !midiService.isConnected) return;
     _isSyncing = true;
     _syncProgress = 0.0;
-    _syncStatusText = 'Iniciando lectura de presets...';
+    _syncStatusText = 'Leyendo presets de la GT-1B...';
     notifyListeners();
 
     try {
@@ -196,7 +232,6 @@ class PatchService extends ChangeNotifier {
             break;
           }
         }
-        // Small delay between requests to avoid overloading the MIDI buffer
         await Future.delayed(const Duration(milliseconds: 30));
       }
 
@@ -205,7 +240,7 @@ class PatchService extends ChangeNotifier {
     } finally {
       _isSyncing = false;
       _syncProgress = 1.0;
-      _syncStatusText = '¡Presets sincronizados!';
+      _syncStatusText = '¡Presets de tu pedalera cargados!';
       notifyListeners();
     }
   }

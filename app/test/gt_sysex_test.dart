@@ -102,6 +102,21 @@ void main() {
       expect(switches[EffectCategory.preamp], isTrue);
     });
 
+    test('Current Patch Number RQ1 request and parser', () {
+      final req = GtSysEx.buildCurrentPatchNumberRequest();
+      expect(req, equals([
+        0xF0, 0x41, 0x00, 0x00, 0x00, 0x00, 0x3E, 0x11,
+        0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x7D, 0xF7
+      ]));
+
+      final reply = Uint8List.fromList([
+        0xF0, 0x41, 0x00, 0x00, 0x00, 0x00, 0x3E, 0x12,
+        0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x7E, 0xF7
+      ]);
+      final patchIdx = GtSysEx.parseCurrentPatchNumber(reply);
+      expect(patchIdx, equals(1));
+    });
+
     test('Effect Toggle generates valid DT1 message for OD/DS', () {
       final odDsOn = GtSysEx.buildEffectToggle(EffectCategory.odDs, true);
       expect(odDsOn, equals([

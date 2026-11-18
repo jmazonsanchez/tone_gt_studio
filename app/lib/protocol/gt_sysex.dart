@@ -97,6 +97,28 @@ class GtSysEx {
     );
   }
 
+  /// Request currently selected patch number from setup buffer (address 00 01 00 00, size 2 bytes).
+  static Uint8List buildCurrentPatchNumberRequest({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildRq1Message(
+      address: Gt1bAddresses.currentPatchNo,
+      size: [0x00, 0x00, 0x00, 0x02],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Parse currently selected patch index (0..98) from 00 01 00 00 DT1 response.
+  static int? parseCurrentPatchNumber(Uint8List packet) {
+    if (packet.length < 15) return null;
+    if (packet[0] != 0xF0 || packet[7] != commandDt1) return null;
+    if (packet[8] != 0x00 || packet[9] != 0x01 || packet[10] != 0x00 || packet[11] != 0x00) {
+      return null;
+    }
+    final high = packet[12];
+    final low = packet[13];
+    return (high << 7) | low;
+  }
+
   /// Parse patch name from an incoming Roland DT1 packet.
   static String? parsePatchName(Uint8List packet) {
     if (packet.length < 28) return null;

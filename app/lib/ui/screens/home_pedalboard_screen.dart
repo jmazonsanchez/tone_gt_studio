@@ -320,7 +320,7 @@ class HomePedalboardScreen extends StatelessWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(ok
-                          ? '✅ Conectado exitosamente con ${midi.connectedDeviceName}'
+                          ? '✅ Conectado con ${midi.connectedDeviceName}. Leyendo tus presets directamente de la pedalera...'
                           : '⚠️ No se pudo conectar con la Boss GT-1B. Verifica el cable USB y permisos MIDI.'),
                       backgroundColor: ok ? Colors.teal : Colors.deepOrange,
                       duration: const Duration(seconds: 4),
