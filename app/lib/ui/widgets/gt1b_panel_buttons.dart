@@ -20,11 +20,14 @@ class Gt1bPanelButtons extends StatelessWidget {
       e.category == EffectCategory.comp ||
       e.category == EffectCategory.odDs ||
       e.category == EffectCategory.preamp ||
+      e.category == EffectCategory.eq ||
       e.category == EffectCategory.fx1 ||
       e.category == EffectCategory.fx2 ||
       e.category == EffectCategory.delay ||
       e.category == EffectCategory.reverb ||
-      e.category == EffectCategory.pedalFx
+      e.category == EffectCategory.pedalFx ||
+      e.category == EffectCategory.footVolume ||
+      e.category == EffectCategory.noiseSuppressor
     ).toList();
 
     return Container(
@@ -171,6 +174,12 @@ class Gt1bPanelButtons extends StatelessWidget {
         return 'REV';
       case EffectCategory.pedalFx:
         return 'WAH';
+      case EffectCategory.noiseSuppressor:
+        return 'NS';
+      case EffectCategory.footVolume:
+        return 'FV';
+      case EffectCategory.eq:
+        return 'EQ';
     }
   }
 }

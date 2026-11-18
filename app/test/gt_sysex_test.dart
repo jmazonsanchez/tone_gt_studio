@@ -140,5 +140,73 @@ void main() {
       expect(req.sublist(12, 16), equals([0x00, 0x00, 0x00, 0x14])); // 20 bytes
       expect(req[16], equals(0x65)); // Checksum verified mathematically
     });
+
+    test('parseFxChainOrder correctly parses hardware chain DT1 reply', () {
+      // Mock DT1 reply for 60 00 07 20
+      final chainBytes = [
+        0x01, // COMP (Chain ID 1)
+        0x00, // WAH / Pedal FX (Chain ID 0)
+        0x04, // OD/DS (Chain ID 4)
+        0x08, // PREAMP (Chain ID 8)
+        0x0A, // EQ (Chain ID 10)
+        0x0E, // FX1 (Chain ID 14)
+        0x11, // FX2 (Chain ID 17)
+        0x0F, // Foot Volume (Chain ID 15)
+        0x05, // DELAY (Chain ID 5)
+        0x02, // CHORUS (Chain ID 2)
+        0x06, // REVERB (Chain ID 6)
+        0x0B, // NS (Chain ID 11)
+        // Remainder padding
+        0x03, 0x07, 0x09, 0x0C, 0x0D, 0x10, 0x12, 0x13,
+      ];
+      final packet = <int>[
+        0xF0, 0x41, 0x00, 0x00, 0x00, 0x00, 0x3E, 0x12,
+        0x60, 0x00, 0x07, 0x20,
+        ...chainBytes,
+        0x00, // dummy checksum
+        0xF7,
+      ];
+
+      final ordered = GtSysEx.parseFxChainOrder(Uint8List.fromList(packet));
+      expect(ordered, isNotNull);
+      expect(ordered!.length, equals(20));
+      expect(ordered[0], equals(0x01));
+      expect(GtSysEx.chainIdToCategory[ordered[0]], equals(EffectCategory.comp));
+      expect(GtSysEx.chainIdToCategory[ordered[1]], equals(EffectCategory.pedalFx));
+      expect(GtSysEx.chainIdToCategory[ordered[2]], equals(EffectCategory.odDs));
+      expect(GtSysEx.chainIdToCategory[ordered[3]], equals(EffectCategory.preamp));
+      expect(GtSysEx.chainIdToCategory[ordered[4]], equals(EffectCategory.eq));
+      expect(GtSysEx.chainIdToCategory[ordered[5]], equals(EffectCategory.fx1));
+      expect(GtSysEx.chainIdToCategory[ordered[6]], equals(EffectCategory.fx2));
+      expect(GtSysEx.chainIdToCategory[ordered[7]], equals(EffectCategory.footVolume));
+      expect(GtSysEx.chainIdToCategory[ordered[8]], equals(EffectCategory.delay));
+      expect(GtSysEx.chainIdToCategory[ordered[9]], equals(EffectCategory.chorus));
+      expect(GtSysEx.chainIdToCategory[ordered[10]], equals(EffectCategory.reverb));
+      expect(GtSysEx.chainIdToCategory[ordered[11]], equals(EffectCategory.noiseSuppressor));
+    });
+
+    test('Effect Toggle generates valid DT1 message for Noise Suppressor', () {
+      final nsOn = GtSysEx.buildEffectToggle(EffectCategory.noiseSuppressor, true);
+      expect(nsOn.sublist(8, 12), equals([0x60, 0x00, 0x06, 0x63]));
+      expect(nsOn[12], equals(0x01)); // ON
+
+      final nsOff = GtSysEx.buildEffectToggle(EffectCategory.noiseSuppressor, false);
+      expect(nsOff.sublist(8, 12), equals([0x60, 0x00, 0x06, 0x63]));
+      expect(nsOff[12], equals(0x00)); // OFF
+    });
+
+    test('Editor Communication Mode DT1 generates valid packet for address 7F 00 00 01', () {
+      final modeOn = GtSysEx.buildEditorMode(enable: true);
+      expect(modeOn.sublist(8, 12), equals([0x7F, 0x00, 0x00, 0x01]));
+      expect(modeOn[12], equals(0x01));
+      expect(modeOn[13], equals(0x7F)); // Checksum
+      expect(modeOn.last, equals(0xF7));
+
+      final modeOff = GtSysEx.buildEditorMode(enable: false);
+      expect(modeOff.sublist(8, 12), equals([0x7F, 0x00, 0x00, 0x01]));
+      expect(modeOff[12], equals(0x00));
+      expect(modeOff[13], equals(0x00)); // Checksum
+      expect(modeOff.last, equals(0xF7));
+    });
   });
 }

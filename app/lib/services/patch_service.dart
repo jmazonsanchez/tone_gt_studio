@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../models/effect_block.dart';
 import '../models/effect_parameter.dart';
@@ -8,6 +10,7 @@ import 'midi_service.dart';
 
 class PatchService extends ChangeNotifier {
   final MidiService midiService;
+  StreamSubscription<Uint8List>? _sysExSubscription;
   int _currentPatchIndex = 0;
   bool _isTunerActive = false;
   bool _isWahActive = false;
@@ -21,10 +24,12 @@ class PatchService extends ChangeNotifier {
   PatchService(this.midiService) {
     _initializeDefaultPatches();
     midiService.addListener(_onMidiStateChanged);
+    _sysExSubscription = midiService.onSysExReceived.listen(_handleIncomingHardwareSysEx);
   }
 
   @override
   void dispose() {
+    _sysExSubscription?.cancel();
     midiService.removeListener(_onMidiStateChanged);
     super.dispose();
   }
@@ -43,6 +48,8 @@ class PatchService extends ChangeNotifier {
     await syncCurrentPatchNumber();
     // 2. Fetch the active patch settings, effect states and WAH status
     await syncActivePatchFromPedal();
+    await syncEffectsBlock6FromPedal();
+    await syncFxChainFromPedal();
     await syncWahStateFromPedal();
     // 3. Fetch all 99 preset names from the physical pedal in background
     await syncAllPatchesFromPedal();
@@ -188,6 +195,43 @@ class PatchService extends ChangeNotifier {
           EffectParameter(id: 'pdl_level', name: 'Effect Level', address: [0x60, 0x00, 0x06, 0x2A], value: 80),
         ],
       ),
+      EffectBlock(
+        id: 'eq',
+        name: 'EQ',
+        subtitle: 'Parametric Equalizer',
+        category: EffectCategory.eq,
+        accentColor: const Color(0xFF009688), // Teal Green
+        isEnabled: false,
+        parameters: [
+          EffectParameter(id: 'eq_low', name: 'Low', address: [0x60, 0x00, 0x01, 0x33], value: 50),
+          EffectParameter(id: 'eq_mid', name: 'Mid', address: [0x60, 0x00, 0x01, 0x36], value: 50),
+          EffectParameter(id: 'eq_high', name: 'High', address: [0x60, 0x00, 0x01, 0x39], value: 50),
+          EffectParameter(id: 'eq_level', name: 'Level', address: [0x60, 0x00, 0x01, 0x3A], value: 50),
+        ],
+      ),
+      EffectBlock(
+        id: 'foot_volume',
+        name: 'FOOT VOL',
+        subtitle: 'Foot Volume Level',
+        category: EffectCategory.footVolume,
+        accentColor: const Color(0xFF8D6E63), // Copper Bronze
+        isEnabled: true,
+        parameters: [
+          EffectParameter(id: 'fv_level', name: 'Level', address: Gt1bAddresses.footVolume, value: 100),
+        ],
+      ),
+      EffectBlock(
+        id: 'ns',
+        name: 'NS',
+        subtitle: 'Noise Suppressor',
+        category: EffectCategory.noiseSuppressor,
+        accentColor: const Color(0xFF607D8B), // Slate Steel
+        isEnabled: true,
+        parameters: [
+          EffectParameter(id: 'ns_threshold', name: 'Threshold', address: Gt1bAddresses.ns1Threshold, value: 50),
+          EffectParameter(id: 'ns_release', name: 'Release', address: Gt1bAddresses.ns1Release, value: 30),
+        ],
+      ),
     ];
   }
 
@@ -289,6 +333,244 @@ class PatchService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error syncing active patch: $e');
+    }
+  }
+
+  /// Synchronize secondary effect switches (Chorus, Reverb, Wah, Foot Vol, NS) from buffer (60 00 06 00)
+  Future<void> syncEffectsBlock6FromPedal() async {
+    if (!midiService.isConnected) return;
+    try {
+      final req = GtSysEx.buildEffectsBlock6Request();
+      final reply = await midiService.sendSysExRequest(
+        req,
+        timeout: const Duration(milliseconds: 400),
+      );
+      if (reply != null) {
+        final switches = GtSysEx.parseActiveEffectSwitches(reply);
+        if (switches != null) {
+          for (final effect in currentPatch.effects) {
+            if (switches.containsKey(effect.category)) {
+              effect.isEnabled = switches[effect.category]!;
+            }
+          }
+          if (switches.containsKey(EffectCategory.pedalFx)) {
+            _isWahActive = switches[EffectCategory.pedalFx]!;
+          }
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error syncing block 6: $e');
+    }
+  }
+
+  /// Synchronize the exact FX Chain connection line order directly from GT-1B (60 00 07 20)
+  Future<void> syncFxChainFromPedal() async {
+    if (!midiService.isConnected) return;
+    try {
+      final req = GtSysEx.buildFxChainRequest();
+      final reply = await midiService.sendSysExRequest(
+        req,
+        timeout: const Duration(milliseconds: 400),
+      );
+      if (reply != null) {
+        final chainIds = GtSysEx.parseFxChainOrder(reply);
+        if (chainIds != null && chainIds.isNotEmpty) {
+          _applyFxChainOrder(chainIds);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error syncing FX chain: $e');
+    }
+  }
+
+  /// Reorder the current patch effects to match hardware chain IDs
+  void _applyFxChainOrder(List<int> chainIds) {
+    final patch = _patches[_currentPatchIndex];
+    final currentEffects = List<EffectBlock>.from(patch.effects);
+
+    final orderedEffects = <EffectBlock>[];
+    for (final id in chainIds) {
+      final category = GtSysEx.chainIdToCategory[id];
+      if (category != null) {
+        final effect = currentEffects.where((e) => e.category == category).firstOrNull;
+        if (effect != null && !orderedEffects.contains(effect)) {
+          orderedEffects.add(effect);
+        }
+      }
+    }
+
+    for (final effect in currentEffects) {
+      if (!orderedEffects.contains(effect)) {
+        orderedEffects.add(effect);
+      }
+    }
+
+    _patches[_currentPatchIndex] = patch.copyWith(effects: orderedEffects);
+    notifyListeners();
+  }
+
+  /// Live hardware SysEx handler for real-time bidirectional synchronization
+  void _handleIncomingHardwareSysEx(Uint8List packet) {
+    if (packet.isEmpty) return;
+
+    // 1. Standard MIDI Program Change (0xC0 [patchIndex])
+    if (packet.length >= 2 && (packet[0] & 0xF0) == 0xC0) {
+      final patchIdx = packet[1];
+      if (patchIdx >= 0 && patchIdx < _patches.length && patchIdx != _currentPatchIndex) {
+        _currentPatchIndex = patchIdx;
+        notifyListeners();
+        syncActivePatchFromPedal();
+        syncEffectsBlock6FromPedal();
+        syncFxChainFromPedal();
+        syncWahStateFromPedal();
+      }
+      return;
+    }
+
+    // 2. Roland SysEx DT1 Packet (F0 41 ... 12 [addr0 addr1 addr2 addr3] [data...] [checksum] F7)
+    if (packet.length < 14) return;
+    if (packet[0] != 0xF0 || packet[7] != GtSysEx.commandDt1) return;
+
+    final a0 = packet[8];
+    final a1 = packet[9];
+    final a2 = packet[10];
+    final a3 = packet[11];
+    final val = packet[12];
+
+    // A. Current Patch Number (00 01 00 00)
+    if (a0 == 0x00 && a1 == 0x01 && a2 == 0x00 && a3 == 0x00) {
+      final patchIdx = GtSysEx.parseCurrentPatchNumber(packet);
+      if (patchIdx != null && patchIdx >= 0 && patchIdx < _patches.length && patchIdx != _currentPatchIndex) {
+        _currentPatchIndex = patchIdx;
+        notifyListeners();
+        syncActivePatchFromPedal();
+        syncEffectsBlock6FromPedal();
+        syncFxChainFromPedal();
+        syncWahStateFromPedal();
+      }
+      return;
+    }
+
+    // B. Tuner Running Mode (7F 00 00 02)
+    if (a0 == 0x7F && a1 == 0x00 && a2 == 0x00 && a3 == 0x02) {
+      final tunerActive = val == 0x01;
+      if (_isTunerActive != tunerActive) {
+        _isTunerActive = tunerActive;
+        notifyListeners();
+      }
+      return;
+    }
+
+    // C. FX Chain Order Changed in Hardware (60 00 07 20)
+    if (a0 == 0x60 && a1 == 0x00 && a2 == 0x07 && a3 == 0x20) {
+      final chainIds = GtSysEx.parseFxChainOrder(packet);
+      if (chainIds != null && chainIds.isNotEmpty) {
+        _applyFxChainOrder(chainIds);
+      }
+      return;
+    }
+
+    // D. Individual Effect Switches (Temporary Buffer 60 00 ...)
+    if (a0 == 0x60 && a1 == 0x00) {
+      // COMP SW: 60 00 00 20
+      if (a2 == 0x00 && a3 == 0x20) {
+        _updateEffectEnabled(EffectCategory.comp, val != 0);
+        return;
+      }
+      // OD/DS SW: 60 00 00 30
+      if (a2 == 0x00 && a3 == 0x30) {
+        _updateEffectEnabled(EffectCategory.odDs, val != 0);
+        return;
+      }
+      // PREAMP SW: 60 00 00 50
+      if (a2 == 0x00 && a3 == 0x50) {
+        _updateEffectEnabled(EffectCategory.preamp, val != 0);
+        return;
+      }
+      // EQ SW: 60 00 01 30
+      if (a2 == 0x01 && a3 == 0x30) {
+        _updateEffectEnabled(EffectCategory.eq, val != 0);
+        return;
+      }
+      // FX1 SW: 60 00 01 40
+      if (a2 == 0x01 && a3 == 0x40) {
+        _updateEffectEnabled(EffectCategory.fx1, val != 0);
+        return;
+      }
+      // FX2 SW: 60 00 03 4C
+      if (a2 == 0x03 && a3 == 0x4C) {
+        _updateEffectEnabled(EffectCategory.fx2, val != 0);
+        return;
+      }
+      // DELAY SW: 60 00 05 60
+      if (a2 == 0x05 && a3 == 0x60) {
+        _updateEffectEnabled(EffectCategory.delay, val != 0);
+        return;
+      }
+      // CHORUS SW: 60 00 06 00
+      if (a2 == 0x06 && a3 == 0x00) {
+        _updateEffectEnabled(EffectCategory.chorus, val != 0);
+        return;
+      }
+      // REVERB SW: 60 00 06 10
+      if (a2 == 0x06 && a3 == 0x10) {
+        _updateEffectEnabled(EffectCategory.reverb, val != 0);
+        return;
+      }
+      // WAH / PEDAL FX SW: 60 00 06 20
+      if (a2 == 0x06 && a3 == 0x20) {
+        _isWahActive = val != 0;
+        _updateEffectEnabled(EffectCategory.pedalFx, val != 0);
+        notifyListeners();
+        return;
+      }
+      // WAH POSITION: 60 00 06 27
+      if (a2 == 0x06 && a3 == 0x27) {
+        _wahPosition = val;
+        notifyListeners();
+        return;
+      }
+      // FOOT VOLUME LEVEL: 60 00 06 33
+      if (a2 == 0x06 && a3 == 0x33) {
+        _updateEffectEnabled(EffectCategory.footVolume, val > 0);
+        return;
+      }
+      // NOISE SUPPRESSOR SW: 60 00 06 63
+      if (a2 == 0x06 && a3 == 0x63) {
+        _updateEffectEnabled(EffectCategory.noiseSuppressor, val != 0);
+        return;
+      }
+
+      // E. Live Knob Parameter Updates (e.g. Gain, Tone, Level, Time, etc.)
+      for (final effect in currentPatch.effects) {
+        for (final param in effect.parameters) {
+          if (param.address.length >= 4 &&
+              param.address[0] == a0 &&
+              param.address[1] == a1 &&
+              param.address[2] == a2 &&
+              param.address[3] == a3) {
+            if (param.value != val) {
+              param.value = val;
+              notifyListeners();
+            }
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  void _updateEffectEnabled(EffectCategory category, bool isEnabled) {
+    bool changed = false;
+    for (final effect in currentPatch.effects) {
+      if (effect.category == category && effect.isEnabled != isEnabled) {
+        effect.isEnabled = isEnabled;
+        changed = true;
+      }
+    }
+    if (changed) {
+      notifyListeners();
     }
   }
 

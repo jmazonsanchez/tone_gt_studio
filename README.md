@@ -80,6 +80,79 @@ La aplicación ha sido diseñada desde cero para pantallas táctiles de cualquie
 
 ---
 
+## 🚀 Cómo Levantar y Ejecutar la Aplicación
+
+### 📋 Requisitos Previos
+- **Flutter SDK:** versión >= 3.3.0 (`flutter --version`)
+- **Navegador Web:** Google Chrome o Edge (para soporte de Web MIDI API con SysEx)
+- **O Dispositivo Móvil:** Teléfono o Tablet con Android 8.0+ y cable adaptador **USB OTG** (USB-C / Micro-USB a USB-B de impresora)
+- **Hardware:** Pedalera Boss GT-1B conectada por USB
+
+---
+
+### Opción 1: Ejecución Rápida en el Navegador (Web MIDI - PC / Laptop)
+Esta es la forma más rápida de usar y depurar la app con la pedalera conectada al PC por USB:
+
+1. Entra al directorio de la aplicación:
+   ```bash
+   cd tone_gt_studio/app
+   ```
+2. Instala las dependencias:
+   ```bash
+   flutter pub get
+   ```
+3. Ejecuta la aplicación en Chrome:
+   ```bash
+   flutter run -d chrome
+   ```
+4. Al abrirse Chrome, conecta tu Boss GT-1B por USB. Cuando el navegador solicite permisos de dispositivos MIDI / SysEx, haz clic en **Permitir**.
+
+> [!TIP]
+> También puedes servir directamente la versión compilada de producción web:
+> ```bash
+> cd tone_gt_studio/app/build/web
+> python3 -m http.server 8080
+> ```
+> Y abrir en Chrome: `http://localhost:8080`.
+
+---
+
+### Opción 2: Ejecución en Dispositivo Móvil o Tablet (Android)
+
+1. Conecta tu teléfono o tablet a la computadora por cable USB con la **Depuración por USB activada** en Opciones de Desarrollador.
+2. Verifica que Flutter reconozca tu dispositivo:
+   ```bash
+   flutter devices
+   ```
+3. Ejecuta la aplicación directamente en tu dispositivo:
+   ```bash
+   cd tone_gt_studio/app
+   flutter run -d <id_de_tu_dispositivo>
+   ```
+4. Una vez instalada, desconecta el teléfono de la PC y conéctalo directamente a la Boss GT-1B usando un **cable USB OTG**.
+
+---
+
+### Opción 3: Compilar el APK de Producción para Android
+
+Para generar el archivo instalador `.apk` listo para instalar en cualquier móvil o tablet:
+```bash
+cd tone_gt_studio/app
+flutter build apk --release
+```
+El archivo generado se ubicará en:
+`tone_gt_studio/app/build/app/outputs/flutter-apk/app-release.apk`
+
+---
+
+## 📜 Historial de Cambios y Despliegues
+
+Para consultar el seguimiento detallado de todas las versiones, características añadidas y correcciones técnicas, consulta el archivo [CHANGELOG.md](file:///home/jmazons/Repositorios/BossGT1B/tone_gt_studio/CHANGELOG.md).
+
+Para revisar el mapa exhaustivo de direcciones de memoria SysEx de todos los bloques y parámetros del hardware, consulta [docs/gt1b_full_parameter_map.md](file:///home/jmazons/Repositorios/BossGT1B/tone_gt_studio/docs/gt1b_full_parameter_map.md).
+
+---
+
 ## 🛠️ Cómo Probar la Conexión con tu Boss GT-1B
 
 1. Conecta la Boss GT-1B mediante cable USB a la computadora.

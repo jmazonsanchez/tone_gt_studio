@@ -117,6 +117,57 @@ class GtSysEx {
     );
   }
 
+  /// Request second effects block (address 60 00 06 00, size 127 bytes: Chorus, Reverb, Wah, Foot Vol, NS).
+  static Uint8List buildEffectsBlock6Request({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildRq1Message(
+      address: [0x60, 0x00, 0x06, 0x00],
+      size: [0x00, 0x00, 0x00, 0x7F],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Mapping from GT-1B hardware FX Chain IDs (0..19) to EffectCategory
+  static const Map<int, EffectCategory> chainIdToCategory = {
+    0: EffectCategory.pedalFx,
+    1: EffectCategory.comp,
+    2: EffectCategory.chorus,
+    4: EffectCategory.odDs,
+    5: EffectCategory.delay,
+    6: EffectCategory.reverb,
+    8: EffectCategory.preamp,
+    10: EffectCategory.eq,
+    11: EffectCategory.noiseSuppressor,
+    14: EffectCategory.fx1,
+    15: EffectCategory.footVolume,
+    17: EffectCategory.fx2,
+  };
+
+  static const Map<EffectCategory, int> categoryToChainId = {
+    EffectCategory.pedalFx: 0,
+    EffectCategory.comp: 1,
+    EffectCategory.chorus: 2,
+    EffectCategory.odDs: 4,
+    EffectCategory.delay: 5,
+    EffectCategory.reverb: 6,
+    EffectCategory.preamp: 8,
+    EffectCategory.eq: 10,
+    EffectCategory.noiseSuppressor: 11,
+    EffectCategory.fx1: 14,
+    EffectCategory.footVolume: 15,
+    EffectCategory.fx2: 17,
+  };
+
+  /// Parse FX Chain order from a 60 00 07 20 DT1 response
+  static List<int>? parseFxChainOrder(Uint8List packet) {
+    if (packet.length < 34) return null;
+    if (packet[0] != 0xF0 || packet[7] != commandDt1) return null;
+    if (packet[8] != 0x60 || packet[9] != 0x00 || packet[10] != 0x07 || packet[11] != 0x20) {
+      return null;
+    }
+    return packet.sublist(12, 32).toList();
+  }
+
   /// Parse currently selected patch index (0..98) from 00 01 00 00 DT1 response.
   static int? parseCurrentPatchNumber(Uint8List packet) {
     if (packet.length < 15) return null;
@@ -148,19 +199,53 @@ class GtSysEx {
     return packet[9];
   }
 
-  /// Parse active effect switches from a 60 00 00 00 DT1 response
+  /// Parse active effect switches from a GT-1B DT1 response (60 00 00 00, 60 00 01 00, 60 00 06 00, etc.)
   static Map<EffectCategory, bool>? parseActiveEffectSwitches(Uint8List packet) {
-    if (packet.length < 95) return null;
-    if (packet[0] != 0xF0 || packet[7] != commandDt1 || packet[8] != 0x60 || packet[9] != 0x00) {
+    if (packet.length < 14) return null;
+    if (packet[0] != 0xF0 || packet[7] != commandDt1 || packet[8] != 0x60) {
       return null;
     }
-    // Base payload starts at index 12 (Address 60 00 00 00)
     const base = 12;
-    return {
-      EffectCategory.comp: packet[base + 0x20] != 0x00,
-      EffectCategory.odDs: packet[base + 0x30] != 0x00,
-      EffectCategory.preamp: packet[base + 0x50] != 0x00,
-    };
+    final addrHigh = packet[9];
+    final addrMid = packet[10];
+    final addrLow = packet[11];
+    final result = <EffectCategory, bool>{};
+
+    // Block 60 00 00 00 (COMP, OD/DS, PREAMP)
+    if (addrHigh == 0x00 && addrMid == 0x00 && addrLow == 0x00) {
+      if (packet.length >= base + 0x51) {
+        result[EffectCategory.comp] = packet[base + 0x20] != 0x00;
+        result[EffectCategory.odDs] = packet[base + 0x30] != 0x00;
+        result[EffectCategory.preamp] = packet[base + 0x50] != 0x00;
+      }
+    }
+    // Block 60 00 01 00 (EQ, FX1)
+    else if (addrHigh == 0x00 && addrMid == 0x01) {
+      if (packet.length >= base + 0x41) {
+        result[EffectCategory.eq] = packet[base + 0x30] != 0x00;
+        result[EffectCategory.fx1] = packet[base + 0x40] != 0x00;
+      }
+    }
+    // Block 60 00 03 4C (FX2)
+    else if (addrHigh == 0x00 && addrMid == 0x03 && addrLow == 0x4C) {
+      result[EffectCategory.fx2] = packet[base] != 0x00;
+    }
+    // Block 60 00 05 60 (DELAY)
+    else if (addrHigh == 0x00 && addrMid == 0x05 && addrLow == 0x60) {
+      result[EffectCategory.delay] = packet[base] != 0x00;
+    }
+    // Block 60 00 06 00 (CHORUS, REVERB, WAH, FOOT VOLUME, NOISE SUPPRESSOR)
+    else if (addrHigh == 0x00 && addrMid == 0x06 && addrLow == 0x00) {
+      if (packet.length >= base + 0x64) {
+        result[EffectCategory.chorus] = packet[base + 0x00] != 0x00;
+        result[EffectCategory.reverb] = packet[base + 0x10] != 0x00;
+        result[EffectCategory.pedalFx] = packet[base + 0x20] != 0x00;
+        result[EffectCategory.footVolume] = packet[base + 0x33] > 0;
+        result[EffectCategory.noiseSuppressor] = packet[base + 0x63] != 0x00;
+      }
+    }
+
+    return result;
   }
 
   /// Build Roland SysEx DT1 Patch Change for User Patches (U01 - U99).
@@ -181,6 +266,17 @@ class GtSysEx {
     assert(patchIndex >= 0 && patchIndex <= 98, 'Patch index must be 0..98');
     final status = 0xC0 | (channel & 0x0F);
     return Uint8List.fromList([status, patchIndex]);
+  }
+
+  /// Activate or deactivate Roland Editor Communication Mode (7F 00 00 01).
+  /// When active, GT-1B transmits parameter changes live when physical buttons or knobs are manipulated.
+  static Uint8List buildEditorMode({bool enable = true, List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildDt1Message(
+      address: Gt1bAddresses.editorCommunicationMode,
+      data: [enable ? 0x01 : 0x00],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
   }
 
   /// Toggle Tuner mode ON or OFF.
@@ -224,6 +320,15 @@ class GtSysEx {
         break;
       case EffectCategory.pedalFx:
         address = Gt1bAddresses.pedalFxSwitch;
+        break;
+      case EffectCategory.noiseSuppressor:
+        address = Gt1bAddresses.ns1Switch;
+        break;
+      case EffectCategory.footVolume:
+        address = Gt1bAddresses.footVolume;
+        break;
+      case EffectCategory.eq:
+        address = Gt1bAddresses.eqSwitch;
         break;
     }
 

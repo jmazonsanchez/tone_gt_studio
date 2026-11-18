@@ -63,6 +63,8 @@ class MidiService extends ChangeNotifier {
       if (success) {
         _connectionState = MidiConnectionState.connected;
         _connectedDeviceName = _driver.connectedDeviceName;
+        // Activate Roland Editor Communication Mode for live bidirectional parameter sync
+        await sendSysEx(GtSysEx.buildEditorMode(enable: true));
       } else {
         _connectionState = MidiConnectionState.disconnected;
         _connectedDeviceName = '';
@@ -80,6 +82,11 @@ class MidiService extends ChangeNotifier {
 
   /// Disconnect current session
   Future<void> disconnect() async {
+    if (isConnected) {
+      try {
+        await sendSysEx(GtSysEx.buildEditorMode(enable: false));
+      } catch (_) {}
+    }
     await _driver.disconnect();
     _connectionState = MidiConnectionState.disconnected;
     _connectedDeviceName = '';
