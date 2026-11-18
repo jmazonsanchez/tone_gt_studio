@@ -5,7 +5,7 @@ import '../models/effect_block.dart';
 /// Roland / Boss SysEx Protocol Engine for Boss GT-1B and GT-1.
 class GtSysEx {
   static const int rolandManufacturerId = 0x41;
-  static const int defaultDeviceId = 0x10;
+  static const int defaultDeviceId = 0x00; // GT-1B factory default Device ID is 0x00
 
   // Model IDs
   static const List<int> modelIdGt1b = [0x00, 0x00, 0x00, 0x3E]; // GT-1B (Bass)

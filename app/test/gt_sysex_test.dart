@@ -24,7 +24,7 @@ void main() {
 
       expect(msg.first, equals(0xF0)); // SOX
       expect(msg[1], equals(0x41));   // Roland
-      expect(msg[2], equals(0x10));   // Device ID
+      expect(msg[2], equals(0x00));   // Device ID (0x00)
       expect(msg.sublist(3, 7), equals([0x00, 0x00, 0x00, 0x3E])); // Model GT-1B
       expect(msg[7], equals(0x12));   // Command DT1
       expect(msg.sublist(8, 12), equals(Gt1bAddresses.tunerSingleModePitch)); // Address
