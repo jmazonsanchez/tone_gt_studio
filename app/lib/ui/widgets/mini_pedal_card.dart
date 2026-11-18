@@ -268,11 +268,17 @@ class _MiniPedalCardState extends State<MiniPedalCard> with SingleTickerProvider
 
     final displayParams = params.take(3).toList();
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: displayParams.map((p) {
-        return _buildSingleMiniKnob(p, active, accent);
-      }).toList(),
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: displayParams.map((p) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: _buildSingleMiniKnob(p, active, accent),
+          );
+        }).toList(),
+      ),
     );
   }
 

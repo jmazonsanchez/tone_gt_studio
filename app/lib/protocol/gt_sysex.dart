@@ -249,11 +249,11 @@ class GtSysEx {
     return result;
   }
 
-  /// Build Roland SysEx DT1 Patch Change for User Patches (U01 - U99).
-  /// [patchIndex] ranges from 0 (U01) to 98 (U99).
-  /// Format: Address 00 01 00 00, Data [00, patchIndex]
+  /// Build Roland SysEx DT1 Patch Change for all 198 Presets (U01-U99 and P01-P99).
+  /// [patchIndex] ranges from 0 (U01) to 197 (P99) (H9, D4).
+  /// Format: Address 00 01 00 00, Data [(patchIndex >> 7) & 0x7F, patchIndex & 0x7F]
   static Uint8List buildPatchChange(int patchIndex, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
-    assert(patchIndex >= 0 && patchIndex <= 98, 'Patch index must be 0..98');
+    assert(patchIndex >= 0 && patchIndex <= 197, 'Patch index must be 0..197');
     return buildDt1Message(
       address: Gt1bAddresses.currentPatchNo,
       data: [(patchIndex >> 7) & 0x7F, patchIndex & 0x7F],
@@ -264,9 +264,9 @@ class GtSysEx {
 
   /// Build Standard MIDI Program Change (PC) fallback.
   static Uint8List buildProgramChange(int patchIndex, {int channel = 0}) {
-    assert(patchIndex >= 0 && patchIndex <= 98, 'Patch index must be 0..98');
+    assert(patchIndex >= 0 && patchIndex <= 127, 'MIDI Program Change index must be 0..127');
     final status = 0xC0 | (channel & 0x0F);
-    return Uint8List.fromList([status, patchIndex]);
+    return Uint8List.fromList([status, patchIndex & 0x7F]);
   }
 
   /// Activate or deactivate Roland Editor Communication Mode (7F 00 00 01).

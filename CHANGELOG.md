@@ -7,6 +7,31 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [0.6.0] - 2026-11-18
+
+### 🚀 Añadido (Fase 2: Escenario Horizontal y Espejo en Vivo)
+- **Orientación Horizontal Bloqueada (`main.dart`):**
+  - Configuración nativa de orientación forzada a horizontal (`DeviceOrientation.landscapeLeft` y `DeviceOrientation.landscapeRight`) para uso ergonómico en vivo sobre el escenario con móvil, tablet y web.
+- **Arquitectura de Escenario en Tres Zonas sin Scroll Vertical (`LandscapeScaffold`):**
+  - `app/lib/ui/layout/landscape_scaffold.dart` y `responsive_breakpoints.dart` con soporte adaptativo para resoluciones Wide (≥1150px), Medium (750-1149px) y Compact (<750px móvil horizontal).
+- **Zona 1 (Izquierda): Panel de Botones Frontales de Silicona (`StageLeftPanel`):**
+  - Réplica física de los 12 botones frontales de la GT-1B (`COMP`, `OD/DS`, `PREAMP`, `EQ`, `FX1`, `FX2`, `DELAY`, `REVERB`, `PEDAL FX`, `FOOT VOL`, `NS`, `MASTER`) con retroiluminación LED roja activa y respuesta instantánea al hardware en vivo.
+- **Zona 2 (Centro): Línea de Señal y Pedalera Boutique (`StageCenterPanel`):**
+  - Ruteo dinámico de cadena de audio (`MemoryEditChainBar`) con reflejo inmediato de cambios de slot (`60 00 07 20+n`).
+  - Estante horizontal de mini-pedales boutique (`MiniPedalCard`) con chasis esmaltado, 3D Jewel LEDs con halo óptico y footswitch metálico animado con `FittedBox` anti-desbordamiento.
+- **Zona 3 (Derecha): Expresión, WAH y Medidor Foot Volume (`StageRightPanel`):**
+  - Treadle de pedal de expresión con pisador de punta (*toe switch*) y LED ámbar de activación WAH.
+  - Medidor vertical de escalera LED continua (10 segmentos: verde, ámbar, rojo) para Foot Volume en vivo (`0..100%`, H10, D6).
+- **Barra Superior de Escenario (`StageHeaderBar`):**
+  - Indicador de estado de conexión con barra de progreso de sincronización real (0..100%).
+  - Selector de parches con indicación de banco e índice (`U01..U99` y `P01..P99`), badge `[FABRICA]` para presets de solo lectura, botones de navegación ◀ ▶ con teclas dedicadas y acceso directo a afinador cromático.
+- **Modularización y Calidad Estructural:**
+  - Separación de `GatewayScreen` y reducción de `home_pedalboard_screen.dart` de 718 a 85 líneas (cumplimiento estricto del límite ≤ 300 líneas en todos los módulos).
+  - 31 pruebas unitarias y de widgets pasando al 100%.
+  - 10/10 reglas de arquitectura `codegraph` superadas (0 violaciones, 0 ciclos).
+
+---
+
 ## [0.5.0] - 2026-11-18
 
 ### 🚀 Añadido (Fase 1: Refactor de Arquitectura y Verificación de Hardware)
