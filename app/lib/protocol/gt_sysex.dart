@@ -75,8 +75,20 @@ class GtSysEx {
     ]);
   }
 
-  /// Build Standard MIDI Program Change (PC) for User Patches (U01 - U99).
+  /// Build Roland SysEx DT1 Patch Change for User Patches (U01 - U99).
   /// [patchIndex] ranges from 0 (U01) to 98 (U99).
+  /// Format: Address 00 01 00 00, Data [00, patchIndex]
+  static Uint8List buildPatchChange(int patchIndex, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    assert(patchIndex >= 0 && patchIndex <= 98, 'Patch index must be 0..98');
+    return buildDt1Message(
+      address: Gt1bAddresses.currentPatchNo,
+      data: [(patchIndex >> 7) & 0x7F, patchIndex & 0x7F],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Build Standard MIDI Program Change (PC) fallback.
   static Uint8List buildProgramChange(int patchIndex, {int channel = 0}) {
     assert(patchIndex >= 0 && patchIndex <= 98, 'Patch index must be 0..98');
     final status = 0xC0 | (channel & 0x0F);
@@ -84,16 +96,18 @@ class GtSysEx {
   }
 
   /// Toggle Tuner mode ON or OFF.
-  static Uint8List buildTunerToggle({bool enable = true, List<int> modelId = modelIdGt1b}) {
+  /// Uses runningMode address [7F, 00, 00, 02] (01 = Tuner, 00 = Play).
+  static Uint8List buildTunerToggle({bool enable = true, List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
     return buildDt1Message(
-      address: Gt1bAddresses.tunerSingleModePitch,
+      address: Gt1bAddresses.runningMode,
       data: [enable ? 0x01 : 0x00],
       modelId: modelId,
+      deviceId: deviceId,
     );
   }
 
   /// Toggle an effect category ON or OFF.
-  static Uint8List buildEffectToggle(EffectCategory category, bool isEnabled, {List<int> modelId = modelIdGt1b}) {
+  static Uint8List buildEffectToggle(EffectCategory category, bool isEnabled, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
     List<int> address;
     switch (category) {
       case EffectCategory.comp:
@@ -126,6 +140,7 @@ class GtSysEx {
       address: address,
       data: [isEnabled ? 0x01 : 0x00],
       modelId: modelId,
+      deviceId: deviceId,
     );
   }
 }

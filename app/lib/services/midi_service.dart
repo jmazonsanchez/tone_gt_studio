@@ -53,10 +53,10 @@ class MidiService extends ChangeNotifier {
     debugPrint('SysEx Sent (${data.length} bytes): ${data.map((b) => b.toRadixString(16).padLeft(2, "0")).join(" ")}');
   }
 
-  /// Change Patch (U01 - U99)
+  /// Change Patch (U01 - U99) using Roland SysEx DT1
   Future<void> changePatch(int patchIndex) async {
-    final pc = GtSysEx.buildProgramChange(patchIndex);
-    await sendSysEx(pc);
+    final msg = GtSysEx.buildPatchChange(patchIndex);
+    await sendSysEx(msg);
   }
 
   /// Toggle Effect Block
