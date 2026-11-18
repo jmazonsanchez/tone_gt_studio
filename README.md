@@ -46,12 +46,37 @@ Open-source patch editor, librarian, and controller for **Boss GT-1B** (Bass) an
 | **Conectividad** | Firmware para Arduino Uno + USB Host + HC-06 | ✅ Código base | Código de referencia en `firmware/arduino_usb_host_bridge/`. |
 | **Librería & Datos** | Respaldo y exportación de patches (.tsl / JSON) | ⏳ Pendiente | Guardar y cargar bancos completos en almacenamiento local del teléfono o nube. |
 | **Librería & Datos** | Importador de archivos Boss Tone Studio (.tsl) | ⏳ Pendiente | Parser para cargar presets comunitarios oficiales de Roland/Boss. |
+| **Multi-dispositivo** | Soporte para Smartphones y Tablets (Android/iOS) | ✅ Completado | Diseño responsivo adaptativo (2 columnas en móviles, 3-4 en tablets/iPad) con soporte vertical y apaisado. |
+| **Multi-dispositivo** | Detección automática USB OTG (Plug & Play) | ✅ Completado | Filtro `device_filter.xml` con Vendor ID Boss `1410` (0x0582) y Product ID GT-1B `500` (0x01F3). |
+| **Multi-dispositivo** | Compilación automática de APK (GitHub Actions) | ✅ Completado | Workflow CI/CD que compila el APK de release y corre los tests en cada push. |
 | **Multi-dispositivo** | Soporte y selector para Boss GT-1 (Guitarra) | ⏳ Pendiente | Selector de Model ID (`0x3B`) y carga del mapa de amplificadores de guitarra. |
 
 **Leyenda:**  
 * ✅ **Completado:** Implementado, verificado en tests y probado con hardware real.  
 * 🔄 **En progreso:** Código estructurado, en proceso de integración móvil/driver.  
 * ⏳ **Pendiente:** Planificado en el roadmap para versiones posteriores.
+
+---
+
+## 📱 Soporte para Móviles y Tablets
+
+La aplicación ha sido diseñada desde cero para pantallas táctiles de cualquier tamaño:
+
+- **Smartphones (Android / iOS):**
+  - Cuadrícula de 2 columnas de mini-pedales boutique optimizada para el pulgar.
+  - Indicador de patch gigante de alto contraste visible en escenario (`U01`).
+  - Barra de conmutación rápida de botones de goma iluminados (`COMP`, `OD/DS`, `PREAMP`, `FX1`, `FX2`, `DELAY`, `REV`, `WAH`).
+  - Tarjeta de pedal de expresión dedicada para activar WAH de punta (*toe switch*) o modular el barrido con el dedo.
+
+- **Tablets y iPads (Android / iPadOS):**
+  - Cuadrícula adaptativa de 3 a 4 columnas de pedales con proporciones boutique reales.
+  - Soporte completo para orientación vertical (*Portrait*) y apaisada (*Landscape*).
+  - Mayor área táctil para ajuste preciso de perillas y perfiles de ecualización.
+
+### 🔌 Conexión Directa USB OTG (Móvil / Tablet a GT-1B)
+1. Conecta un cable **USB OTG** (USB-C a USB-B o Micro-USB según tu dispositivo) entre tu teléfono/tablet y el puerto USB de la Boss GT-1B.
+2. Al conectar el cable, Android reconocerá automáticamente el dispositivo (Vendor ID `0x0582`, Product ID `0x01F3`) gracias a `device_filter.xml` y solicitará abrir **tone_gt_studio**.
+3. La app iniciará la sincronización en vivo del preset activo y descargará automáticamente los 99 nombres de tus patches en segundo plano.
 
 ---
 
