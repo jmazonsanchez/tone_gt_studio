@@ -130,5 +130,15 @@ void main() {
         0x60, 0x00, 0x00, 0x30, 0x00, 0x70, 0xF7
       ]));
     });
+
+    test('FX Chain RQ1 request generates valid packet for address 60 00 07 20', () {
+      final req = GtSysEx.buildFxChainRequest();
+      expect(req.first, equals(0xF0));
+      expect(req.last, equals(0xF7));
+      expect(req[7], equals(GtSysEx.commandRq1));
+      expect(req.sublist(8, 12), equals(Gt1bAddresses.fxChainBase));
+      expect(req.sublist(12, 16), equals([0x00, 0x00, 0x00, 0x14])); // 20 bytes
+      expect(req[16], equals(0x65)); // Checksum verified mathematically
+    });
   });
 }

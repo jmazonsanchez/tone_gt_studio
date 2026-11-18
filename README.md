@@ -37,7 +37,7 @@ Open-source patch editor, librarian, and controller for **Boss GT-1B** (Bass) an
 | **Interfaz Móvil (UI)** | Editor modal de parámetros de cada efecto | ✅ Completado | Edición en vivo de Gain, Bass, Level, Time, Feedback, etc. vía SysEx. |
 | **Interfaz Móvil (UI)** | Modal de Afinador cromático en vivo | ✅ Completado | Pantalla con aguja gráfica de afinación, nota detectada y botón Mute. |
 | **Interfaz Móvil (UI)** | Sincronización y lector de 99 patches de usuario | ✅ Completado | Botón de sincronización con barra de progreso interactiva y lectura directa de la memoria de la GT-1B. |
-| **Interfaz Móvil (UI)** | Reordenamiento de la cadena de efectos | ⏳ Pendiente | Drag-and-drop para mover pedales antes/después del preamp o EQ. |
+| **Interfaz Móvil (UI)** | Reordenamiento de cadena (MEMORY EDIT) | ✅ Completado | Widget `MemoryEditChainBar` con línea de conexión serie ([IN] ➔ [FX] ➔ [OUT]), conmutación táctil y cambio de posición dinámica. |
 | **Interfaz Móvil (UI)** | Editor de asignaciones (EXP Pedal / CTL1) | ⏳ Pendiente | Configuración de rangos mínimos/máximos del pedal de expresión y switches auxiliares. |
 | **Conectividad** | Script de verificación interactiva de hardware (PC) | ✅ Completado | `tools/test_gt1b_hardware.sh` con detección de bloqueo de puertos y prueba en vivo de parches, afinador y efectos. |
 | **Conectividad** | Pruebas físicas con pedalera real | ✅ Completado | Boss GT-1B probada exitosamente por USB: responde a identidad, conmuta efectos y cambia presets. |

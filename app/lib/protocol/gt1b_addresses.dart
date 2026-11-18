@@ -25,4 +25,7 @@ class Gt1bAddresses {
   static const List<int> pedalFxWahPosition = [0x60, 0x00, 0x06, 0x27]; // 0..100
   static const List<int> footVolume = [0x60, 0x00, 0x06, 0x33]; // 0..100
   static const List<int> expSwFunc = [0x60, 0x00, 0x07, 0x60];
+
+  // FX Chain Order (Positions 1 to 20)
+  static const List<int> fxChainBase = [0x60, 0x00, 0x07, 0x20];
 }

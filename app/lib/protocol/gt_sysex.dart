@@ -107,6 +107,16 @@ class GtSysEx {
     );
   }
 
+  /// Request FX chain order (address 60 00 07 20, size 20 bytes).
+  static Uint8List buildFxChainRequest({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildRq1Message(
+      address: Gt1bAddresses.fxChainBase,
+      size: [0x00, 0x00, 0x00, 0x14],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
   /// Parse currently selected patch index (0..98) from 00 01 00 00 DT1 response.
   static int? parseCurrentPatchNumber(Uint8List packet) {
     if (packet.length < 15) return null;

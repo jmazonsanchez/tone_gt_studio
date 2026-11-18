@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/midi_service.dart';
 import '../../services/patch_service.dart';
 import '../widgets/gt1b_panel_buttons.dart';
+import '../widgets/memory_edit_chain_bar.dart';
 import '../widgets/wah_expression_card.dart';
 import '../widgets/mini_pedal_card.dart';
 import '../widgets/effect_detail_modal.dart';
@@ -87,7 +88,16 @@ class HomePedalboardScreen extends StatelessWidget {
 
                 const SizedBox(height: 14),
 
-                // B. Dedicated EXP / WAH Footswitch Card
+                // B. GT-1B [MEMORY EDIT] Effect Chain & Routing (Línea de Conexión)
+                MemoryEditChainBar(
+                  effects: current.effects,
+                  onToggle: (effect) => patchService.toggleEffect(effect),
+                  onMoveEffect: (from, to) => patchService.moveEffect(from, to),
+                ),
+
+                const SizedBox(height: 14),
+
+                // C. Dedicated EXP / WAH Footswitch Card
                 WahExpressionCard(
                   isWahActive: patchService.isWahActive,
                   wahPosition: patchService.wahPosition,

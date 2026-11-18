@@ -382,4 +382,32 @@ class PatchService extends ChangeNotifier {
     notifyListeners();
     await midiService.toggleTuner(_isTunerActive);
   }
+
+  /// Reorder effect blocks in the active patch's signal chain (Memory Edit)
+  void reorderEffects(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    final patch = _patches[_currentPatchIndex];
+    final updatedList = List<EffectBlock>.from(patch.effects);
+    final movedItem = updatedList.removeAt(oldIndex);
+    updatedList.insert(newIndex, movedItem);
+
+    _patches[_currentPatchIndex] = patch.copyWith(effects: updatedList);
+    notifyListeners();
+  }
+
+  /// Shift an effect block left/earlier or right/later in the chain
+  void moveEffect(int fromIndex, int toIndex) {
+    final patch = _patches[_currentPatchIndex];
+    if (fromIndex < 0 || fromIndex >= patch.effects.length) return;
+    if (toIndex < 0 || toIndex >= patch.effects.length) return;
+
+    final updatedList = List<EffectBlock>.from(patch.effects);
+    final item = updatedList.removeAt(fromIndex);
+    updatedList.insert(toIndex, item);
+
+    _patches[_currentPatchIndex] = patch.copyWith(effects: updatedList);
+    notifyListeners();
+  }
 }
