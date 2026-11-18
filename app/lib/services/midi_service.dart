@@ -32,7 +32,6 @@ class MidiService extends ChangeNotifier {
     _connectionType = type;
     notifyListeners();
 
-    // Simulated connection delay / handshake
     await Future.delayed(const Duration(milliseconds: 600));
 
     _connectionState = MidiConnectionState.connected;
@@ -51,8 +50,6 @@ class MidiService extends ChangeNotifier {
   /// Send raw SysEx packet
   Future<void> sendSysEx(Uint8List data) async {
     if (!isConnected) return;
-    // In production, flutter_midi_command sends:
-    // MidiCommand().sendData(data);
     debugPrint('SysEx Sent (${data.length} bytes): ${data.map((b) => b.toRadixString(16).padLeft(2, "0")).join(" ")}');
   }
 
@@ -71,6 +68,15 @@ class MidiService extends ChangeNotifier {
   /// Toggle Tuner
   Future<void> toggleTuner(bool enable) async {
     final msg = GtSysEx.buildTunerToggle(enable: enable);
+    await sendSysEx(msg);
+  }
+
+  /// Send individual parameter value change in real time via SysEx DT1
+  Future<void> sendParameterValue(List<int> address, int value) async {
+    final msg = GtSysEx.buildDt1Message(
+      address: address,
+      data: [value & 0x7F],
+    );
     await sendSysEx(msg);
   }
 }

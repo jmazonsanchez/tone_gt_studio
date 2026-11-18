@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../services/midi_service.dart';
 import '../../services/patch_service.dart';
 import '../widgets/stompbox_card.dart';
+import '../widgets/effect_detail_modal.dart';
+import '../widgets/patch_list_modal.dart';
 import '../widgets/tuner_modal.dart';
 
 class HomePedalboardScreen extends StatelessWidget {
@@ -31,7 +33,7 @@ class HomePedalboardScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // Patch Selector Header
+          // Patch Selector Header (Tap center to open full 99 patches list)
           _buildPatchHeader(context, patchService, current),
 
           // Pedalboard Effect Chain
@@ -52,7 +54,7 @@ class HomePedalboardScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Toca para encender / apagar',
+                      'Toca para editar perillas',
                       style: TextStyle(fontSize: 11, color: Colors.white38),
                     ),
                   ],
@@ -73,6 +75,14 @@ class HomePedalboardScreen extends StatelessWidget {
                     return StompboxCard(
                       effect: effect,
                       onToggle: () => patchService.toggleEffect(effect),
+                      onOpenDetail: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (ctx) => EffectDetailModal(effect: effect),
+                        );
+                      },
                     );
                   },
                 ),
@@ -130,7 +140,7 @@ class HomePedalboardScreen extends StatelessWidget {
   Widget _buildPatchHeader(BuildContext context, PatchService patchService, dynamic current) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       color: const Color(0xFF191921),
       child: Row(
         children: [
@@ -139,27 +149,47 @@ class HomePedalboardScreen extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           ),
           Expanded(
-            child: Column(
-              children: [
-                Text(
-                  current.displayNumber,
-                  style: const TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF00ADB5),
-                    letterSpacing: 2.0,
-                  ),
+            child: GestureDetector(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (ctx) => const PatchListModal(),
+                );
+              },
+              child: Container(
+                color: Colors.transparent,
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          current.displayNumber,
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF00ADB5),
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.arrow_drop_down, color: Color(0xFF00ADB5), size: 24),
+                      ],
+                    ),
+                    Text(
+                      current.name.toUpperCase(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  current.name.toUpperCase(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           IconButton.filledTonal(

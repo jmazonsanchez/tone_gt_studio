@@ -4,11 +4,13 @@ import '../../models/effect_block.dart';
 class StompboxCard extends StatelessWidget {
   final EffectBlock effect;
   final VoidCallback onToggle;
+  final VoidCallback onOpenDetail;
 
   const StompboxCard({
     super.key,
     required this.effect,
     required this.onToggle,
+    required this.onOpenDetail,
   });
 
   @override
@@ -17,7 +19,7 @@ class StompboxCard extends StatelessWidget {
     final color = effect.accentColor;
 
     return GestureDetector(
-      onTap: onToggle,
+      onTap: onOpenDetail,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeInOut,
@@ -55,39 +57,60 @@ class StompboxCard extends StatelessWidget {
                     color: active ? Colors.white : Colors.white38,
                   ),
                 ),
-                Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: active ? color : Colors.black45,
-                    boxShadow: active
-                        ? [
-                            BoxShadow(
-                              color: color,
-                              blurRadius: 6,
-                              spreadRadius: 1,
-                            ),
-                          ]
-                        : [],
-                    border: Border.all(
-                      color: active ? Colors.white : Colors.white24,
-                      width: 1,
+                GestureDetector(
+                  onTap: onToggle,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: active ? color.withOpacity(0.2) : Colors.transparent,
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: active ? color : Colors.black45,
+                          boxShadow: active
+                              ? [
+                                  BoxShadow(
+                                    color: color,
+                                    blurRadius: 6,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : [],
+                          border: Border.all(
+                            color: active ? Colors.white : Colors.white24,
+                            width: 1,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 6),
-            Text(
-              effect.subtitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: active ? Colors.white70 : Colors.white30,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    effect.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: active ? Colors.white70 : Colors.white30,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.tune, size: 14, color: Colors.white24),
+              ],
             ),
           ],
         ),

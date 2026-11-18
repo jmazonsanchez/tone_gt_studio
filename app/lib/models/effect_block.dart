@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'effect_parameter.dart';
 
 enum EffectCategory {
   comp,
@@ -18,6 +19,7 @@ class EffectBlock {
   final EffectCategory category;
   final Color accentColor;
   bool isEnabled;
+  final List<EffectParameter> parameters;
 
   EffectBlock({
     required this.id,
@@ -26,9 +28,10 @@ class EffectBlock {
     required this.category,
     required this.accentColor,
     this.isEnabled = false,
-  });
+    List<EffectParameter>? parameters,
+  }) : parameters = parameters ?? [];
 
-  EffectBlock copyWith({bool? isEnabled}) {
+  EffectBlock copyWith({bool? isEnabled, List<EffectParameter>? parameters}) {
     return EffectBlock(
       id: id,
       name: name,
@@ -36,6 +39,7 @@ class EffectBlock {
       category: category,
       accentColor: accentColor,
       isEnabled: isEnabled ?? this.isEnabled,
+      parameters: parameters ?? this.parameters,
     );
   }
 }
