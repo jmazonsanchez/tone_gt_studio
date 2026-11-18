@@ -75,12 +75,13 @@ class GtSysEx {
     ]);
   }
 
-  /// Request patch name for user patch [patchIndex] (0..98 -> U01..U99).
-  /// Address: [0x10, patchIndex, 0x00, 0x00], Size: [0x00, 0x00, 0x00, 0x10] (16 bytes)
-  static Uint8List buildPatchNameRequest(int patchIndex, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+  /// Request patch name for user patch (address 10 [patchIndex] 00 00) or preset factory patch (address 20 [patchIndex] 00 00).
+  /// [patchIndex] ranges from 0 to 98 (representing patch 01 to 99).
+  static Uint8List buildPatchNameRequest(int patchIndex, {bool isFactoryPreset = false, List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
     assert(patchIndex >= 0 && patchIndex <= 98, 'Patch index must be 0..98');
+    final baseAddr = isFactoryPreset ? 0x20 : 0x10;
     return buildRq1Message(
-      address: [0x10, patchIndex, 0x00, 0x00],
+      address: [baseAddr, patchIndex, 0x00, 0x00],
       size: [0x00, 0x00, 0x00, 0x10],
       modelId: modelId,
       deviceId: deviceId,
@@ -186,8 +187,8 @@ class GtSysEx {
     if (packet[0] != 0xF0 || packet[1] != rolandManufacturerId || packet[7] != commandDt1) {
       return null;
     }
-    // Check if address starts with 0x10 (user patch list) or 0x60 (temporary patch)
-    if (packet[8] != 0x10 && packet[8] != 0x60) return null;
+    // Check if address starts with 0x10 (user patch list), 0x20 (preset patch list), or 0x60 (temporary patch)
+    if (packet[8] != 0x10 && packet[8] != 0x20 && packet[8] != 0x60) return null;
     final nameBytes = packet.sublist(12, 28);
     final chars = nameBytes.map((b) => (b >= 32 && b <= 126) ? String.fromCharCode(b) : ' ').join();
     return chars.trim();

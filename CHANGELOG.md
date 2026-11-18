@@ -7,6 +7,33 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [0.5.0] - 2026-11-18
+
+### 🚀 Añadido (Fase 1: Refactor de Arquitectura y Verificación de Hardware)
+- **Capa de Transporte Desacoplada (`MidiTransport` & `FakeTransport`):**
+  - Interfaz abstracta `MidiTransport` en `app/lib/core/transport/midi_transport.dart`.
+  - Simulador de hardware en memoria `FakeTransport` para ejecutar tests automatizados de sincronización completa sin necesidad de pedalera física conectada.
+- **Motor SysEx Roland Puro (`RolandSysEx`):**
+  - Motor de bajo nivel en `app/lib/protocol/roland_sysex.dart` con resolución estricta del defecto D1: emparejamiento de paquetes RQ1/DT1 por dirección completa de 4 bytes (`addressMatches`).
+- **Soporte Completo de 198 Presets (Bancos U01..U99 y P01..P99):**
+  - Integración de los dos bancos confirmados por hardware (H9): `U01..U99` (User, lectura y escritura, direcciones `10 nn 00 00`) y `P01..P99` (Factory Presets, solo lectura, direcciones `20 nn 00 00`).
+  - Modelo `PatchRef` inmutable con indicador `isReadOnly` y visualización adecuada de badges `[FABRICA]` / `[SOLO LECTURA]`.
+- **Cola de Escritura Throttled con Supresión de Eco (`WriteQueue`):**
+  - Control de flujo a ~30 msg/s con deduplicación por dirección y supresión de eco DT1 emitido por la GT-1B tras escritura (H3).
+- **Enrutador de Eventos Físicos (`EventRouter`):**
+  - Enrutamiento reactivo en tiempo real de conmutadores de pedal (H10), reordenamiento de cadena por slot individual en Memory Edit (`60 00 07 20+n`, H8, D5), nivel continuo de Foot Volume 0..100 (H10, D6), y activación de modo Afinador.
+- **Motor de Sincronización Escalonado (`SyncEngine`):**
+  - Lectura en tramos ≤128 bytes para evitar fragmentación de paquetes en la GT-1B (H4).
+  - Recarga e invalidación del patch temporal tras cambio de preset físico (H7, D7).
+- **Controladores de Estado Especializados:**
+  - `ConnectionController` como único dueño de la conexión y handshake de Modo Editor (D2).
+  - `PatchController` y `LibraryController` para el manejo reactivo del patch activo y la biblioteca de 198 parches.
+- **Generadores y Pruebas Unitarias:**
+  - Catálogo auto-generado con `tools/gen_catalog.py` (`gt1b_map.dart` y `gt1b_catalog.dart`).
+  - Cobertura completa de tests (25/25 pasando) en `sync_engine_test.dart`, `event_router_test.dart`, `roland_sysex_test.dart` y `gt_sysex_test.dart`.
+
+---
+
 ## [0.4.0] - 2026-11-18
 
 ### 🚀 Añadido

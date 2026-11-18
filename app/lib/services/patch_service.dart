@@ -15,6 +15,7 @@ class PatchService extends ChangeNotifier {
   bool _isTunerActive = false;
   bool _isWahActive = false;
   int _wahPosition = 50;
+  int _footVolumeLevel = 100;
 
   bool _isSyncing = false;
   double _syncProgress = 0.0;
@@ -56,9 +57,11 @@ class PatchService extends ChangeNotifier {
   }
 
   int get currentPatchIndex => _currentPatchIndex;
+  bool get isCurrentPatchReadOnly => _currentPatchIndex >= 99;
   bool get isTunerActive => _isTunerActive;
   bool get isWahActive => _isWahActive;
   int get wahPosition => _wahPosition;
+  int get footVolumeLevel => _footVolumeLevel;
   bool get isSyncing => _isSyncing;
   double get syncProgress => _syncProgress;
   String get syncStatusText => _syncStatusText;
@@ -69,6 +72,7 @@ class PatchService extends ChangeNotifier {
   final List<Patch> _patches = [];
 
   void _initializeDefaultPatches() {
+    // 99 Presets de Usuario (U01 a U99, índices 0 a 98)
     for (int i = 0; i < 99; i++) {
       final numberStr = (i + 1).toString().padLeft(2, '0');
       _patches.add(
@@ -76,6 +80,17 @@ class PatchService extends ChangeNotifier {
           index: i,
           name: 'Patch U$numberStr',
           effects: _createDefaultEffects(i),
+        ),
+      );
+    }
+    // 99 Presets de Fábrica (P01 a P99, índices 99 a 197) (H9, H11, D4)
+    for (int i = 0; i < 99; i++) {
+      final numberStr = (i + 1).toString().padLeft(2, '0');
+      _patches.add(
+        Patch(
+          index: 99 + i,
+          name: 'Preset P$numberStr',
+          effects: _createDefaultEffects(99 + i),
         ),
       );
     }
@@ -256,7 +271,7 @@ class PatchService extends ChangeNotifier {
     }
   }
 
-  /// Synchronize all 99 user patch names from Boss GT-1B hardware via SysEx RQ1
+  /// Synchronize all 198 patch names (99 User + 99 Preset) from Boss GT-1B hardware (H9, H11)
   Future<void> syncAllPatchesFromPedal() async {
     if (_isSyncing || !midiService.isConnected) return;
     _isSyncing = true;
@@ -266,14 +281,15 @@ class PatchService extends ChangeNotifier {
 
     try {
       int consecutiveFails = 0;
+      // 1. Leer 99 User Patches (U01 a U99)
       for (int i = 0; i < 99; i++) {
         if (!midiService.isConnected) break;
 
-        _syncProgress = (i + 1) / 99.0;
+        _syncProgress = (i + 1) / 198.0;
         _syncStatusText = 'Leyendo U${(i + 1).toString().padLeft(2, '0')}/U99...';
         notifyListeners();
 
-        final req = GtSysEx.buildPatchNameRequest(i);
+        final req = GtSysEx.buildPatchNameRequest(i, isFactoryPreset: false);
         final reply = await midiService.sendSysExRequest(
           req,
           timeout: const Duration(milliseconds: 350),
@@ -287,12 +303,37 @@ class PatchService extends ChangeNotifier {
           }
         } else {
           consecutiveFails++;
-          if (consecutiveFails > 8) {
-            debugPrint('Demasiados timeouts al leer patches. Deteniendo sincronización.');
-            break;
-          }
+          if (consecutiveFails > 8) break;
         }
-        await Future.delayed(const Duration(milliseconds: 30));
+        await Future.delayed(const Duration(milliseconds: 25));
+      }
+
+      // 2. Leer 99 Factory Presets (P01 a P99)
+      consecutiveFails = 0;
+      for (int i = 0; i < 99; i++) {
+        if (!midiService.isConnected) break;
+
+        _syncProgress = (99 + i + 1) / 198.0;
+        _syncStatusText = 'Leyendo P${(i + 1).toString().padLeft(2, '0')}/P99...';
+        notifyListeners();
+
+        final req = GtSysEx.buildPatchNameRequest(i, isFactoryPreset: true);
+        final reply = await midiService.sendSysExRequest(
+          req,
+          timeout: const Duration(milliseconds: 350),
+        );
+
+        if (reply != null) {
+          consecutiveFails = 0;
+          final name = GtSysEx.parsePatchName(reply);
+          if (name != null && name.isNotEmpty) {
+            _patches[99 + i] = _patches[99 + i].copyWith(name: name);
+          }
+        } else {
+          consecutiveFails++;
+          if (consecutiveFails > 8) break;
+        }
+        await Future.delayed(const Duration(milliseconds: 25));
       }
 
       await syncActivePatchFromPedal();
@@ -410,6 +451,20 @@ class PatchService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Reorder a single effect slot in the current chain (H8, D5)
+  void _applySingleChainSlot(int slotIndex, int chainId) {
+    final category = GtSysEx.chainIdToCategory[chainId];
+    if (category == null) return;
+    final currentEffects = List<EffectBlock>.from(currentPatch.effects);
+    final idx = currentEffects.indexWhere((e) => e.category == category);
+    if (idx >= 0 && slotIndex < currentEffects.length) {
+      final item = currentEffects.removeAt(idx);
+      currentEffects.insert(slotIndex, item);
+      _patches[_currentPatchIndex] = currentPatch.copyWith(effects: currentEffects);
+      notifyListeners();
+    }
+  }
+
   /// Live hardware SysEx handler for real-time bidirectional synchronization
   void _handleIncomingHardwareSysEx(Uint8List packet) {
     if (packet.isEmpty) return;
@@ -463,11 +518,17 @@ class PatchService extends ChangeNotifier {
     }
 
     // C. FX Chain Order Changed in Hardware (60 00 07 20)
-    if (a0 == 0x60 && a1 == 0x00 && a2 == 0x07 && a3 == 0x20) {
+    if (a0 == 0x60 && a1 == 0x00 && a2 == 0x07 && a3 == 0x20 && packet.length >= 32) {
       final chainIds = GtSysEx.parseFxChainOrder(packet);
       if (chainIds != null && chainIds.isNotEmpty) {
         _applyFxChainOrder(chainIds);
       }
+      return;
+    }
+    // Slot individual modificado en Memory Edit (60 00 07 20 + n) (H8, D5)
+    if (a0 == 0x60 && a1 == 0x00 && a2 == 0x07 && a3 >= 0x20 && a3 <= 0x33) {
+      final slotIndex = a3 - 0x20;
+      _applySingleChainSlot(slotIndex, val);
       return;
     }
 
@@ -531,9 +592,11 @@ class PatchService extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      // FOOT VOLUME LEVEL: 60 00 06 33
+      // FOOT VOLUME LEVEL: 60 00 06 33 (H10, D6 - nivel continuo 0..100)
       if (a2 == 0x06 && a3 == 0x33) {
+        _footVolumeLevel = val;
         _updateEffectEnabled(EffectCategory.footVolume, val > 0);
+        notifyListeners();
         return;
       }
       // NOISE SUPPRESSOR SW: 60 00 06 63

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../core/transport/midi_transport.dart';
 import '../protocol/gt_sysex.dart';
 import '../models/effect_block.dart';
 import 'midi/midi_driver.dart';
@@ -16,7 +17,7 @@ enum ConnectionType {
 }
 
 /// MIDI Service for Boss GT-1B and GT-1 communication
-class MidiService extends ChangeNotifier {
+class MidiService extends ChangeNotifier implements MidiTransport {
   final MidiDriver _driver = MidiDriver();
   final _sysExController = StreamController<Uint8List>.broadcast();
 
@@ -26,8 +27,12 @@ class MidiService extends ChangeNotifier {
 
   MidiConnectionState get connectionState => _connectionState;
   ConnectionType get connectionType => _connectionType;
+  @override
   String get connectedDeviceName => _connectedDeviceName;
+  @override
   bool get isConnected => _connectionState == MidiConnectionState.connected;
+  @override
+  Stream<Uint8List> get onDataReceived => _sysExController.stream;
   Stream<Uint8List> get onSysExReceived => _sysExController.stream;
 
   MidiService() {
@@ -53,6 +58,7 @@ class MidiService extends ChangeNotifier {
   }
 
   /// Connect to Boss GT-1B via USB OTG or Web MIDI
+  @override
   Future<bool> connect({ConnectionType type = ConnectionType.usbOtg, String? deviceName}) async {
     _connectionState = MidiConnectionState.connecting;
     _connectionType = type;
@@ -81,6 +87,7 @@ class MidiService extends ChangeNotifier {
   }
 
   /// Disconnect current session
+  @override
   Future<void> disconnect() async {
     if (isConnected) {
       try {
@@ -94,6 +101,9 @@ class MidiService extends ChangeNotifier {
   }
 
   /// Send raw SysEx packet
+  @override
+  Future<void> send(Uint8List data) async => sendSysEx(data);
+
   Future<void> sendSysEx(Uint8List data) async {
     if (!isConnected) return;
     await _driver.send(data);
@@ -112,8 +122,11 @@ class MidiService extends ChangeNotifier {
 
     final sub = onSysExReceived.listen((packet) {
       if (packet.length >= 12 && packet[0] == 0xF0 && packet[7] == GtSysEx.commandDt1) {
-        // Compare address prefix
-        if (packet[8] == reqAddress[0] && packet[9] == reqAddress[1]) {
+        // Compare complete 4-byte address (Soluciona D1)
+        if (packet[8] == reqAddress[0] &&
+            packet[9] == reqAddress[1] &&
+            packet[10] == reqAddress[2] &&
+            packet[11] == reqAddress[3]) {
           if (!completer.isCompleted) {
             completer.complete(packet);
           }

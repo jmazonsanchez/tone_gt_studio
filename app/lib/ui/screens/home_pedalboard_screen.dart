@@ -531,13 +531,28 @@ class _HomePedalboardScreenState extends State<HomePedalboardScreen> {
                       children: [
                         Text(
                           current.displayNumber,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 34,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFF00ADB5),
+                            color: current.isReadOnly ? Colors.amber : const Color(0xFF00ADB5),
                             letterSpacing: 2.2,
                           ),
                         ),
+                        if (current.isReadOnly) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.amber.withValues(alpha: 0.5), width: 0.8),
+                            ),
+                            child: const Text(
+                              'FABRICA',
+                              style: TextStyle(fontSize: 8, color: Colors.amber, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
                         const SizedBox(width: 6),
                         const Icon(Icons.arrow_drop_down, color: Color(0xFF00ADB5), size: 26),
                       ],
@@ -566,7 +581,9 @@ class _HomePedalboardScreenState extends State<HomePedalboardScreen> {
               backgroundColor: const Color(0xFF242432),
               padding: const EdgeInsets.all(12),
             ),
-            onPressed: patchService.currentPatchIndex < 98 ? () => patchService.nextPatch() : null,
+            onPressed: patchService.currentPatchIndex < (patchService.patches.length - 1)
+                ? () => patchService.nextPatch()
+                : null,
             icon: const Icon(Icons.arrow_forward_ios, size: 22, color: Colors.white),
           ),
         ],

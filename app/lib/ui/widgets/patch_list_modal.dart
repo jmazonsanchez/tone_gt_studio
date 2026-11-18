@@ -42,7 +42,7 @@ class _PatchListModalState extends State<PatchListModal> {
                   Icon(Icons.library_music, color: Color(0xFF00ADB5), size: 20),
                   SizedBox(width: 8),
                   Text(
-                    'PRESETS GT-1B (U01 - U99)',
+                    'PRESETS GT-1B (U01-U99 / P01-P99)',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.1),
                   ),
                 ],
@@ -172,12 +172,31 @@ class _PatchListModalState extends State<PatchListModal> {
                       color: isSelected ? const Color(0xFF00ADB5) : Colors.white54,
                     ),
                   ),
-                  title: Text(
-                    p.name,
-                    style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? Colors.white : Colors.white70,
-                    ),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          p.name,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? Colors.white : Colors.white70,
+                          ),
+                        ),
+                      ),
+                      if (p.isReadOnly)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.amber.withValues(alpha: 0.4), width: 0.8),
+                          ),
+                          child: const Text(
+                            'SOLO LECTURA',
+                            style: TextStyle(fontSize: 9, color: Colors.amber, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                    ],
                   ),
                   trailing: isSelected
                       ? const Icon(Icons.check_circle, color: Color(0xFF00ADB5), size: 20)

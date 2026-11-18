@@ -74,11 +74,6 @@ class PlatformMidiDriver implements MidiDriver {
       _connected = success;
       if (success) {
         _deviceName = deviceName ?? 'Boss GT-1B (USB)';
-        // Send initial Roland editor handshake
-        final handshake = Uint8List.fromList([
-          0xF0, 0x41, 0x00, 0x00, 0x00, 0x00, 0x3E, 0x12, 0x7F, 0x00, 0x00, 0x01, 0x01, 0x7F, 0xF7
-        ]);
-        await send(handshake);
       }
       return success;
     } catch (e) {
