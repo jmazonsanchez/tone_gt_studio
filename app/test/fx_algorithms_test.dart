@@ -145,6 +145,10 @@ void main() {
     });
 
     testWidgets('MemoryEditChainBar renders INPUT and OUTPUT pinned and draggable blocks in between', (tester) async {
+      tester.view.physicalSize = const Size(1400, 700);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(

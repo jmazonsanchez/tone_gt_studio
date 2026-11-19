@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../domain/gt1b_catalog.dart';
 import '../domain/gt1b_fx_algorithms.dart';
+import '../models/assign_model.dart';
 import '../models/effect_block.dart';
 import '../models/effect_parameter.dart';
 import '../models/patch.dart';
@@ -18,6 +19,27 @@ class PatchService extends ChangeNotifier {
   bool _isWahActive = false;
   int _wahPosition = 50;
   int _footVolumeLevel = 100;
+
+  // Master settings (Block 7)
+  int _patchLevel = 100;
+  int _masterBpm = 120;
+  int _masterKey = 0;
+  int _masterEqLow = 20;
+  int _masterEqMidFreq = 14;
+  int _masterEqMidQ = 1;
+  int _masterEqMidGain = 20;
+  int _masterEqHigh = 20;
+
+  // Phase 5: Control, EXP and Assign Matrices 1-8
+  CtlExpSetting _ctlExpSetting = const CtlExpSetting();
+  final List<AssignSetting> _assigns = List.generate(
+    8,
+    (i) => AssignSetting(index: i + 1),
+  );
+
+  List<int> _hardwareFxChain = [
+    0, 1, 4, 8, 10, 14, 17, 5, 2, 6, 11, 15, 12, 13, 7, 9, 18, 3, 19, 16
+  ];
 
   bool _isSyncing = false;
   double _syncProgress = 0.0;
@@ -61,6 +83,18 @@ class PatchService extends ChangeNotifier {
   bool get isWahActive => _isWahActive;
   int get wahPosition => _wahPosition;
   int get footVolumeLevel => _footVolumeLevel;
+  int get patchLevel => _patchLevel;
+  int get masterBpm => _masterBpm;
+  int get masterKey => _masterKey;
+  int get masterEqLow => _masterEqLow;
+  int get masterEqMidFreq => _masterEqMidFreq;
+  int get masterEqMidQ => _masterEqMidQ;
+  int get masterEqMidGain => _masterEqMidGain;
+  int get masterEqHigh => _masterEqHigh;
+
+  CtlExpSetting get ctlExpSetting => _ctlExpSetting;
+  List<AssignSetting> get assigns => List.unmodifiable(_assigns);
+
   bool get isSyncing => _isSyncing;
   double get syncProgress => _syncProgress;
   String get syncStatusText => _syncStatusText;
@@ -333,6 +367,7 @@ class PatchService extends ChangeNotifier {
             }
           }
         }
+        GtSysEx.parseActivePatchParameters(reply, currentPatch.effects);
         notifyListeners();
       }
     } catch (e) {
@@ -340,7 +375,7 @@ class PatchService extends ChangeNotifier {
     }
   }
 
-  /// Synchronize Block 1 (EQ, FX1 switch, FX1 algorithm type) from buffer (60 00 01 00)
+  /// Synchronize Block 1 (EQ, FX1 switch, FX1 algorithm type & parameters) from buffer (60 00 01 00)
   Future<void> syncEffectsBlock1FromPedal() async {
     if (!midiService.isConnected) return;
     try {
@@ -362,6 +397,7 @@ class PatchService extends ChangeNotifier {
         if (fxTypes != null && fxTypes.containsKey(EffectCategory.fx1)) {
           _applyFxAlgorithm(EffectCategory.fx1, fxTypes[EffectCategory.fx1]!);
         }
+        GtSysEx.parseActivePatchParameters(reply, currentPatch.effects);
         notifyListeners();
       }
     } catch (e) {
@@ -369,7 +405,7 @@ class PatchService extends ChangeNotifier {
     }
   }
 
-  /// Synchronize Block 3 (FX2 switch, FX2 algorithm type) from buffer (60 00 03 4C)
+  /// Synchronize Block 3 (FX2 switch, FX2 algorithm type & parameters) from buffer (60 00 03 4C)
   Future<void> syncEffectsBlock3FromPedal() async {
     if (!midiService.isConnected) return;
     try {
@@ -388,6 +424,7 @@ class PatchService extends ChangeNotifier {
         if (fxTypes != null && fxTypes.containsKey(EffectCategory.fx2)) {
           _applyFxAlgorithm(EffectCategory.fx2, fxTypes[EffectCategory.fx2]!);
         }
+        GtSysEx.parseActivePatchParameters(reply, currentPatch.effects);
         notifyListeners();
       }
     } catch (e) {
@@ -395,7 +432,7 @@ class PatchService extends ChangeNotifier {
     }
   }
 
-  /// Synchronize Block 5 (DELAY switch) from buffer (60 00 05 60)
+  /// Synchronize Block 5 (DELAY switch & parameters) from buffer (60 00 05 60)
   Future<void> syncEffectsBlock5FromPedal() async {
     if (!midiService.isConnected) return;
     try {
@@ -410,9 +447,10 @@ class PatchService extends ChangeNotifier {
           final dly = currentPatch.effects.where((e) => e.category == EffectCategory.delay).firstOrNull;
           if (dly != null) {
             dly.isEnabled = switches[EffectCategory.delay]!;
-            notifyListeners();
           }
         }
+        GtSysEx.parseActivePatchParameters(reply, currentPatch.effects);
+        notifyListeners();
       }
     } catch (e) {
       debugPrint('Error syncing block 5: $e');
@@ -427,8 +465,68 @@ class PatchService extends ChangeNotifier {
     await syncEffectsBlock3FromPedal();
     await syncEffectsBlock5FromPedal();
     await syncEffectsBlock6FromPedal();
+    await syncEffectsBlock7FromPedal();
     await syncFxChainFromPedal();
     await syncWahStateFromPedal();
+    await syncCtlExpAndAssignsFromPedal();
+  }
+
+  /// Synchronize Block 7 (Master Level, Master EQ, BPM, Key) from buffer (60 00 07 10)
+  Future<void> syncEffectsBlock7FromPedal() async {
+    if (!midiService.isConnected) return;
+    try {
+      final req = GtSysEx.buildEffectsBlock7Request();
+      final reply = await midiService.sendSysExRequest(
+        req,
+        timeout: const Duration(milliseconds: 400),
+      );
+      if (reply != null) {
+        final masterMap = <String, int>{};
+        GtSysEx.parseActivePatchParameters(reply, currentPatch.effects, masterValues: masterMap);
+        _applyMasterMap(masterMap);
+      }
+    } catch (e) {
+      debugPrint('Error syncing block 7: $e');
+    }
+  }
+
+  /// Synchronize Control (CTL1), Expression (EXP/EXP SW), and Assign matrices from pedal
+  Future<void> syncCtlExpAndAssignsFromPedal() async {
+    if (!midiService.isConnected) return;
+    try {
+      // CTL1 / EXP SW block: 60 00 07 50, size 32 bytes
+      final ctlReq = GtSysEx.buildRq1Message(
+        address: [0x60, 0x00, 0x07, 0x50],
+        size: [0x00, 0x00, 0x00, 0x20],
+      );
+      final ctlReply = await midiService.sendSysExRequest(ctlReq, timeout: const Duration(milliseconds: 400));
+      if (ctlReply != null && ctlReply.length >= 12 + 0x14) {
+        final d = ctlReply.sublist(12);
+        _ctlExpSetting = _ctlExpSetting.copyWith(
+          ctl1Func: d[0x00],
+          ctl1Mode: d[0x03],
+          expSwFunc: d[0x10],
+        );
+      }
+
+      // EXP Pedal: 60 00 08 10, size 4 bytes
+      final expReq = GtSysEx.buildRq1Message(
+        address: [0x60, 0x00, 0x08, 0x10],
+        size: [0x00, 0x00, 0x00, 0x04],
+      );
+      final expReply = await midiService.sendSysExRequest(expReq, timeout: const Duration(milliseconds: 400));
+      if (expReply != null && expReply.length >= 12 + 3) {
+        final d = expReply.sublist(12);
+        _ctlExpSetting = _ctlExpSetting.copyWith(
+          expFunc: d[0],
+          expMin: d[1],
+          expMax: d[2],
+        );
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error syncing ctl/exp/assigns: $e');
+    }
   }
 
   /// Apply FX algorithm dynamically to an active effect block
@@ -471,8 +569,9 @@ class PatchService extends ChangeNotifier {
           if (switches.containsKey(EffectCategory.pedalFx)) {
             _isWahActive = switches[EffectCategory.pedalFx]!;
           }
-          notifyListeners();
         }
+        GtSysEx.parseActivePatchParameters(reply, currentPatch.effects);
+        notifyListeners();
       }
     } catch (e) {
       debugPrint('Error syncing block 6: $e');
@@ -683,6 +782,19 @@ class PatchService extends ChangeNotifier {
         return;
       }
 
+      // Master Live Parameters (60 00 07 10..18)
+      if (a2 == 0x07 && a3 >= 0x10 && a3 <= 0x18) {
+        if (a3 == 0x10) _patchLevel = val;
+        if (a3 == 0x11) _masterEqLow = val;
+        if (a3 == 0x12) _masterEqMidFreq = val;
+        if (a3 == 0x13) _masterEqMidQ = val;
+        if (a3 == 0x14) _masterEqMidGain = val;
+        if (a3 == 0x15) _masterEqHigh = val;
+        if (a3 == 0x18) _masterKey = val;
+        notifyListeners();
+        return;
+      }
+
       // E. Live Knob Parameter Updates (e.g. Gain, Tone, Level, Time, etc.)
       for (final effect in currentPatch.effects) {
         for (final param in effect.parameters) {
@@ -835,13 +947,137 @@ class PatchService extends ChangeNotifier {
 
     // Transmit updated chain order to hardware GT-1B
     if (midiService.isConnected) {
-      final chainIds = <int>[];
+      final visibleChainIds = <int>[];
       for (final eff in updatedList) {
         final cid = GtSysEx.categoryToChainId[eff.category];
-        if (cid != null) chainIds.add(cid);
+        if (cid != null) visibleChainIds.add(cid);
       }
-      final msg = GtSysEx.buildFxChainOrder(chainIds);
+      final newHardwareChain = List<int>.from(_hardwareFxChain);
+      int visibleIdx = 0;
+      for (int i = 0; i < newHardwareChain.length; i++) {
+        if (GtSysEx.chainIdToCategory.containsKey(newHardwareChain[i])) {
+          if (visibleIdx < visibleChainIds.length) {
+            newHardwareChain[i] = visibleChainIds[visibleIdx++];
+          }
+        }
+      }
+      _hardwareFxChain = newHardwareChain;
+      final msg = GtSysEx.buildFxChainOrder(_hardwareFxChain);
       midiService.sendSysEx(msg);
+    }
+  }
+
+  void _applyMasterMap(Map<String, int> map) {
+    if (map.containsKey('patch_level')) _patchLevel = map['patch_level']!;
+    if (map.containsKey('master_eq_low')) _masterEqLow = map['master_eq_low']!;
+    if (map.containsKey('master_eq_mid_freq')) _masterEqMidFreq = map['master_eq_mid_freq']!;
+    if (map.containsKey('master_eq_mid_q')) _masterEqMidQ = map['master_eq_mid_q']!;
+    if (map.containsKey('master_eq_mid_gain')) _masterEqMidGain = map['master_eq_mid_gain']!;
+    if (map.containsKey('master_eq_high')) _masterEqHigh = map['master_eq_high']!;
+    if (map.containsKey('master_bpm')) _masterBpm = map['master_bpm']!;
+    if (map.containsKey('master_key')) _masterKey = map['master_key']!;
+    notifyListeners();
+  }
+
+  Future<void> updateMasterParameter(String key, int value) async {
+    List<int> address;
+    switch (key) {
+      case 'patch_level':
+        _patchLevel = value.clamp(0, 100);
+        address = [0x60, 0x00, 0x07, 0x10];
+        break;
+      case 'master_eq_low':
+        _masterEqLow = value.clamp(0, 40);
+        address = [0x60, 0x00, 0x07, 0x11];
+        break;
+      case 'master_eq_mid_freq':
+        _masterEqMidFreq = value.clamp(0, 27);
+        address = [0x60, 0x00, 0x07, 0x12];
+        break;
+      case 'master_eq_mid_q':
+        _masterEqMidQ = value.clamp(0, 5);
+        address = [0x60, 0x00, 0x07, 0x13];
+        break;
+      case 'master_eq_mid_gain':
+        _masterEqMidGain = value.clamp(0, 40);
+        address = [0x60, 0x00, 0x07, 0x14];
+        break;
+      case 'master_eq_high':
+        _masterEqHigh = value.clamp(0, 40);
+        address = [0x60, 0x00, 0x07, 0x15];
+        break;
+      case 'master_bpm':
+        _masterBpm = value.clamp(40, 250);
+        address = [0x60, 0x00, 0x07, 0x16];
+        break;
+      case 'master_key':
+        _masterKey = value.clamp(0, 11);
+        address = [0x60, 0x00, 0x07, 0x18];
+        break;
+      default:
+        return;
+    }
+    notifyListeners();
+
+    if (key == 'master_bpm') {
+      final msg = GtSysEx.buildDt1Message(
+        address: address,
+        data: [(value >> 7) & 0x7F, value & 0x7F],
+      );
+      await midiService.sendSysEx(msg);
+    } else {
+      await midiService.sendParameterValue(address, value);
+    }
+  }
+
+  Future<void> updateCtlExp(CtlExpSetting setting) async {
+    _ctlExpSetting = setting;
+    notifyListeners();
+    if (midiService.isConnected) {
+      await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x50], setting.ctl1Func);
+      await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x53], setting.ctl1Mode);
+      await midiService.sendParameterValue([0x60, 0x00, 0x08, 0x10], setting.expFunc);
+      await midiService.sendParameterValue([0x60, 0x00, 0x08, 0x11], setting.expMin);
+      await midiService.sendParameterValue([0x60, 0x00, 0x08, 0x12], setting.expMax);
+      await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x60], setting.expSwFunc);
+    }
+  }
+
+  Future<void> updateAssign(int index, AssignSetting setting) async {
+    if (index < 0 || index >= _assigns.length) return;
+    _assigns[index] = setting;
+    notifyListeners();
+
+    if (midiService.isConnected) {
+      final baseAddresses = [
+        [0x60, 0x00, 0x08, 0x30],
+        [0x60, 0x00, 0x08, 0x50],
+        [0x60, 0x00, 0x08, 0x70],
+        [0x60, 0x00, 0x09, 0x10],
+        [0x60, 0x00, 0x09, 0x30],
+        [0x60, 0x00, 0x09, 0x50],
+        [0x60, 0x00, 0x09, 0x70],
+        [0x60, 0x00, 0x0A, 0x10],
+      ];
+      final base = baseAddresses[index];
+      await midiService.sendParameterValue(base, setting.isEnabled ? 1 : 0);
+      final targetMsg = GtSysEx.buildDt1Message(
+        address: [base[0], base[1], base[2], base[3] + 1],
+        data: [(setting.target >> 7) & 0x7F, setting.target & 0x7F],
+      );
+      await midiService.sendSysEx(targetMsg);
+      final minMsg = GtSysEx.buildDt1Message(
+        address: [base[0], base[1], base[2], base[3] + 3],
+        data: [(setting.targetMin >> 7) & 0x7F, setting.targetMin & 0x7F],
+      );
+      await midiService.sendSysEx(minMsg);
+      final maxMsg = GtSysEx.buildDt1Message(
+        address: [base[0], base[1], base[2], base[3] + 5],
+        data: [(setting.targetMax >> 7) & 0x7F, setting.targetMax & 0x7F],
+      );
+      await midiService.sendSysEx(maxMsg);
+      await midiService.sendParameterValue([base[0], base[1], base[2], base[3] + 7], setting.source);
+      await midiService.sendParameterValue([base[0], base[1], base[2], base[3] + 8], setting.sourceMode);
     }
   }
 }

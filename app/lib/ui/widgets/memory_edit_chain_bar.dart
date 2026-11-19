@@ -53,27 +53,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
           const Divider(height: 1, color: Colors.white12),
           SizedBox(
             height: 108,
-            child: Row(
-              children: [
-                const SizedBox(width: 10),
-                _buildTerminalNode(
-                  title: 'INPUT',
-                  icon: Icons.input,
-                  color: const Color(0xFF00ADB5),
-                  subtitle: 'BASS IN',
-                ),
-                _buildCableConnector(isActive: true),
-                Expanded(child: _buildDraggableChain()),
-                _buildCableConnector(isActive: true),
-                _buildTerminalNode(
-                  title: 'OUTPUT',
-                  icon: Icons.speaker,
-                  color: const Color(0xFF4CAF50),
-                  subtitle: 'AMP / PA',
-                ),
-                const SizedBox(width: 10),
-              ],
-            ),
+            child: _buildDraggableChain(),
           ),
           _buildFooter(),
         ],
@@ -146,7 +126,31 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
     return ReorderableListView.builder(
       scrollDirection: Axis.horizontal,
       buildDefaultDragHandles: false,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      cacheExtent: 2500,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      header: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildTerminalNode(
+            title: 'INPUT',
+            icon: Icons.input,
+            color: const Color(0xFF00ADB5),
+            subtitle: 'BASS IN',
+          ),
+          _buildCableConnector(isActive: true),
+        ],
+      ),
+      footer: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildTerminalNode(
+            title: 'OUTPUT',
+            icon: Icons.speaker,
+            color: const Color(0xFF4CAF50),
+            subtitle: 'AMP / PA',
+          ),
+        ],
+      ),
       itemCount: widget.effects.length,
       onReorder: (int oldIndex, int newIndex) {
         final targetIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
@@ -172,8 +176,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
                   widget.onToggle(effect);
                 },
               ),
-              if (index < widget.effects.length - 1)
-                _buildCableConnector(isActive: effect.isEnabled),
+              _buildCableConnector(isActive: effect.isEnabled),
             ],
           ),
         );

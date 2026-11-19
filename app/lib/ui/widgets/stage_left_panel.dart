@@ -5,12 +5,14 @@ import '../layout/responsive_breakpoints.dart';
 class StageLeftPanel extends StatelessWidget {
   final List<EffectBlock> effects;
   final Function(EffectBlock) onToggle;
+  final VoidCallback? onSelectMaster;
   final StageBreakpoint breakpoint;
 
   const StageLeftPanel({
     super.key,
     required this.effects,
     required this.onToggle,
+    this.onSelectMaster,
     required this.breakpoint,
   });
 
@@ -81,6 +83,8 @@ class StageLeftPanel extends StatelessWidget {
   }
 
   Widget _buildTwoColumnGrid(List<EffectBlock> panelEffects) {
+    // 11 effect blocks + 1 Master button = 12 buttons (2x6 grid)
+    final totalCount = panelEffects.length + 1;
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -89,23 +93,87 @@ class StageLeftPanel extends StatelessWidget {
         mainAxisSpacing: 6,
         childAspectRatio: 1.6,
       ),
-      itemCount: panelEffects.length,
+      itemCount: totalCount,
       itemBuilder: (context, index) {
-        final effect = panelEffects[index];
-        return _buildSiliconeButton(effect, isMini: false);
+        if (index < panelEffects.length) {
+          return _buildSiliconeButton(panelEffects[index], isMini: false);
+        }
+        return _buildMasterButton(isMini: false);
       },
     );
   }
 
   Widget _buildCompactList(List<EffectBlock> panelEffects) {
+    final totalCount = panelEffects.length + 1;
     return ListView.separated(
       physics: const BouncingScrollPhysics(),
-      itemCount: panelEffects.length,
+      itemCount: totalCount,
       separatorBuilder: (_, __) => const SizedBox(height: 4),
       itemBuilder: (context, index) {
-        final effect = panelEffects[index];
-        return _buildSiliconeButton(effect, isMini: true);
+        if (index < panelEffects.length) {
+          return _buildSiliconeButton(panelEffects[index], isMini: true);
+        }
+        return _buildMasterButton(isMini: true);
       },
+    );
+  }
+
+  Widget _buildMasterButton({required bool isMini}) {
+    return InkWell(
+      onTap: onSelectMaster,
+      borderRadius: BorderRadius.circular(6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1710),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: const Color(0xFFFF9800),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF9800).withValues(alpha: 0.25),
+              blurRadius: 6,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 5,
+              height: 5,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFFFF9800),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0xFFFF9800),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              'MASTER',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: isMini ? 8 : 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+                color: const Color(0xFFFF9800),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

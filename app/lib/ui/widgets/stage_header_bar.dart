@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/midi_service.dart';
 import '../../services/patch_service.dart';
+import 'assign_editor_modal.dart';
 import 'patch_list_modal.dart';
 import 'tuner_modal.dart';
 
@@ -84,10 +85,13 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
 
           // 4. Tuner / Mute Button
           _buildTunerButton(context),
-
           const SizedBox(width: 8),
 
-          // 5. Library / Presets Button
+          // 5. Phase 5: CTL1 / EXP / Assigns Button
+          _buildAssignsButton(context),
+          const SizedBox(width: 8),
+
+          // 6. Library / Presets Button
           _buildLibraryButton(context),
         ],
       ),
@@ -127,23 +131,11 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (isConnecting)
-              const SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber),
-              )
+              const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber))
             else
               Icon(icon, size: 14, color: color),
             const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                color: color,
-                letterSpacing: 0.6,
-              ),
-            ),
+            Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.6)),
           ],
         ),
       ),
@@ -160,19 +152,14 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       child: Row(
         children: [
-          // Previous Patch
           IconButton(
             key: const Key('prev-patch-btn'),
             visualDensity: VisualDensity.compact,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             icon: const Icon(Icons.chevron_left, color: Colors.white70, size: 24),
-            onPressed: patchService.currentPatchIndex > 0
-                ? () => patchService.previousPatch()
-                : null,
+            onPressed: patchService.currentPatchIndex > 0 ? () => patchService.previousPatch() : null,
           ),
-
-          // Central Patch Identifier
           Expanded(
             child: InkWell(
               onTap: () => _openPatchList(context),
@@ -197,14 +184,7 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(color: Colors.amber, width: 0.8),
                       ),
-                      child: const Text(
-                        'FABRICA',
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.amber,
-                        ),
-                      ),
+                      child: const Text('FABRICA', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.amber)),
                     ),
                   ],
                   const SizedBox(width: 8),
@@ -212,12 +192,7 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
                     child: Text(
                       current.name.toUpperCase(),
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.8,
-                      ),
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.8),
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -226,17 +201,13 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
           ),
-
-          // Next Patch
           IconButton(
             key: const Key('next-patch-btn'),
             visualDensity: VisualDensity.compact,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             icon: const Icon(Icons.chevron_right, color: Colors.white70, size: 24),
-            onPressed: patchService.currentPatchIndex < (patchService.patches.length - 1)
-                ? () => patchService.nextPatch()
-                : null,
+            onPressed: patchService.currentPatchIndex < (patchService.patches.length - 1) ? () => patchService.nextPatch() : null,
           ),
         ],
       ),
@@ -248,13 +219,8 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
     return IconButton.filledTonal(
       visualDensity: VisualDensity.compact,
       style: IconButton.styleFrom(
-        backgroundColor: active
-            ? const Color(0xFF00ADB5).withValues(alpha: 0.25)
-            : const Color(0xFF222230),
-        side: BorderSide(
-          color: active ? const Color(0xFF00ADB5) : Colors.white12,
-          width: 1,
-        ),
+        backgroundColor: active ? const Color(0xFF00ADB5).withValues(alpha: 0.25) : const Color(0xFF222230),
+        side: BorderSide(color: active ? const Color(0xFF00ADB5) : Colors.white12, width: 1),
       ),
       onPressed: () {
         patchService.toggleTuner();
@@ -262,20 +228,27 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (ctx) => TunerModal(
-            onClose: () {
-              patchService.toggleTuner();
-              Navigator.pop(ctx);
-            },
-          ),
+          builder: (ctx) => TunerModal(onClose: () {
+            patchService.toggleTuner();
+            Navigator.pop(ctx);
+          }),
         );
       },
-      icon: Icon(
-        Icons.tune,
-        size: 18,
-        color: active ? const Color(0xFF00ADB5) : Colors.white70,
-      ),
+      icon: Icon(Icons.tune, size: 18, color: active ? const Color(0xFF00ADB5) : Colors.white70),
       tooltip: 'Afinador / Silenciador',
+    );
+  }
+
+  Widget _buildAssignsButton(BuildContext context) {
+    return IconButton.filledTonal(
+      visualDensity: VisualDensity.compact,
+      style: IconButton.styleFrom(
+        backgroundColor: const Color(0xFF222230),
+        side: const BorderSide(color: Colors.white12, width: 1),
+      ),
+      onPressed: () => AssignEditorModal.show(context, patchService),
+      icon: const Icon(Icons.settings_remote, size: 18, color: Color(0xFF00ADB5)),
+      tooltip: 'CTL1 / EXP / Assigns 1-8 (Fase 5)',
     );
   }
 

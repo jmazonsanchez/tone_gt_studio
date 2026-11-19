@@ -128,41 +128,60 @@ class GtSysEx {
     );
   }
 
-  /// Request Block 1 (EQ, FX1 switch, FX1 algorithm type) (address 60 00 01 00, size 80 bytes).
+  /// Default 20-slot authentic hardware chain order of Boss GT-1B.
+  static const List<int> defaultHardwareChain = [
+    0, 1, 4, 8, 10, 14, 17, 5, 2, 6, 11, 15, 12, 13, 7, 9, 18, 3, 19, 16
+  ];
+
+  /// Request Block 1 (EQ, FX1 switch, FX1 algorithm type & parameters) (address 60 00 01 00, size 127 bytes).
   static Uint8List buildEffectsBlock1Request({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
     return buildRq1Message(
       address: [0x60, 0x00, 0x01, 0x00],
-      size: [0x00, 0x00, 0x00, 0x50],
+      size: [0x00, 0x00, 0x00, 0x7F],
       modelId: modelId,
       deviceId: deviceId,
     );
   }
 
-  /// Request Block 3 (FX2 switch, FX2 algorithm type) (address 60 00 03 4C, size 4 bytes).
+  /// Request Block 3 (FX2 switch, FX2 algorithm type & parameters) (address 60 00 03 4C, size 52 bytes).
   static Uint8List buildEffectsBlock3Request({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
     return buildRq1Message(
       address: [0x60, 0x00, 0x03, 0x4C],
-      size: [0x00, 0x00, 0x00, 0x04],
+      size: [0x00, 0x00, 0x00, 0x34],
       modelId: modelId,
       deviceId: deviceId,
     );
   }
 
-  /// Request Block 5 (DELAY switch, DELAY type) (address 60 00 05 60, size 4 bytes).
+  /// Request Block 5 (DELAY switch, DELAY type & parameters) (address 60 00 05 60, size 16 bytes).
   static Uint8List buildEffectsBlock5Request({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
     return buildRq1Message(
       address: [0x60, 0x00, 0x05, 0x60],
-      size: [0x00, 0x00, 0x00, 0x04],
+      size: [0x00, 0x00, 0x00, 0x10],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Request Block 7 (MASTER Level, Master EQ, BPM, Key) (address 60 00 07 10, size 16 bytes).
+  static Uint8List buildEffectsBlock7Request({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildRq1Message(
+      address: [0x60, 0x00, 0x07, 0x10],
+      size: [0x00, 0x00, 0x00, 0x10],
       modelId: modelId,
       deviceId: deviceId,
     );
   }
 
   /// Build full FX chain order update (address 60 00 07 20, 20 slot IDs).
+  /// Replaces any missing positions with authentic valid GT-1B routing IDs (never 0xFF!).
   static Uint8List buildFxChainOrder(List<int> chainIds, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
     final padded = List<int>.from(chainIds);
-    while (padded.length < 20) {
-      padded.add(0xFF);
+    for (final id in defaultHardwareChain) {
+      if (padded.length >= 20) break;
+      if (!padded.contains(id)) {
+        padded.add(id);
+      }
     }
     return buildDt1Message(
       address: Gt1bAddresses.fxChainBase,
@@ -319,6 +338,54 @@ class GtSysEx {
     }
 
     return result.isEmpty ? null : result;
+  }
+
+  /// Parse parameter values from a DT1 response packet into matching EffectParameters.
+  /// Matches parameters whose 4-byte address falls within the packet address range.
+  static void parseActivePatchParameters(
+    Uint8List packet,
+    List<EffectBlock> effects, {
+    Map<String, int>? masterValues,
+  }) {
+    if (packet.length < 14) return;
+    if (packet[0] != 0xF0 || packet[7] != commandDt1) return;
+    final a0 = packet[8];
+    final a1 = packet[9];
+    final a2 = packet[10];
+    final a3 = packet[11];
+    final data = packet.sublist(12, packet.length - 2);
+
+    for (final effect in effects) {
+      for (final param in effect.parameters) {
+        if (param.address.length >= 4 &&
+            param.address[0] == a0 &&
+            param.address[1] == a1 &&
+            param.address[2] == a2) {
+          final offset = param.address[3] - a3;
+          if (offset >= 0 && offset < data.length) {
+            if (param.max > 127 && offset + 1 < data.length) {
+              param.value = (data[offset] << 7) | data[offset + 1];
+            } else {
+              param.value = data[offset];
+            }
+          }
+        }
+      }
+    }
+
+    if (masterValues != null && a0 == 0x60 && a1 == 0x00 && a2 == 0x07 && a3 <= 0x18) {
+      final base = 0x10 - a3;
+      if (base >= 0 && base < data.length) masterValues['patch_level'] = data[base];
+      if (base + 1 >= 0 && base + 1 < data.length) masterValues['master_eq_low'] = data[base + 1];
+      if (base + 2 >= 0 && base + 2 < data.length) masterValues['master_eq_mid_freq'] = data[base + 2];
+      if (base + 3 >= 0 && base + 3 < data.length) masterValues['master_eq_mid_q'] = data[base + 3];
+      if (base + 4 >= 0 && base + 4 < data.length) masterValues['master_eq_mid_gain'] = data[base + 4];
+      if (base + 5 >= 0 && base + 5 < data.length) masterValues['master_eq_high'] = data[base + 5];
+      if (base + 7 >= 0 && base + 7 < data.length) {
+        masterValues['master_bpm'] = (data[base + 6] << 7) | data[base + 7];
+      }
+      if (base + 8 >= 0 && base + 8 < data.length) masterValues['master_key'] = data[base + 8];
+    }
   }
 
   /// Build Roland SysEx DT1 Patch Change for all 198 Presets (U01-U99 and P01-P99).

@@ -1,0 +1,108 @@
+/// Authentic Boss GT-1B Control, Expression, and Assign matrix catalog constants.
+class Gt1bAssigns {
+  static const List<String> expFuncNames = [
+    'OFF',
+    'FOOT VOLUME',
+    'WAH',
+    'PEDAL BEND',
+    'PATCH LEVEL',
+  ];
+
+  static const List<String> expSwFuncNames = [
+    'OFF',
+    'PEDAL FX',
+    'COMP',
+    'OD/DS',
+    'PREAMP',
+    'EQ',
+    'FX1',
+    'FX2',
+    'DELAY',
+    'CHORUS',
+    'REVERB',
+    'TUNER',
+  ];
+
+  static const List<String> ctl1FuncNames = [
+    'OFF',
+    'COMP',
+    'OD/DS',
+    'PREAMP',
+    'EQ',
+    'FX1',
+    'FX2',
+    'DELAY',
+    'CHORUS',
+    'REVERB',
+    'PEDAL FX',
+    'TUNER',
+    'BPM TAP',
+    'SOLO SW',
+    'ACCEL',
+    'PATCH UP',
+    'PATCH DOWN',
+  ];
+
+  static const List<String> assignSourceNames = [
+    'EXP1',
+    'EXP1 SW',
+    'CTL1',
+    'CTL2',
+    'CTL3',
+    'EXP2',
+    'INT PEDAL',
+    'WAVE PEDAL',
+    'MIDI CC#1',
+    'MIDI CC#7',
+    'MIDI CC#11',
+    'MIDI CC#80',
+  ];
+
+  static const List<String> sourceModeNames = [
+    'MOMENT',
+    'TOGGLE',
+  ];
+
+  static const List<String> targetNames = [
+    'OFF',
+    'PATCH LEVEL',
+    'COMP: ON/OFF',
+    'COMP: SUSTAIN',
+    'COMP: LEVEL',
+    'OD/DS: ON/OFF',
+    'OD/DS: DRIVE',
+    'OD/DS: LEVEL',
+    'OD/DS: SOLO SW',
+    'PREAMP: ON/OFF',
+    'PREAMP: GAIN',
+    'PREAMP: BASS',
+    'PREAMP: MIDDLE',
+    'PREAMP: TREBLE',
+    'PREAMP: LEVEL',
+    'EQ: ON/OFF',
+    'EQ: LOW GAIN',
+    'EQ: HIGH GAIN',
+    'EQ: LEVEL',
+    'FX1: ON/OFF',
+    'FX1: PARAM 1',
+    'FX1: LEVEL',
+    'FX2: ON/OFF',
+    'FX2: PARAM 1',
+    'FX2: LEVEL',
+    'DELAY: ON/OFF',
+    'DELAY: TIME',
+    'DELAY: FEEDBACK',
+    'DELAY: LEVEL',
+    'CHORUS: ON/OFF',
+    'CHORUS: RATE',
+    'CHORUS: DEPTH',
+    'CHORUS: LEVEL',
+    'REVERB: ON/OFF',
+    'REVERB: TIME',
+    'REVERB: LEVEL',
+    'WAH: ON/OFF',
+    'WAH: POSITION',
+    'FOOT VOLUME: LEVEL',
+    'MASTER BPM',
+  ];
+}
