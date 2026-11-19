@@ -252,6 +252,24 @@ class MidiService extends ChangeNotifier implements MidiTransport {
     await sendSysEx(msg);
   }
 
+  /// Toggle Phrase Loop Mode (00 00 01 00)
+  Future<void> togglePhraseLoop(bool enable) async {
+    final msg = GtSysEx.buildPhraseLoopToggle(enable: enable);
+    await sendSysEx(msg);
+  }
+
+  /// Set Phrase Loop Playback Level (00 00 01 04)
+  Future<void> setPhraseLoopLevel(int level) async {
+    final msg = GtSysEx.buildPhraseLoopLevel(level);
+    await sendSysEx(msg);
+  }
+
+  /// Set Phrase Loop Rec Mode (00 00 01 02)
+  Future<void> setPhraseLoopRecMode(int mode) async {
+    final msg = GtSysEx.buildPhraseLoopRecMode(mode);
+    await sendSysEx(msg);
+  }
+
   /// Send individual parameter value change in real time via SysEx DT1
   Future<void> sendParameterValue(List<int> address, int value) async {
     final msg = GtSysEx.buildDt1Message(

@@ -482,6 +482,36 @@ class GtSysEx {
     );
   }
 
+  /// Toggle Phrase Loop Mode ON or OFF (address 00 00 01 00).
+  static Uint8List buildPhraseLoopToggle({bool enable = true, List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildDt1Message(
+      address: Gt1bAddresses.phraseLoopMode,
+      data: [enable ? 0x01 : 0x00],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Set Phrase Loop Playback Level (address 00 00 01 04, range 0..120).
+  static Uint8List buildPhraseLoopLevel(int level, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildDt1Message(
+      address: Gt1bAddresses.phraseLoopPlayLevel,
+      data: [level.clamp(0, 120)],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Set Phrase Loop Rec Mode (address 00 00 01 02, 00 = REC->DUB, 01 = REC->PLAY).
+  static Uint8List buildPhraseLoopRecMode(int mode, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildDt1Message(
+      address: Gt1bAddresses.phraseLoopRecMode,
+      data: [mode.clamp(0, 1)],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
   /// Toggle an effect category ON or OFF.
   static Uint8List buildEffectToggle(EffectCategory category, bool isEnabled, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
     List<int> address;

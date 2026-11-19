@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../models/phrase_loop.dart';
 import '../../services/midi_service.dart';
 import '../../services/patch_service.dart';
 import '../theme/app_theme.dart';
 import 'assign_editor_modal.dart';
 import 'patch_list_modal.dart';
 import 'patch_write_modal.dart';
+import 'phrase_loop_modal.dart';
 import 'system_settings_modal.dart';
 import 'tuner_modal.dart';
 
@@ -82,7 +84,11 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
           _buildTunerButton(context, colors),
           const SizedBox(width: 8),
 
-          // 6. Phase 5: CTL1 / EXP / Assigns Button
+          // 6. Phrase Looper Modal
+          _buildLooperButton(context, colors),
+          const SizedBox(width: 8),
+
+          // 7. Phase 5: CTL1 / EXP / Assigns Button
           _buildAssignsButton(context, colors),
           const SizedBox(width: 8),
 
@@ -98,27 +104,15 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Widget _buildConnectionStatus(BuildContext context, bool isConnected, bool isConnecting, bool isReconnecting) {
-    Color color = Colors.redAccent;
-    String label = 'DESCONECTADO';
-    IconData icon = Icons.usb_off;
-
-    if (isConnected) {
-      color = const Color(0xFF00ADB5);
-      label = 'GT-1B EN VIVO';
-      icon = Icons.usb;
-    } else if (isConnecting) {
-      color = Colors.amber;
-      label = 'CONECTANDO...';
-      icon = Icons.sync;
-    } else if (isReconnecting) {
-      color = Colors.orangeAccent;
-      label = 'RECONECTANDO...';
-      icon = Icons.sync_problem;
-    } else if (isDemoMode) {
-      color = Colors.purpleAccent;
-      label = 'MODO DEMO';
-      icon = Icons.bolt;
-    }
+    final (color, label, icon) = isConnected
+        ? (const Color(0xFF00ADB5), 'GT-1B EN VIVO', Icons.usb)
+        : isConnecting
+            ? (Colors.amber, 'CONECTANDO...', Icons.sync)
+            : isReconnecting
+                ? (Colors.orangeAccent, 'RECONECTANDO...', Icons.sync_problem)
+                : isDemoMode
+                    ? (Colors.purpleAccent, 'MODO DEMO', Icons.bolt)
+                    : (Colors.redAccent, 'DESCONECTADO', Icons.usb_off);
 
     return InkWell(
       onTap: isConnected ? () => midi.disconnect() : onConnectRequest,
@@ -234,6 +228,20 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
       onPressed: () => TunerModal.show(context, patchService),
       icon: Icon(Icons.tune, size: 18, color: active ? colors.primary : colors.textSecondary),
       tooltip: 'Afinador / Silenciador',
+    );
+  }
+
+  Widget _buildLooperButton(BuildContext context, AppColorScheme colors) {
+    final active = patchService.looperStatus != LooperStatus.stopped;
+    return IconButton.filledTonal(
+      visualDensity: VisualDensity.compact,
+      style: IconButton.styleFrom(
+        backgroundColor: active ? Colors.redAccent.withValues(alpha: 0.25) : colors.surfaceVariant,
+        side: BorderSide(color: active ? Colors.redAccent : colors.borderSubtle, width: 1),
+      ),
+      onPressed: () => PhraseLoopModal.show(context, patchService),
+      icon: Icon(Icons.all_inclusive, size: 18, color: active ? Colors.redAccent : colors.textSecondary),
+      tooltip: 'Grabador de Loops (Phrase Loop)',
     );
   }
 

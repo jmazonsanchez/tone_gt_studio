@@ -33,4 +33,11 @@ class Gt1bAddresses {
 
   // FX Chain Order (Positions 1 to 20)
   static const List<int> fxChainBase = [0x60, 0x00, 0x07, 0x20];
+
+  // Phrase Loop (Looper 32s)
+  static const List<int> phraseLoopMode = [0x00, 0x00, 0x01, 0x00]; // 00 = Off, 01 = On
+  static const List<int> phraseLoopPedalFunc = [0x00, 0x00, 0x01, 0x01];
+  static const List<int> phraseLoopRecMode = [0x00, 0x00, 0x01, 0x02]; // 00 = REC->DUB, 01 = REC->PLAY
+  static const List<int> phraseLoopPlayLevel = [0x00, 0x00, 0x01, 0x04]; // 0..120 %
+  static const List<int> manualModePhraseLoop = [0x60, 0x00, 0x07, 0x46];
 }

@@ -8,6 +8,7 @@ import '../models/assign_model.dart';
 import '../models/effect_block.dart';
 import '../models/effect_parameter.dart';
 import '../models/patch.dart';
+import '../models/phrase_loop.dart';
 import '../models/system_settings.dart';
 import '../protocol/gt_sysex.dart';
 import '../protocol/gt1b_addresses.dart';
@@ -23,6 +24,21 @@ class PatchService extends ChangeNotifier {
   bool _isWahActive = false;
   int _wahPosition = 50;
   int _footVolumeLevel = 100;
+
+  // Phrase Loop (Looper 32s)
+  final PhraseLoopSettings phraseLoopSettings = PhraseLoopSettings();
+  LooperStatus _looperStatus = LooperStatus.stopped;
+  int _looperCountdownRemaining = 0;
+  double _looperElapsedSeconds = 0.0;
+  double _recordedLoopDuration = 0.0;
+  Timer? _looperProgressTimer;
+  Timer? _looperCountdownTimer;
+
+  LooperStatus get looperStatus => _looperStatus;
+  int get looperCountdownRemaining => _looperCountdownRemaining;
+  double get looperElapsedSeconds => _looperElapsedSeconds;
+  double get recordedLoopDuration => _recordedLoopDuration;
+  bool get isLooperActive => phraseLoopSettings.isEnabled;
 
   // Master settings (Block 7)
   int _patchLevel = 100;
@@ -70,6 +86,8 @@ class PatchService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _looperCountdownTimer?.cancel();
+    _looperProgressTimer?.cancel();
     _tunerPollingTimer?.cancel();
     _demoTunerTimer?.cancel();
     _sysExSubscription?.cancel();
@@ -1067,6 +1085,135 @@ class PatchService extends ChangeNotifier {
   void setManualPitch(int noteIndex, int centsDeviation) {
     _demoTunerTimer?.cancel();
     systemSettings.updateLivePitch(noteIndex, 50 + centsDeviation);
+    notifyListeners();
+  }
+
+  /// Turn on the Phrase Loop and start recording, honoring the configured countdown timer in seconds.
+  Future<void> startLooperWithTimer() async {
+    phraseLoopSettings.isEnabled = true;
+    await midiService.togglePhraseLoop(true);
+
+    final delay = phraseLoopSettings.startTimerSeconds;
+    if (delay > 0) {
+      _looperStatus = LooperStatus.countdown;
+      _looperCountdownRemaining = delay;
+      notifyListeners();
+
+      _looperCountdownTimer?.cancel();
+      _looperCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        _looperCountdownRemaining--;
+        if (_looperCountdownRemaining <= 0) {
+          timer.cancel();
+          _looperCountdownTimer = null;
+          _beginRecording();
+        } else {
+          notifyListeners();
+        }
+      });
+    } else {
+      _beginRecording();
+    }
+  }
+
+  void _beginRecording() {
+    _looperStatus = LooperStatus.recording;
+    _looperElapsedSeconds = 0.0;
+    notifyListeners();
+
+    _looperProgressTimer?.cancel();
+    _looperProgressTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (_looperStatus != LooperStatus.recording) {
+        timer.cancel();
+        return;
+      }
+      _looperElapsedSeconds += 0.1;
+
+      final maxTarget = phraseLoopSettings.maxDurationSeconds > 0
+          ? phraseLoopSettings.maxDurationSeconds.toDouble()
+          : 32.0;
+
+      if (_looperElapsedSeconds >= maxTarget) {
+        switchToPlayback();
+      } else {
+        notifyListeners();
+      }
+    });
+  }
+
+  /// Switch to Playback mode (closes recording or overdub)
+  void switchToPlayback() {
+    if (_looperStatus == LooperStatus.recording) {
+      _recordedLoopDuration = _looperElapsedSeconds.clamp(0.5, 32.0);
+    }
+    _looperStatus = LooperStatus.playing;
+    _looperElapsedSeconds = 0.0;
+    notifyListeners();
+
+    _looperProgressTimer?.cancel();
+    _looperProgressTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (_looperStatus != LooperStatus.playing && _looperStatus != LooperStatus.overdubbing) {
+        timer.cancel();
+        return;
+      }
+      _looperElapsedSeconds += 0.1;
+      if (_recordedLoopDuration > 0 && _looperElapsedSeconds >= _recordedLoopDuration) {
+        _looperElapsedSeconds = 0.0;
+      }
+      notifyListeners();
+    });
+  }
+
+  /// Switch to Overdub mode (layer over loop)
+  void switchToOverdub() {
+    if (_recordedLoopDuration <= 0) return;
+    _looperStatus = LooperStatus.overdubbing;
+    notifyListeners();
+  }
+
+  /// Stop loop playback
+  void stopLooper() {
+    _looperCountdownTimer?.cancel();
+    _looperCountdownTimer = null;
+    _looperCountdownRemaining = 0;
+    _looperProgressTimer?.cancel();
+    _looperProgressTimer = null;
+    _looperStatus = LooperStatus.stopped;
+    _looperElapsedSeconds = 0.0;
+    notifyListeners();
+  }
+
+  /// Clear loop memory and turn off
+  Future<void> clearLooper() async {
+    stopLooper();
+    _recordedLoopDuration = 0.0;
+    phraseLoopSettings.isEnabled = false;
+    notifyListeners();
+    await midiService.togglePhraseLoop(false);
+  }
+
+  /// Update loop playback level (SysEx 00 00 01 04)
+  Future<void> updateLooperLevel(int level) async {
+    phraseLoopSettings.playLevel = level.clamp(0, 120);
+    notifyListeners();
+    await midiService.setPhraseLoopLevel(phraseLoopSettings.playLevel);
+  }
+
+  /// Update loop rec mode (SysEx 00 00 01 02)
+  Future<void> updateLooperRecMode(LooperRecMode mode) async {
+    phraseLoopSettings.recMode = mode;
+    notifyListeners();
+    await midiService.setPhraseLoopRecMode(mode == LooperRecMode.recPlay ? 1 : 0);
+  }
+
+  /// Update start timer seconds
+  void updateLooperStartTimer(int seconds) {
+    phraseLoopSettings.startTimerSeconds = seconds.clamp(0, 30);
+    notifyListeners();
+  }
+
+  /// Update auto-stop duration timer
+  void updateLooperDurationTimer(int seconds) {
+    phraseLoopSettings.maxDurationSeconds = seconds.clamp(0, 32);
     notifyListeners();
   }
 
