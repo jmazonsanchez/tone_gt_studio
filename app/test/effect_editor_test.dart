@@ -64,14 +64,14 @@ void main() {
     });
 
     test('Updating parameter in PatchService writes throttled DT1 SysEx to hardware', () async {
-      final comp = patchService.currentPatch.effects.firstWhere((e) => e.category == EffectCategory.comp);
-      final levelParam = comp.parameters.firstWhere((p) => p.id == 'comp_level');
+      final od = patchService.currentPatch.effects.firstWhere((e) => e.category == EffectCategory.odDs);
+      final driveParam = od.parameters.firstWhere((p) => p.id == 'od_drive');
 
-      expect(levelParam.value, 60);
+      expect(driveParam.value, 50);
 
-      await patchService.updateParameter(levelParam, 85);
+      await patchService.updateParameter(driveParam, 85);
 
-      expect(levelParam.value, 85);
+      expect(driveParam.value, 85);
     });
 
     test('Incoming DT1 packet from physical GT-1B updates active parameter in real-time', () async {
@@ -95,30 +95,30 @@ void main() {
       expect(gainParam.value, 88);
     });
 
-    testWidgets('Renders EffectEditorPanel with type dropdown and knobs for COMP', (tester) async {
-      final comp = patchService.currentPatch.effects.firstWhere((e) => e.category == EffectCategory.comp);
+    testWidgets('Renders EffectEditorPanel with type dropdown and knobs for OD/DS', (tester) async {
+      final od = patchService.currentPatch.effects.firstWhere((e) => e.category == EffectCategory.odDs);
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: ChangeNotifierProvider<PatchService>.value(
               value: patchService,
-              child: EffectEditorPanel(effect: comp),
+              child: EffectEditorPanel(effect: od),
             ),
           ),
         ),
       );
 
       // Verify Header
-      expect(find.text('COMP'), findsOneWidget);
+      expect(find.text('OD/DS'), findsOneWidget);
       expect(find.text('TYPE:'), findsOneWidget);
-      expect(find.text('BOSS COMP'), findsOneWidget);
+      expect(find.text('BASS OD'), findsOneWidget);
 
       // Verify Parameter Knobs
-      expect(find.text('SUSTAIN'), findsOneWidget);
-      expect(find.text('ATTACK'), findsOneWidget);
+      expect(find.text('DRIVE'), findsOneWidget);
+      expect(find.text('BOTTOM'), findsOneWidget);
       expect(find.text('TONE'), findsOneWidget);
-      expect(find.text('LEVEL'), findsOneWidget);
+      expect(find.text('EFFECT LEVEL'), findsOneWidget);
 
       expect(tester.takeException(), isNull);
     });

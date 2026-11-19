@@ -71,8 +71,8 @@ void main() {
       block0[12 + 0x52] = 85;
       // Preamp Bass at 60 00 00 54 -> set to 72
       block0[12 + 0x54] = 72;
-      // Comp Sustain at 60 00 00 22 -> set to 64
-      block0[12 + 0x22] = 64;
+      // OD Drive at 60 00 00 32 -> set to 64
+      block0[12 + 0x32] = 64;
 
       GtSysEx.parseActivePatchParameters(block0, effects);
 
@@ -82,9 +82,9 @@ void main() {
       expect(gainParam.value, 85);
       expect(bassParam.value, 72);
 
-      final comp = effects.firstWhere((e) => e.category == EffectCategory.comp);
-      final sustainParam = comp.parameters.firstWhere((p) => p.name == 'Sustain');
-      expect(sustainParam.value, 64);
+      final od = effects.firstWhere((e) => e.category == EffectCategory.odDs);
+      final driveParam = od.parameters.firstWhere((p) => p.name == 'Drive');
+      expect(driveParam.value, 64);
     });
 
     test('parseActivePatchParameters correctly extracts Master Level, EQ and BPM from Block 7', () {
@@ -187,15 +187,32 @@ void main() {
     });
 
     test('Phase 5: CTL / EXP and Assigns updating modifies state and notifies listeners', () async {
-      expect(patchService.assigns.length, 8);
+      expect(patchService.assigns.length, 6);
       expect(patchService.ctlExpSetting.ctl1Func, 14);
 
-      // Update CTL1
+      // Update CTL1 and sub controls
       await patchService.updateCtlExp(
-        patchService.ctlExpSetting.copyWith(ctl1Func: 11, ctl1Mode: 0),
+        patchService.ctlExpSetting.copyWith(
+          ctl1Func: 11,
+          ctl1Mode: 0,
+          ctl2Func: 5,
+          ctl3Func: 7,
+          exp2Func: 3,
+          downFunc: 1,
+          upFunc: 2,
+          inLevel: 65,
+          outLevel: 75,
+        ),
       );
       expect(patchService.ctlExpSetting.ctl1Func, 11);
       expect(patchService.ctlExpSetting.ctl1Mode, 0);
+      expect(patchService.ctlExpSetting.ctl2Func, 5);
+      expect(patchService.ctlExpSetting.ctl3Func, 7);
+      expect(patchService.ctlExpSetting.exp2Func, 3);
+      expect(patchService.ctlExpSetting.downFunc, 1);
+      expect(patchService.ctlExpSetting.upFunc, 2);
+      expect(patchService.ctlExpSetting.inLevel, 65);
+      expect(patchService.ctlExpSetting.outLevel, 75);
 
       // Update Assign 1
       await patchService.updateAssign(
@@ -209,7 +226,7 @@ void main() {
       expect(patchService.assigns[0].source, 2);
     });
 
-    testWidgets('AssignEditorModal renders CTL & EXP and Assigns 1-8 tabs', (tester) async {
+    testWidgets('AssignEditorModal renders CTL & EXP, DOWN/UP and Assigns tabs', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -218,16 +235,17 @@ void main() {
         ),
       );
 
-      expect(find.text('CONTROL, EXP & ASSIGNS (FASE 5)'), findsOneWidget);
-      expect(find.text('CTL1 & EXP PEDAL'), findsOneWidget);
-      expect(find.text('ASSIGNS 1–8'), findsOneWidget);
+      expect(find.text('CONFIGURACIÓN GT-1B (CTL / EXP / A1–A6 / I-O)'), findsOneWidget);
+      expect(find.text('CTL & EXP'), findsOneWidget);
+      expect(find.text('DOWN / UP & NIVELES'), findsOneWidget);
+      expect(find.text('ASIGNACIONES (A1–A6)'), findsOneWidget);
 
-      // Switch to ASSIGNS 1-8 tab
-      await tester.tap(find.text('ASSIGNS 1–8'));
+      // Switch to ASIGNACIONES (A1–A6) tab
+      await tester.tap(find.text('ASIGNACIONES (A1–A6)'));
       await tester.pumpAndSettle();
 
       expect(find.text('ASSIGN 1'), findsOneWidget);
-      expect(find.text('ASSIGN 1 CONFIGURATION'), findsOneWidget);
+      expect(find.text('ASIGNACIÓN A1'), findsOneWidget);
       expect(find.text('TARGET PARAMETER'), findsOneWidget);
     });
   });

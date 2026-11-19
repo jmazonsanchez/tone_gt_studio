@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../domain/gt1b_assigns.dart';
 import '../../services/patch_service.dart';
 
-/// Tab for CTL1 Footswitch, Expression Pedal (EXP), and Toe Switch (EXP SW).
+/// Tab for CTL1, EXP1, EXP1 SW, CTL2, CTL3, and EXP2.
 class AssignCtlTab extends StatelessWidget {
   final PatchService patchService;
 
@@ -39,17 +39,32 @@ class AssignCtlTab extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           _buildCard(
-            title: 'EXP PEDAL (EXPRESSION)',
+            title: 'EXP1 PEDAL & EXP1 TOE SWITCH',
             icon: Icons.linear_scale,
             child: Column(
               children: [
-                _buildDropdown(
-                  label: 'FUNCTION',
-                  value: ctl.expFunc.clamp(0, Gt1bAssigns.expFuncNames.length - 1),
-                  items: Gt1bAssigns.expFuncNames,
-                  onChanged: (val) => patchService.updateCtlExp(ctl.copyWith(expFunc: val)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildDropdown(
+                        label: 'EXP1 FUNCTION',
+                        value: ctl.expFunc.clamp(0, Gt1bAssigns.expFuncNames.length - 1),
+                        items: Gt1bAssigns.expFuncNames,
+                        onChanged: (val) => patchService.updateCtlExp(ctl.copyWith(expFunc: val)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildDropdown(
+                        label: 'EXP1 TOE SWITCH (EXP SW)',
+                        value: ctl.expSwFunc.clamp(0, Gt1bAssigns.expSwFuncNames.length - 1),
+                        items: Gt1bAssigns.expSwFuncNames,
+                        onChanged: (val) => patchService.updateCtlExp(ctl.copyWith(expSwFunc: val)),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -74,15 +89,87 @@ class AssignCtlTab extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           _buildCard(
-            title: 'EXP TOE SWITCH (EXP SW)',
-            icon: Icons.power_settings_new,
-            child: _buildDropdown(
-              label: 'FUNCTION',
-              value: ctl.expSwFunc.clamp(0, Gt1bAssigns.expSwFuncNames.length - 1),
-              items: Gt1bAssigns.expSwFuncNames,
-              onChanged: (val) => patchService.updateCtlExp(ctl.copyWith(expSwFunc: val)),
+            title: 'SUB CTL2 & SUB CTL3 (FOOTSWITCHES)',
+            icon: Icons.alt_route,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      _buildDropdown(
+                        label: 'CTL2 FUNCTION',
+                        value: ctl.ctl2Func.clamp(0, Gt1bAssigns.ctl2FuncNames.length - 1),
+                        items: Gt1bAssigns.ctl2FuncNames,
+                        onChanged: (val) => patchService.updateCtlExp(ctl.copyWith(ctl2Func: val)),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDropdown(
+                        label: 'CTL2 MODE',
+                        value: ctl.ctl2Mode.clamp(0, Gt1bAssigns.sourceModeNames.length - 1),
+                        items: Gt1bAssigns.sourceModeNames,
+                        onChanged: (val) => patchService.updateCtlExp(ctl.copyWith(ctl2Mode: val)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    children: [
+                      _buildDropdown(
+                        label: 'CTL3 FUNCTION',
+                        value: ctl.ctl3Func.clamp(0, Gt1bAssigns.ctl3FuncNames.length - 1),
+                        items: Gt1bAssigns.ctl3FuncNames,
+                        onChanged: (val) => patchService.updateCtlExp(ctl.copyWith(ctl3Func: val)),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDropdown(
+                        label: 'CTL3 MODE',
+                        value: ctl.ctl3Mode.clamp(0, Gt1bAssigns.sourceModeNames.length - 1),
+                        items: Gt1bAssigns.sourceModeNames,
+                        onChanged: (val) => patchService.updateCtlExp(ctl.copyWith(ctl3Mode: val)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildCard(
+            title: 'SUB EXP2 (PEDAL DE EXPRESIÓN 2)',
+            icon: Icons.tune,
+            child: Column(
+              children: [
+                _buildDropdown(
+                  label: 'EXP2 FUNCTION',
+                  value: ctl.exp2Func.clamp(0, Gt1bAssigns.exp2FuncNames.length - 1),
+                  items: Gt1bAssigns.exp2FuncNames,
+                  onChanged: (val) => patchService.updateCtlExp(ctl.copyWith(exp2Func: val)),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildSlider(
+                        label: 'EXP2 MIN',
+                        value: ctl.exp2Min,
+                        onChanged: (v) => patchService.updateCtlExp(ctl.copyWith(exp2Min: v)),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildSlider(
+                        label: 'EXP2 MAX',
+                        value: ctl.exp2Max,
+                        onChanged: (v) => patchService.updateCtlExp(ctl.copyWith(exp2Max: v)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],

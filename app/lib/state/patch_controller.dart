@@ -182,11 +182,11 @@ class PatchController extends ChangeNotifier {
     _effects.insert(newIndex, item);
     notifyListeners();
 
-    // Generar la lista de 20 bytes para la pedalera
-    final chainBytes = List<int>.filled(20, 0);
-    for (int i = 0; i < _effects.length && i < 20; i++) {
+    // GT-1B authentic 20-slot chain: slots 7..15 hold the 9 movable effects
+    final chainBytes = List<int>.from(GtSysEx.defaultHardwareChain);
+    for (int i = 0; i < _effects.length && i < 9; i++) {
       final chainId = GtSysEx.categoryToChainId[_effects[i].category] ?? 0;
-      chainBytes[i] = chainId;
+      chainBytes[7 + i] = chainId;
     }
     writeQueue.queueWrite(Gt1bMap.fxChainBase, chainBytes);
   }
@@ -251,9 +251,10 @@ class PatchController extends ChangeNotifier {
     if (category == null) return;
 
     final effectIdx = _effects.indexWhere((e) => e.category == category);
-    if (effectIdx >= 0 && slotIndex < _effects.length) {
+    final targetIdx = (slotIndex >= 7 && slotIndex <= 15) ? (slotIndex - 7) : slotIndex;
+    if (effectIdx >= 0 && targetIdx >= 0 && targetIdx < _effects.length) {
       final effect = _effects.removeAt(effectIdx);
-      _effects.insert(slotIndex, effect);
+      _effects.insert(targetIdx, effect);
       notifyListeners();
     }
   }

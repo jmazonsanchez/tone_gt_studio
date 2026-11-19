@@ -5,7 +5,6 @@ import 'package:tone_gt_studio/services/midi_service.dart';
 import 'package:tone_gt_studio/services/patch_service.dart';
 import 'package:tone_gt_studio/ui/theme/app_theme.dart';
 import 'package:tone_gt_studio/ui/widgets/quick_preset_bar.dart';
-import 'package:tone_gt_studio/ui/widgets/quick_preset_editor_modal.dart';
 
 void main() {
   group('QuickPreset Model & Serialization Tests', () {

@@ -7,6 +7,8 @@ import 'effect_editor_panel.dart';
 import 'mini_pedal_card.dart';
 import 'memory_edit_chain_bar.dart';
 import 'quick_preset_bar.dart';
+import 'master_settings_modal.dart';
+import 'assign_editor_modal.dart';
 
 class StageCenterPanel extends StatelessWidget {
   final PatchService patchService;
@@ -44,6 +46,8 @@ class StageCenterPanel extends StatelessWidget {
             effects: effects,
             onToggle: onToggleEffect,
             onMoveEffect: onMoveEffect,
+            onOpenMaster: () => MasterSettingsModal.show(context, patchService),
+            onOpenConfig: () => AssignEditorModal.show(context, patchService),
           ),
 
           const SizedBox(height: 8),

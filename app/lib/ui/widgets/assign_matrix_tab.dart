@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../domain/gt1b_assigns.dart';
 import '../../services/patch_service.dart';
 
-/// Tab for Boss GT-1B Assign Matrices 1 to 8.
+/// Tab for Boss GT-1B Assign Matrices A1 to A6.
 class AssignMatrixTab extends StatefulWidget {
   final PatchService patchService;
 
@@ -18,15 +18,18 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
   @override
   Widget build(BuildContext context) {
     final assigns = widget.patchService.assigns;
+    if (_selectedAssignIndex >= assigns.length) {
+      _selectedAssignIndex = 0;
+    }
     final currentAssign = assigns[_selectedAssignIndex];
 
     return Row(
       children: [
-        // Assign 1..8 Selector Sidebar
+        // Assign A1..A6 Selector Sidebar
         SizedBox(
           width: 140,
           child: ListView.builder(
-            itemCount: 8,
+            itemCount: assigns.length,
             itemBuilder: (context, idx) {
               final a = assigns[idx];
               final isSel = _selectedAssignIndex == idx;
@@ -48,12 +51,14 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'ASSIGN ${idx + 1}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: isSel ? const Color(0xFF00ADB5) : Colors.white70,
+                        Expanded(
+                          child: Text(
+                            'ASSIGN ${idx + 1}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: isSel ? const Color(0xFF00ADB5) : Colors.white70,
+                            ),
                           ),
                         ),
                         Container(
@@ -83,7 +88,7 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'ASSIGN ${_selectedAssignIndex + 1} CONFIGURATION',
+                      'ASIGNACIÓN A${_selectedAssignIndex + 1}',
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF00ADB5)),
                     ),
                     Switch(

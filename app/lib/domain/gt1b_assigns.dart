@@ -43,6 +43,24 @@ class Gt1bAssigns {
     'PATCH DOWN',
   ];
 
+  static const List<String> ctl2FuncNames = ctl1FuncNames;
+  static const List<String> ctl3FuncNames = ctl1FuncNames;
+  static const List<String> exp2FuncNames = expFuncNames;
+
+  static const List<String> downFuncNames = [
+    'PATCH DOWN',
+    'BANK DOWN',
+    'NUMBER DOWN',
+    'OFF',
+  ];
+
+  static const List<String> upFuncNames = [
+    'PATCH UP',
+    'BANK UP',
+    'NUMBER UP',
+    'OFF',
+  ];
+
   static const List<String> assignSourceNames = [
     'EXP1',
     'EXP1 SW',

@@ -130,8 +130,11 @@ class GtSysEx {
   }
 
   /// Default 20-slot authentic hardware chain order of Boss GT-1B.
+  /// Fixed slots 0..6: [0, 1, 4, 8, 10, 14, 17]
+  /// Movable slots 7..15 (authentic 9 blocks): [5, 2, 13, 15, 12, 11, 7, 6, 9]
+  /// Fixed slots 16..19: [18, 3, 19, 16]
   static const List<int> defaultHardwareChain = [
-    0, 1, 4, 8, 10, 14, 17, 5, 2, 6, 11, 15, 12, 13, 7, 9, 18, 3, 19, 16
+    0, 1, 4, 8, 10, 14, 17, 5, 2, 13, 15, 12, 11, 7, 6, 9, 18, 3, 19, 16
   ];
 
   /// Request Block 1 (EQ, FX1 switch, FX1 algorithm type & parameters) (address 60 00 01 00, size 127 bytes).
@@ -226,52 +229,59 @@ class GtSysEx {
   }
 
   /// Build full FX chain order update (address 60 00 07 20, 20 slot IDs).
+  /// If given 9 movable block IDs, maps them into slots 7..15 of the authentic 20-slot chain.
   /// Replaces any missing positions with authentic valid GT-1B routing IDs (never 0xFF!).
   static Uint8List buildFxChainOrder(List<int> chainIds, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
-    final padded = List<int>.from(chainIds);
-    for (final id in defaultHardwareChain) {
-      if (padded.length >= 20) break;
-      if (!padded.contains(id)) {
-        padded.add(id);
+    List<int> fullChain;
+    if (chainIds.length == 20) {
+      fullChain = List<int>.from(chainIds);
+    } else if (chainIds.length == 9) {
+      fullChain = List<int>.from(defaultHardwareChain);
+      for (int i = 0; i < 9; i++) {
+        fullChain[7 + i] = chainIds[i];
+      }
+    } else {
+      fullChain = List<int>.from(chainIds);
+      for (final id in defaultHardwareChain) {
+        if (fullChain.length >= 20) break;
+        if (!fullChain.contains(id)) {
+          fullChain.add(id);
+        }
       }
     }
     return buildDt1Message(
       address: Gt1bAddresses.fxChainBase,
-      data: padded.sublist(0, 20),
+      data: fullChain.sublist(0, 20),
       modelId: modelId,
       deviceId: deviceId,
     );
   }
 
-  /// Mapping from GT-1B hardware FX Chain IDs (0..19) to EffectCategory
+  /// Mapping from authentic GT-1B hardware FX Chain IDs (0..19) to EffectCategory.
+  /// Exactly 9 movable stompboxes exist in GT-1B hardware:
+  /// PDL=5, OD=2, PREAMP=13, FX1=15, NS=12, FV=11, FX2=7, DELAY=6, REVERB=9.
   static const Map<int, EffectCategory> chainIdToCategory = {
-    0: EffectCategory.pedalFx,
-    1: EffectCategory.comp,
-    2: EffectCategory.chorus,
-    4: EffectCategory.odDs,
-    5: EffectCategory.delay,
-    6: EffectCategory.reverb,
-    8: EffectCategory.preamp,
-    10: EffectCategory.eq,
-    11: EffectCategory.noiseSuppressor,
-    14: EffectCategory.fx1,
-    15: EffectCategory.footVolume,
-    17: EffectCategory.fx2,
+    5: EffectCategory.pedalFx,
+    2: EffectCategory.odDs,
+    13: EffectCategory.preamp,
+    15: EffectCategory.fx1,
+    12: EffectCategory.noiseSuppressor,
+    11: EffectCategory.footVolume,
+    7: EffectCategory.fx2,
+    6: EffectCategory.delay,
+    9: EffectCategory.reverb,
   };
 
   static const Map<EffectCategory, int> categoryToChainId = {
-    EffectCategory.pedalFx: 0,
-    EffectCategory.comp: 1,
-    EffectCategory.chorus: 2,
-    EffectCategory.odDs: 4,
-    EffectCategory.delay: 5,
-    EffectCategory.reverb: 6,
-    EffectCategory.preamp: 8,
-    EffectCategory.eq: 10,
-    EffectCategory.noiseSuppressor: 11,
-    EffectCategory.fx1: 14,
-    EffectCategory.footVolume: 15,
-    EffectCategory.fx2: 17,
+    EffectCategory.pedalFx: 5,
+    EffectCategory.odDs: 2,
+    EffectCategory.preamp: 13,
+    EffectCategory.fx1: 15,
+    EffectCategory.noiseSuppressor: 12,
+    EffectCategory.footVolume: 11,
+    EffectCategory.fx2: 7,
+    EffectCategory.delay: 6,
+    EffectCategory.reverb: 9,
   };
 
   /// Parse FX Chain order from a 60 00 07 20 DT1 response

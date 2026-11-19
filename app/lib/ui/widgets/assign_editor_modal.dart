@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../services/patch_service.dart';
 import 'assign_ctl_tab.dart';
+import 'assign_footswitch_tab.dart';
 import 'assign_matrix_tab.dart';
 
-/// Modal dialog for Boss GT-1B Control (CTL1), Expression Pedal (EXP/EXP SW),
-/// and Assign Matrices 1 to 8.
+/// Modal dialog for Boss GT-1B Control (CTL1..3), Expression Pedals (EXP1..2, EXP1 SW),
+/// Footswitches (Down, Up), Levels (In/Out), and Assign Matrices A1–A6.
 class AssignEditorModal extends StatefulWidget {
   final PatchService patchService;
 
@@ -29,7 +30,7 @@ class _AssignEditorModalState extends State<AssignEditorModal>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -50,8 +51,8 @@ class _AssignEditorModalState extends State<AssignEditorModal>
             side: const BorderSide(color: Color(0xFF00ADB5), width: 1.5),
           ),
           child: Container(
-            width: 720,
-            height: 520,
+            width: 760,
+            height: 560,
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
@@ -62,8 +63,9 @@ class _AssignEditorModalState extends State<AssignEditorModal>
                   labelColor: const Color(0xFF00ADB5),
                   unselectedLabelColor: Colors.white54,
                   tabs: const [
-                    Tab(icon: Icon(Icons.settings_remote, size: 16), text: 'CTL1 & EXP PEDAL'),
-                    Tab(icon: Icon(Icons.hub, size: 16), text: 'ASSIGNS 1–8'),
+                    Tab(icon: Icon(Icons.settings_remote, size: 16), text: 'CTL & EXP'),
+                    Tab(icon: Icon(Icons.swap_vert, size: 16), text: 'DOWN / UP & NIVELES'),
+                    Tab(icon: Icon(Icons.hub, size: 16), text: 'ASIGNACIONES (A1–A6)'),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -72,6 +74,7 @@ class _AssignEditorModalState extends State<AssignEditorModal>
                     controller: _tabController,
                     children: [
                       AssignCtlTab(patchService: widget.patchService),
+                      AssignFootswitchTab(patchService: widget.patchService),
                       AssignMatrixTab(patchService: widget.patchService),
                     ],
                   ),
@@ -88,20 +91,25 @@ class _AssignEditorModalState extends State<AssignEditorModal>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Row(
-          children: [
-            Icon(Icons.tune, color: Color(0xFF00ADB5), size: 20),
-            SizedBox(width: 8),
-            Text(
-              'CONTROL, EXP & ASSIGNS (FASE 5)',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.1,
+        const Expanded(
+          child: Row(
+            children: [
+              Icon(Icons.tune, color: Color(0xFF00ADB5), size: 20),
+              SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'CONFIGURACIÓN GT-1B (CTL / EXP / A1–A6 / I-O)',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         IconButton(
           icon: const Icon(Icons.close, color: Colors.white38, size: 18),

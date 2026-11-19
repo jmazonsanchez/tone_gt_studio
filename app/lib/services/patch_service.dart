@@ -61,10 +61,10 @@ class PatchService extends ChangeNotifier {
   int _masterEqMidGain = 20;
   int _masterEqHigh = 20;
 
-  // Phase 5: Control, EXP and Assign Matrices 1-8
+  // Phase 5: Control, EXP and Assign Matrices A1-A6
   CtlExpSetting _ctlExpSetting = const CtlExpSetting();
   final List<AssignSetting> _assigns = List.generate(
-    8,
+    6,
     (i) => AssignSetting(index: i + 1),
   );
 
@@ -72,7 +72,7 @@ class PatchService extends ChangeNotifier {
   final SystemSettings systemSettings = SystemSettings();
 
   List<int> _hardwareFxChain = [
-    0, 1, 4, 8, 10, 14, 17, 5, 2, 6, 11, 15, 12, 13, 7, 9, 18, 3, 19, 16
+    0, 1, 4, 8, 10, 14, 17, 5, 2, 13, 15, 12, 11, 7, 6, 9, 18, 3, 19, 16
   ];
 
   bool _isSyncing = false;
@@ -184,13 +184,13 @@ class PatchService extends ChangeNotifier {
   List<EffectBlock> _createDefaultEffects(int patchIdx) {
     return [
       EffectBlock(
-        id: 'comp',
-        name: 'COMP',
-        subtitle: 'Limiter / Comp',
-        category: EffectCategory.comp,
-        accentColor: const Color(0xFF1E88E5), // Blue boutique
+        id: 'pedal_fx',
+        name: 'PEDAL FX',
+        subtitle: 'Wah / Foot Bend',
+        category: EffectCategory.pedalFx,
+        accentColor: const Color(0xFFFF5722), // Deep Flame Orange
         isEnabled: false,
-        parameters: _paramsFor(EffectCategory.comp),
+        parameters: _paramsFor(EffectCategory.pedalFx),
       ),
       EffectBlock(
         id: 'od_ds',
@@ -220,6 +220,24 @@ class PatchService extends ChangeNotifier {
         parameters: Gt1bFxAlgorithms.getParametersFor(EffectCategory.fx1, 3), // SUB WAH
       ),
       EffectBlock(
+        id: 'ns',
+        name: 'NS',
+        subtitle: 'Noise Suppressor',
+        category: EffectCategory.noiseSuppressor,
+        accentColor: const Color(0xFF607D8B), // Slate Steel
+        isEnabled: true,
+        parameters: _paramsFor(EffectCategory.noiseSuppressor),
+      ),
+      EffectBlock(
+        id: 'foot_volume',
+        name: 'FOOT VOL',
+        subtitle: 'Foot Volume Level',
+        category: EffectCategory.footVolume,
+        accentColor: const Color(0xFF8D6E63), // Copper Bronze
+        isEnabled: true,
+        parameters: _paramsFor(EffectCategory.footVolume),
+      ),
+      EffectBlock(
         id: 'fx2',
         name: 'FX2',
         subtitle: 'Bass Octaver / Mod',
@@ -238,15 +256,6 @@ class PatchService extends ChangeNotifier {
         parameters: _paramsFor(EffectCategory.delay),
       ),
       EffectBlock(
-        id: 'chorus',
-        name: 'CHORUS',
-        subtitle: 'Stereo Chorus',
-        category: EffectCategory.chorus,
-        accentColor: const Color(0xFF00ACC1), // Cyan
-        isEnabled: false,
-        parameters: _paramsFor(EffectCategory.chorus),
-      ),
-      EffectBlock(
         id: 'reverb',
         name: 'REVERB',
         subtitle: 'Plate / Hall Reverb',
@@ -254,42 +263,6 @@ class PatchService extends ChangeNotifier {
         accentColor: const Color(0xFF5E35B1), // Deep Violet
         isEnabled: false,
         parameters: _paramsFor(EffectCategory.reverb),
-      ),
-      EffectBlock(
-        id: 'pedal_fx',
-        name: 'PEDAL FX',
-        subtitle: 'Wah / Foot Bend',
-        category: EffectCategory.pedalFx,
-        accentColor: const Color(0xFFFF5722), // Deep Flame Orange
-        isEnabled: false,
-        parameters: _paramsFor(EffectCategory.pedalFx),
-      ),
-      EffectBlock(
-        id: 'eq',
-        name: 'EQ',
-        subtitle: 'Parametric Equalizer',
-        category: EffectCategory.eq,
-        accentColor: const Color(0xFF009688), // Teal Green
-        isEnabled: false,
-        parameters: _paramsFor(EffectCategory.eq),
-      ),
-      EffectBlock(
-        id: 'foot_volume',
-        name: 'FOOT VOL',
-        subtitle: 'Foot Volume Level',
-        category: EffectCategory.footVolume,
-        accentColor: const Color(0xFF8D6E63), // Copper Bronze
-        isEnabled: true,
-        parameters: _paramsFor(EffectCategory.footVolume),
-      ),
-      EffectBlock(
-        id: 'ns',
-        name: 'NS',
-        subtitle: 'Noise Suppressor',
-        category: EffectCategory.noiseSuppressor,
-        accentColor: const Color(0xFF607D8B), // Slate Steel
-        isEnabled: true,
-        parameters: _paramsFor(EffectCategory.noiseSuppressor),
       ),
     ];
   }
@@ -704,9 +677,10 @@ class PatchService extends ChangeNotifier {
     if (category == null) return;
     final currentEffects = List<EffectBlock>.from(currentPatch.effects);
     final idx = currentEffects.indexWhere((e) => e.category == category);
-    if (idx >= 0 && slotIndex < currentEffects.length) {
+    final targetIdx = (slotIndex >= 7 && slotIndex <= 15) ? (slotIndex - 7) : slotIndex;
+    if (idx >= 0 && targetIdx >= 0 && targetIdx < currentEffects.length) {
       final item = currentEffects.removeAt(idx);
-      currentEffects.insert(slotIndex, item);
+      currentEffects.insert(targetIdx, item);
       _patches[_currentPatchIndex] = currentPatch.copyWith(effects: currentEffects);
       notifyListeners();
     }
@@ -1320,13 +1294,8 @@ class PatchService extends ChangeNotifier {
       if (cid != null) visibleChainIds.add(cid);
     }
     final newHardwareChain = List<int>.from(_hardwareFxChain);
-    int visibleIdx = 0;
-    for (int i = 0; i < newHardwareChain.length; i++) {
-      if (GtSysEx.chainIdToCategory.containsKey(newHardwareChain[i])) {
-        if (visibleIdx < visibleChainIds.length) {
-          newHardwareChain[i] = visibleChainIds[visibleIdx++];
-        }
-      }
+    for (int i = 0; i < 9 && i < visibleChainIds.length; i++) {
+      newHardwareChain[7 + i] = visibleChainIds[i];
     }
     _hardwareFxChain = newHardwareChain;
 
@@ -1335,7 +1304,7 @@ class PatchService extends ChangeNotifier {
     await midiService.sendSysEx(msg);
 
     // 2. Also update individual slots for any hardware firmware revisions that poll individual slot registers
-    for (int i = 0; i < 20; i++) {
+    for (int i = 7; i <= 15; i++) {
       if (i >= oldHardwareChain.length || oldHardwareChain[i] != newHardwareChain[i]) {
         await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x20 + i], newHardwareChain[i]);
         await Future.delayed(const Duration(milliseconds: 8));
@@ -1410,12 +1379,32 @@ class PatchService extends ChangeNotifier {
     _ctlExpSetting = setting;
     notifyListeners();
     if (midiService.isConnected) {
+      // CTL1
       await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x50], setting.ctl1Func);
       await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x53], setting.ctl1Mode);
+      // EXP1
       await midiService.sendParameterValue([0x60, 0x00, 0x08, 0x10], setting.expFunc);
       await midiService.sendParameterValue([0x60, 0x00, 0x08, 0x11], setting.expMin);
       await midiService.sendParameterValue([0x60, 0x00, 0x08, 0x12], setting.expMax);
+      // EXP1 SW
       await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x60], setting.expSwFunc);
+      // CTL2 & CTL3 (Sub Ctl 1 & 2)
+      await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x70], setting.ctl2Func);
+      await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x73], setting.ctl2Mode);
+      await midiService.sendParameterValue([0x60, 0x00, 0x08, 0x00], setting.ctl3Func);
+      await midiService.sendParameterValue([0x60, 0x00, 0x08, 0x03], setting.ctl3Mode);
+      // EXP2 (Sub Exp)
+      await midiService.sendParameterValue([0x60, 0x00, 0x08, 0x20], setting.exp2Func);
+      await midiService.sendParameterValue([0x60, 0x00, 0x08, 0x21], setting.exp2Min);
+      await midiService.sendParameterValue([0x60, 0x00, 0x08, 0x22], setting.exp2Max);
+      // Down & Up Footswitches
+      await midiService.sendParameterValue([0x60, 0x00, 0x10, 0x77], setting.downFunc);
+      await midiService.sendParameterValue([0x60, 0x00, 0x10, 0x7A], setting.downMode);
+      await midiService.sendParameterValue([0x60, 0x00, 0x10, 0x7B], setting.upFunc);
+      await midiService.sendParameterValue([0x60, 0x00, 0x10, 0x7E], setting.upMode);
+      // System Input & Output Levels
+      await midiService.sendParameterValue([0x00, 0x00, 0x00, 0x71], setting.inLevel);
+      await midiService.sendParameterValue([0x00, 0x00, 0x00, 0x79], setting.outLevel);
     }
   }
 
