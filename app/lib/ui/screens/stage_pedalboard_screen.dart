@@ -6,7 +6,6 @@ import '../widgets/stage_center_panel.dart';
 import '../widgets/stage_header_bar.dart';
 import '../widgets/stage_left_panel.dart';
 import '../widgets/stage_right_panel.dart';
-import '../widgets/master_settings_modal.dart';
 
 class StagePedalboardScreen extends StatelessWidget {
   final MidiService midi;
@@ -38,9 +37,7 @@ class StagePedalboardScreen extends StatelessWidget {
       ),
       syncProgressBar: patchService.isSyncing ? _buildSyncProgress() : null,
       leftPanelBuilder: (ctx, config) => StageLeftPanel(
-        effects: current.effects,
-        onToggle: (effect) => patchService.toggleEffect(effect),
-        onSelectMaster: () => MasterSettingsModal.show(ctx, patchService),
+        patchService: patchService,
         breakpoint: config.breakpoint,
       ),
       centerPanelBuilder: (ctx, config) => StageCenterPanel(

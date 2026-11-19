@@ -49,10 +49,9 @@ void main() {
       expect(find.text('MODO DEMO'), findsOneWidget);
       expect(find.text('U01'), findsOneWidget);
 
-      // Verify Zone 1 (Left panel buttons)
-      expect(find.text('BOTONES FÍSICOS'), findsOneWidget);
-      expect(find.text('COMP'), findsWidgets);
-      expect(find.text('OD/DS'), findsWidgets);
+      // Verify Zone 1 (Left panel Master configuration)
+      expect(find.text('CONFIGURACIÓN MASTER'), findsOneWidget);
+      expect(find.text('PATCH LEVEL'), findsOneWidget);
 
       // Verify Zone 2 (Center panel: chain bar & pedals)
       expect(find.text('MEMORY EDIT'), findsOneWidget);

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../domain/gt1b_catalog.dart';
 import '../domain/gt1b_fx_algorithms.dart';
+import '../domain/gt1b_type_defaults.dart';
 import '../models/assign_model.dart';
 import '../models/effect_block.dart';
 import '../models/effect_parameter.dart';
@@ -600,6 +601,7 @@ class PatchService extends ChangeNotifier {
 
   /// Reorder the current patch effects to match hardware chain IDs
   void _applyFxChainOrder(List<int> chainIds) {
+    _hardwareFxChain = List<int>.from(chainIds);
     final patch = _patches[_currentPatchIndex];
     final currentEffects = List<EffectBlock>.from(patch.effects);
 
@@ -626,6 +628,9 @@ class PatchService extends ChangeNotifier {
 
   /// Reorder a single effect slot in the current chain (H8, D5)
   void _applySingleChainSlot(int slotIndex, int chainId) {
+    if (slotIndex >= 0 && slotIndex < _hardwareFxChain.length) {
+      _hardwareFxChain[slotIndex] = chainId;
+    }
     final category = GtSysEx.chainIdToCategory[chainId];
     if (category == null) return;
     final currentEffects = List<EffectBlock>.from(currentPatch.effects);
@@ -913,9 +918,28 @@ class PatchService extends ChangeNotifier {
       _applyFxAlgorithm(EffectCategory.fx1, param.value);
     } else if (param.id == 'fx2_type') {
       _applyFxAlgorithm(EffectCategory.fx2, param.value);
+    } else if (param.isEnum) {
+      _applyTypeDefaults(param.id, param.value);
     }
 
     await midiService.sendParameterValue(param.address, param.value);
+  }
+
+  void _applyTypeDefaults(String typeParamId, int typeIndex) {
+    final defaults = Gt1bTypeDefaults.getDefaults(typeParamId, typeIndex);
+    if (defaults == null) return;
+
+    for (final effect in currentPatch.effects) {
+      for (final p in effect.parameters) {
+        if (defaults.containsKey(p.id)) {
+          p.value = defaults[p.id]!;
+          if (midiService.isConnected) {
+            midiService.sendParameterValue(p.address, p.value);
+          }
+        }
+      }
+    }
+    notifyListeners();
   }
 
   Future<void> toggleTuner() async {
@@ -933,7 +957,7 @@ class PatchService extends ChangeNotifier {
   }
 
   /// Shift an effect block left/earlier or right/later in the chain and send to hardware
-  void moveEffect(int fromIndex, int toIndex) {
+  Future<void> moveEffect(int fromIndex, int toIndex) async {
     final patch = _patches[_currentPatchIndex];
     if (fromIndex < 0 || fromIndex >= patch.effects.length) return;
     if (toIndex < 0 || toIndex >= patch.effects.length) return;
@@ -947,24 +971,37 @@ class PatchService extends ChangeNotifier {
 
     // Transmit updated chain order to hardware GT-1B
     if (midiService.isConnected) {
-      final visibleChainIds = <int>[];
-      for (final eff in updatedList) {
-        final cid = GtSysEx.categoryToChainId[eff.category];
-        if (cid != null) visibleChainIds.add(cid);
-      }
-      final newHardwareChain = List<int>.from(_hardwareFxChain);
-      int visibleIdx = 0;
-      for (int i = 0; i < newHardwareChain.length; i++) {
-        if (GtSysEx.chainIdToCategory.containsKey(newHardwareChain[i])) {
-          if (visibleIdx < visibleChainIds.length) {
-            newHardwareChain[i] = visibleChainIds[visibleIdx++];
-          }
+      await _syncFxChainToHardware(updatedList);
+    }
+  }
+
+  Future<void> _syncFxChainToHardware(List<EffectBlock> updatedList) async {
+    final oldHardwareChain = List<int>.from(_hardwareFxChain);
+    final visibleChainIds = <int>[];
+    for (final eff in updatedList) {
+      final cid = GtSysEx.categoryToChainId[eff.category];
+      if (cid != null) visibleChainIds.add(cid);
+    }
+    final newHardwareChain = List<int>.from(_hardwareFxChain);
+    int visibleIdx = 0;
+    for (int i = 0; i < newHardwareChain.length; i++) {
+      if (GtSysEx.chainIdToCategory.containsKey(newHardwareChain[i])) {
+        if (visibleIdx < visibleChainIds.length) {
+          newHardwareChain[i] = visibleChainIds[visibleIdx++];
         }
       }
-      _hardwareFxChain = newHardwareChain;
-      final msg = GtSysEx.buildFxChainOrder(_hardwareFxChain);
-      midiService.sendSysEx(msg);
     }
+    _hardwareFxChain = newHardwareChain;
+
+    for (int i = 0; i < 20; i++) {
+      if (i >= oldHardwareChain.length || oldHardwareChain[i] != newHardwareChain[i]) {
+        await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x20 + i], newHardwareChain[i]);
+        await Future.delayed(const Duration(milliseconds: 5));
+      }
+    }
+
+    final msg = GtSysEx.buildFxChainOrder(_hardwareFxChain);
+    await midiService.sendSysEx(msg);
   }
 
   void _applyMasterMap(Map<String, int> map) {

@@ -109,12 +109,10 @@ void main() {
       expect(masterMap['master_bpm'], 140);
     });
 
-    testWidgets('StageLeftPanel includes MASTER as 12th physical button and opens modal', (tester) async {
+    testWidgets('StageLeftPanel renders dedicated Master panel with Level, BPM, Key and EQ', (tester) async {
       tester.view.physicalSize = const Size(1280, 720);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
-
-      bool masterOpened = false;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -123,9 +121,7 @@ void main() {
               width: 240,
               height: 600,
               child: StageLeftPanel(
-                effects: patchService.currentPatch.effects,
-                onToggle: (eff) {},
-                onSelectMaster: () => masterOpened = true,
+                patchService: patchService,
                 breakpoint: StageBreakpoint.medium,
               ),
             ),
@@ -133,14 +129,15 @@ void main() {
         ),
       );
 
-      // Verify all 12 physical buttons are present (11 effects + MASTER)
-      expect(find.text('MASTER'), findsOneWidget);
-      expect(find.text('COMP'), findsOneWidget);
-      expect(find.text('PREAMP'), findsOneWidget);
-      expect(find.text('OD/DS'), findsOneWidget);
-
-      await tester.tap(find.text('MASTER'));
-      expect(masterOpened, isTrue);
+      // Verify dedicated Master panel controls
+      expect(find.text('CONFIGURACIÓN MASTER'), findsOneWidget);
+      expect(find.text('PATCH LEVEL'), findsOneWidget);
+      expect(find.text('BPM'), findsOneWidget);
+      expect(find.text('KEY'), findsOneWidget);
+      expect(find.text('MASTER 4-BAND EQ'), findsOneWidget);
+      expect(find.text('LOW GAIN'), findsOneWidget);
+      expect(find.text('MID GAIN'), findsOneWidget);
+      expect(find.text('HIGH GAIN'), findsOneWidget);
     });
 
     testWidgets('MasterSettingsModal allows tweaking patch level, BPM, and EQ', (tester) async {

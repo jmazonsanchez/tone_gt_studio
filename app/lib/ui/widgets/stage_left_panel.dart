@@ -1,45 +1,38 @@
 import 'package:flutter/material.dart';
-import '../../models/effect_block.dart';
+import '../../services/patch_service.dart';
 import '../layout/responsive_breakpoints.dart';
 
+/// Dedicated Master Configuration Panel for Boss GT-1B.
+/// Replaces the physical buttons section to provide direct live access to:
+/// Patch Level, Master BPM, Master Key, and Master 4-Band Parametric EQ.
 class StageLeftPanel extends StatelessWidget {
-  final List<EffectBlock> effects;
-  final Function(EffectBlock) onToggle;
-  final VoidCallback? onSelectMaster;
+  final PatchService patchService;
   final StageBreakpoint breakpoint;
+
+  static const List<String> musicalKeys = [
+    'C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'
+  ];
+
+  static const List<String> midFreqLabels = [
+    '100 Hz', '125 Hz', '160 Hz', '200 Hz', '250 Hz', '315 Hz', '400 Hz', '500 Hz',
+    '630 Hz', '800 Hz', '1.0 kHz', '1.25 kHz', '1.6 kHz', '2.0 kHz', '2.5 kHz', '3.15 kHz',
+    '4.0 kHz', '5.0 kHz', '6.3 kHz', '8.0 kHz', '10.0 kHz'
+  ];
+
+  static const List<String> midQLabels = ['0.5', '1', '2', '4', '8', '16'];
 
   const StageLeftPanel({
     super.key,
-    required this.effects,
-    required this.onToggle,
-    this.onSelectMaster,
+    required this.patchService,
     required this.breakpoint,
   });
 
   @override
   Widget build(BuildContext context) {
-    // 12 front panel physical blocks of Boss GT-1B
-    final panelEffects = effects.where((e) =>
-      e.category == EffectCategory.comp ||
-      e.category == EffectCategory.odDs ||
-      e.category == EffectCategory.preamp ||
-      e.category == EffectCategory.eq ||
-      e.category == EffectCategory.fx1 ||
-      e.category == EffectCategory.fx2 ||
-      e.category == EffectCategory.delay ||
-      e.category == EffectCategory.reverb ||
-      e.category == EffectCategory.pedalFx ||
-      e.category == EffectCategory.footVolume ||
-      e.category == EffectCategory.noiseSuppressor
-    ).toList();
-
     final isCompact = breakpoint == StageBreakpoint.compact;
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 4 : 8,
-        vertical: 8,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: isCompact ? 6 : 10, vertical: 8),
       decoration: const BoxDecoration(
         color: Color(0xFF13131A),
         border: Border(right: BorderSide(color: Colors.white10, width: 1)),
@@ -47,228 +40,243 @@ class StageLeftPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header
-          if (!isCompact)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
-              child: Row(
+          _buildHeader(),
+          const SizedBox(height: 6),
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(Icons.radio_button_checked, size: 11, color: Colors.redAccent),
-                  SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      'BOTONES FÍSICOS',
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
-                        color: Colors.white54,
-                      ),
-                    ),
+                  _buildSliderTile(
+                    label: 'PATCH LEVEL',
+                    value: patchService.patchLevel,
+                    min: 0,
+                    max: 100,
+                    displayValue: '${patchService.patchLevel}',
+                    onChanged: (val) => patchService.updateMasterParameter('patch_level', val),
                   ),
+                  const SizedBox(height: 8),
+                  _buildTempoAndKeyRow(),
+                  const SizedBox(height: 8),
+                  const Divider(color: Colors.white10, height: 12),
+                  const SizedBox(height: 4),
+                  _buildMasterEqSection(),
                 ],
               ),
             ),
-
-          // Buttons Grid/List (Fits without vertical scroll)
-          Expanded(
-            child: isCompact
-                ? _buildCompactList(panelEffects)
-                : _buildTwoColumnGrid(panelEffects),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTwoColumnGrid(List<EffectBlock> panelEffects) {
-    // 11 effect blocks + 1 Master button = 12 buttons (2x6 grid)
-    final totalCount = panelEffects.length + 1;
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 6,
-        mainAxisSpacing: 6,
-        childAspectRatio: 1.6,
-      ),
-      itemCount: totalCount,
-      itemBuilder: (context, index) {
-        if (index < panelEffects.length) {
-          return _buildSiliconeButton(panelEffects[index], isMini: false);
-        }
-        return _buildMasterButton(isMini: false);
-      },
-    );
-  }
-
-  Widget _buildCompactList(List<EffectBlock> panelEffects) {
-    final totalCount = panelEffects.length + 1;
-    return ListView.separated(
-      physics: const BouncingScrollPhysics(),
-      itemCount: totalCount,
-      separatorBuilder: (_, __) => const SizedBox(height: 4),
-      itemBuilder: (context, index) {
-        if (index < panelEffects.length) {
-          return _buildSiliconeButton(panelEffects[index], isMini: true);
-        }
-        return _buildMasterButton(isMini: true);
-      },
-    );
-  }
-
-  Widget _buildMasterButton({required bool isMini}) {
-    return InkWell(
-      onTap: onSelectMaster,
-      borderRadius: BorderRadius.circular(6),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E1710),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: const Color(0xFFFF9800),
-            width: 1.2,
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Color(0xFFFF9800),
+            boxShadow: [BoxShadow(color: Color(0xFFFF9800), blurRadius: 4, spreadRadius: 1)],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFF9800).withValues(alpha: 0.25),
-              blurRadius: 6,
-              spreadRadius: 1,
-            ),
-          ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 5,
-              height: 5,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFFF9800),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0xFFFF9800),
-                    blurRadius: 4,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
+        const SizedBox(width: 6),
+        const Expanded(
+          child: Text(
+            'CONFIGURACIÓN MASTER',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.8,
+              color: Color(0xFFFF9800),
             ),
-            const SizedBox(height: 3),
-            Text(
-              'MASTER',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: isMini ? 8 : 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.5,
-                color: const Color(0xFFFF9800),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSiliconeButton(EffectBlock effect, {required bool isMini}) {
-    final active = effect.isEnabled;
-    final label = _formatButtonLabel(effect.category);
-
-    return InkWell(
-      onTap: () => onToggle(effect),
-      borderRadius: BorderRadius.circular(6),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFF221114) : const Color(0xFF1A1A22),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: active ? Colors.redAccent : Colors.black87,
-            width: active ? 1.4 : 1.0,
           ),
-          boxShadow: [
-            if (active)
-              BoxShadow(
-                color: Colors.redAccent.withValues(alpha: 0.35),
-                blurRadius: 8,
-                spreadRadius: 1,
-              ),
-          ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Micro LED indicator
-            Container(
-              width: 5,
-              height: 5,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: active ? Colors.redAccent : const Color(0xFF333333),
-                boxShadow: [
-                  if (active)
-                    const BoxShadow(
-                      color: Colors.redAccent,
-                      blurRadius: 4,
-                      spreadRadius: 1,
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 3),
-            // Button Label
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: isMini ? 8 : 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.5,
-                color: active ? Colors.white : Colors.white38,
-              ),
-            ),
-          ],
+      ],
+    );
+  }
+
+  Widget _buildTempoAndKeyRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildSliderTile(
+            label: 'BPM',
+            value: patchService.masterBpm,
+            min: 40,
+            max: 250,
+            displayValue: '${patchService.masterBpm}',
+            onChanged: (val) => patchService.updateMasterParameter('master_bpm', val),
+          ),
         ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: _buildDropdownCard(
+            label: 'KEY',
+            valueIndex: patchService.masterKey.clamp(0, musicalKeys.length - 1),
+            items: musicalKeys,
+            onChanged: (val) => patchService.updateMasterParameter('master_key', val),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMasterEqSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'MASTER 4-BAND EQ',
+          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.8, color: Colors.white54),
+        ),
+        const SizedBox(height: 6),
+        _buildSliderTile(
+          label: 'LOW GAIN',
+          value: patchService.masterEqLow,
+          min: 0,
+          max: 40,
+          displayValue: '${patchService.masterEqLow - 20} dB',
+          onChanged: (val) => patchService.updateMasterParameter('master_eq_low', val),
+        ),
+        const SizedBox(height: 6),
+        _buildSliderTile(
+          label: 'MID GAIN',
+          value: patchService.masterEqMidGain,
+          min: 0,
+          max: 40,
+          displayValue: '${patchService.masterEqMidGain - 20} dB',
+          onChanged: (val) => patchService.updateMasterParameter('master_eq_mid_gain', val),
+        ),
+        const SizedBox(height: 6),
+        _buildMidFreqAndQRow(),
+        const SizedBox(height: 6),
+        _buildSliderTile(
+          label: 'HIGH GAIN',
+          value: patchService.masterEqHigh,
+          min: 0,
+          max: 40,
+          displayValue: '${patchService.masterEqHigh - 20} dB',
+          onChanged: (val) => patchService.updateMasterParameter('master_eq_high', val),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMidFreqAndQRow() {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: _buildDropdownCard(
+            label: 'MID FREQ',
+            valueIndex: patchService.masterEqMidFreq.clamp(0, midFreqLabels.length - 1),
+            items: midFreqLabels,
+            onChanged: (val) => patchService.updateMasterParameter('master_eq_mid_freq', val),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          flex: 2,
+          child: _buildDropdownCard(
+            label: 'MID Q',
+            valueIndex: patchService.masterEqMidQ.clamp(0, midQLabels.length - 1),
+            items: midQLabels,
+            onChanged: (val) => patchService.updateMasterParameter('master_eq_mid_q', val),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdownCard({
+    required String label,
+    required int valueIndex,
+    required List<String> items,
+    required ValueChanged<int> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B1B26),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.white54)),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: valueIndex,
+              isDense: true,
+              isExpanded: true,
+              dropdownColor: const Color(0xFF1E1E2C),
+              style: const TextStyle(color: Color(0xFFFF9800), fontWeight: FontWeight.bold, fontSize: 11),
+              items: List.generate(items.length, (idx) => DropdownMenuItem(value: idx, child: Text(items[idx]))),
+              onChanged: (val) {
+                if (val != null) onChanged(val);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  String _formatButtonLabel(EffectCategory cat) {
-    switch (cat) {
-      case EffectCategory.comp:
-        return 'COMP';
-      case EffectCategory.odDs:
-        return 'OD/DS';
-      case EffectCategory.preamp:
-        return 'PREAMP';
-      case EffectCategory.eq:
-        return 'EQ';
-      case EffectCategory.fx1:
-        return 'FX1';
-      case EffectCategory.fx2:
-        return 'FX2';
-      case EffectCategory.delay:
-        return 'DELAY';
-      case EffectCategory.reverb:
-        return 'REVERB';
-      case EffectCategory.pedalFx:
-        return 'PEDAL FX';
-      case EffectCategory.footVolume:
-        return 'FOOT VOL';
-      case EffectCategory.noiseSuppressor:
-        return 'N.SUPR';
-      default:
-        return cat.name.toUpperCase();
-    }
+  Widget _buildSliderTile({
+    required String label,
+    required int value,
+    required int min,
+    required int max,
+    required String displayValue,
+    required ValueChanged<int> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B1B26),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.white54),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(displayValue, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFFF9800))),
+            ],
+          ),
+          SliderTheme(
+            data: const SliderThemeData(
+              trackHeight: 2,
+              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 5),
+              overlayShape: RoundSliderOverlayShape(overlayRadius: 8),
+              activeTrackColor: Color(0xFFFF9800),
+              inactiveTrackColor: Colors.white10,
+              thumbColor: Color(0xFFFF9800),
+            ),
+            child: Slider(
+              value: value.clamp(min, max).toDouble(),
+              min: min.toDouble(),
+              max: max.toDouble(),
+              onChanged: (v) => onChanged(v.round()),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
