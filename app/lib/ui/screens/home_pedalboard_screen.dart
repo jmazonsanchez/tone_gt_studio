@@ -5,6 +5,7 @@ import '../../services/patch_service.dart';
 import 'disconnected_screen.dart';
 import 'gateway_screen.dart';
 import 'stage_pedalboard_screen.dart';
+import 'sync_loading_screen.dart';
 
 class HomePedalboardScreen extends StatefulWidget {
   const HomePedalboardScreen({super.key});
@@ -43,6 +44,19 @@ class _HomePedalboardScreenState extends State<HomePedalboardScreen> {
 
       return GatewayScreen(
         midi: midi,
+        onEnterDemoMode: () {
+          setState(() {
+            _isDemoMode = true;
+          });
+        },
+      );
+    }
+
+    // Pantalla de carga / sincronización bloqueante mientras se lee la pedalera por OTG o Bluetooth
+    if (midi.isConnected && !patchService.isInitialSyncComplete && !_isDemoMode) {
+      return SyncLoadingScreen(
+        midi: midi,
+        patchService: patchService,
         onEnterDemoMode: () {
           setState(() {
             _isDemoMode = true;

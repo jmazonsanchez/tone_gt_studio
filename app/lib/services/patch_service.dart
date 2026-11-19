@@ -76,17 +76,33 @@ class PatchService extends ChangeNotifier {
   ];
 
   bool _isSyncing = false;
+  bool _isInitialSyncComplete = false;
   bool _cancelSyncRequested = false;
+  bool _isDisposed = false;
+  bool autoSyncOnConnect = true;
   double _syncProgress = 0.0;
   String _syncStatusText = '';
   bool _wasConnected = false;
 
-  void cancelSync() {
-    if (_isSyncing) {
-      _cancelSyncRequested = true;
-      _syncStatusText = 'Cancelando sincronización...';
-      notifyListeners();
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) {
+      super.notifyListeners();
     }
+  }
+
+  void cancelSync() {
+    _cancelSyncRequested = true;
+    _isInitialSyncComplete = true;
+    if (_isSyncing) {
+      _syncStatusText = 'Cancelando sincronización...';
+    }
+    notifyListeners();
+  }
+
+  void setInitialSyncComplete(bool complete) {
+    _isInitialSyncComplete = complete;
+    notifyListeners();
   }
 
   PatchService(this.midiService) {
@@ -97,6 +113,8 @@ class PatchService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
+    _cancelSyncRequested = true;
     _looperCountdownTimer?.cancel();
     _looperProgressTimer?.cancel();
     _tunerPollingTimer?.cancel();
@@ -109,19 +127,65 @@ class PatchService extends ChangeNotifier {
   void _onMidiStateChanged() {
     if (midiService.isConnected && !_wasConnected) {
       _wasConnected = true;
-      _autoSyncFromHardware();
+      _isInitialSyncComplete = false;
+      if (autoSyncOnConnect) {
+        _autoSyncFromHardware();
+      }
     } else if (!midiService.isConnected) {
       _wasConnected = false;
+      _isInitialSyncComplete = false;
+      _isSyncing = false;
+      _cancelSyncRequested = true;
+      notifyListeners();
     }
   }
 
   Future<void> _autoSyncFromHardware() async {
-    // 1. Ask GT-1B what patch is currently selected physically
-    await syncCurrentPatchNumber();
-    // 2. Fetch full active patch settings, all effect blocks, algorithms and chain
-    await syncFullActivePatch();
-    // 3. Fetch all 99 preset names from the physical pedal in background
-    await syncAllPatchesFromPedal();
+    if (_isDisposed) return;
+    _isInitialSyncComplete = false;
+    _isSyncing = true;
+    _cancelSyncRequested = false;
+    _syncProgress = 0.02;
+    _syncStatusText = 'Iniciando conexión con Boss GT-1B...';
+    notifyListeners();
+
+    try {
+      if (_isDisposed || _cancelSyncRequested || !midiService.isConnected) return;
+      // 1. Activar Modo Editor para bidireccionalidad
+      _syncStatusText = 'Activando modo comunicación editor...';
+      _syncProgress = 0.05;
+      notifyListeners();
+      await midiService.sendSysEx(GtSysEx.buildEditorMode(enable: true));
+      await Future.delayed(const Duration(milliseconds: 30));
+
+      if (_isDisposed || _cancelSyncRequested || !midiService.isConnected) return;
+      // 2. Ask GT-1B what patch is currently selected physically
+      _syncStatusText = 'Consultando patch activo en la pedalera...';
+      _syncProgress = 0.08;
+      notifyListeners();
+      await syncCurrentPatchNumber();
+
+      if (_isDisposed || _cancelSyncRequested || !midiService.isConnected) return;
+      // 3. Fetch full active patch settings, all effect blocks, algorithms and chain
+      _syncStatusText = 'Cargando ajustes y cadena del preset actual...';
+      _syncProgress = 0.12;
+      notifyListeners();
+      await syncFullActivePatch();
+
+      if (_isDisposed || _cancelSyncRequested || !midiService.isConnected) return;
+      // 4. Fetch all user and factory presets with names AND FX Chains
+      await syncAllPatchesFromPedal();
+    } catch (e) {
+      debugPrint('Error en autoSyncFromHardware: $e');
+    } finally {
+      if (!_isDisposed) {
+        if (!_cancelSyncRequested && midiService.isConnected) {
+          _isInitialSyncComplete = true;
+        }
+        _isSyncing = false;
+        notifyListeners();
+      }
+    }
   }
 
   int get currentPatchIndex => _currentPatchIndex;
@@ -143,6 +207,7 @@ class PatchService extends ChangeNotifier {
   List<AssignSetting> get assigns => List.unmodifiable(_assigns);
 
   bool get isSyncing => _isSyncing;
+  bool get isInitialSyncComplete => _isInitialSyncComplete;
   double get syncProgress => _syncProgress;
   String get syncStatusText => _syncStatusText;
 
@@ -288,13 +353,13 @@ class PatchService extends ChangeNotifier {
     }
   }
 
-  /// Synchronize all 198 patch names (99 User + 99 Preset) from Boss GT-1B hardware (H9, H11)
+  /// Synchronize all 198 patch names and FX Chains (99 User + 99 Preset) from Boss GT-1B hardware (H9, H11)
   Future<void> syncAllPatchesFromPedal() async {
     if (_isSyncing || !midiService.isConnected) return;
     _isSyncing = true;
     _cancelSyncRequested = false;
     _syncProgress = 0.0;
-    _syncStatusText = 'Leyendo presets de la GT-1B...';
+    _syncStatusText = 'Leyendo presets y cadenas de efectos de la GT-1B...';
     notifyListeners();
 
     try {
@@ -304,26 +369,46 @@ class PatchService extends ChangeNotifier {
         if (!midiService.isConnected || _cancelSyncRequested) break;
 
         _syncProgress = (i + 1) / 198.0;
-        _syncStatusText = 'Leyendo U${(i + 1).toString().padLeft(2, '0')}/U99...';
+        final uNum = (i + 1).toString().padLeft(2, '0');
+        _syncStatusText = 'Sincronizando Preset U$uNum/U99 (Nombre y Cadena)...';
         notifyListeners();
 
-        final req = GtSysEx.buildPatchNameRequest(i, isFactoryPreset: false);
-        final reply = await midiService.sendSysExRequest(
-          req,
-          timeout: const Duration(milliseconds: 350),
+        // 1.1 Nombre del patch
+        final reqName = GtSysEx.buildPatchNameRequest(i, isFactoryPreset: false);
+        final replyName = await midiService.sendSysExRequest(
+          reqName,
+          timeout: const Duration(milliseconds: 300),
         );
 
-        if (reply != null) {
+        if (replyName != null) {
           consecutiveFails = 0;
-          final name = GtSysEx.parsePatchName(reply);
+          final name = GtSysEx.parsePatchName(replyName);
           if (name != null && name.isNotEmpty) {
             _patches[i] = _patches[i].copyWith(name: name);
           }
         } else {
           consecutiveFails++;
-          if (consecutiveFails > 8) break;
         }
-        await Future.delayed(const Duration(milliseconds: 25));
+
+        // 1.2 Cadena de efectos del preset U
+        final reqChain = GtSysEx.buildPatchFxChainRequest(i, isFactoryPreset: false);
+        final replyChain = await midiService.sendSysExRequest(
+          reqChain,
+          timeout: const Duration(milliseconds: 300),
+        );
+
+        if (replyChain != null) {
+          consecutiveFails = 0;
+          final chainIds = GtSysEx.parseFxChainOrder(replyChain);
+          if (chainIds != null && chainIds.isNotEmpty) {
+            _applyFxChainOrder(chainIds, targetPatchIndex: i);
+          }
+        } else {
+          consecutiveFails++;
+        }
+
+        if (consecutiveFails > 12) break;
+        await Future.delayed(const Duration(milliseconds: 15));
       }
 
       // 2. Leer 99 Factory Presets (P01 a P99)
@@ -332,36 +417,60 @@ class PatchService extends ChangeNotifier {
         if (!midiService.isConnected || _cancelSyncRequested) break;
 
         _syncProgress = (99 + i + 1) / 198.0;
-        _syncStatusText = 'Leyendo P${(i + 1).toString().padLeft(2, '0')}/P99...';
+        final pNum = (i + 1).toString().padLeft(2, '0');
+        _syncStatusText = 'Sincronizando Preset P$pNum/P99 (Nombre y Cadena)...';
         notifyListeners();
 
-        final req = GtSysEx.buildPatchNameRequest(i, isFactoryPreset: true);
-        final reply = await midiService.sendSysExRequest(
-          req,
-          timeout: const Duration(milliseconds: 350),
+        // 2.1 Nombre del preset
+        final reqName = GtSysEx.buildPatchNameRequest(i, isFactoryPreset: true);
+        final replyName = await midiService.sendSysExRequest(
+          reqName,
+          timeout: const Duration(milliseconds: 300),
         );
 
-        if (reply != null) {
+        if (replyName != null) {
           consecutiveFails = 0;
-          final name = GtSysEx.parsePatchName(reply);
+          final name = GtSysEx.parsePatchName(replyName);
           if (name != null && name.isNotEmpty) {
             _patches[99 + i] = _patches[99 + i].copyWith(name: name);
           }
         } else {
           consecutiveFails++;
-          if (consecutiveFails > 8) break;
         }
-        await Future.delayed(const Duration(milliseconds: 25));
+
+        // 2.2 Cadena de efectos del preset P
+        final reqChain = GtSysEx.buildPatchFxChainRequest(i, isFactoryPreset: true);
+        final replyChain = await midiService.sendSysExRequest(
+          reqChain,
+          timeout: const Duration(milliseconds: 300),
+        );
+
+        if (replyChain != null) {
+          consecutiveFails = 0;
+          final chainIds = GtSysEx.parseFxChainOrder(replyChain);
+          if (chainIds != null && chainIds.isNotEmpty) {
+            _applyFxChainOrder(chainIds, targetPatchIndex: 99 + i);
+          }
+        } else {
+          consecutiveFails++;
+        }
+
+        if (consecutiveFails > 12) break;
+        await Future.delayed(const Duration(milliseconds: 15));
       }
 
       if (!_cancelSyncRequested && midiService.isConnected) {
         await syncActivePatchFromPedal();
+        await syncFxChainFromPedal();
         await syncWahStateFromPedal();
       }
     } finally {
       _isSyncing = false;
       _syncProgress = _cancelSyncRequested ? 0.0 : 1.0;
       _syncStatusText = _cancelSyncRequested ? 'Sincronización cancelada' : '¡Presets de tu pedalera cargados!';
+      if (!_cancelSyncRequested && midiService.isConnected) {
+        _isInitialSyncComplete = true;
+      }
       _cancelSyncRequested = false;
       notifyListeners();
     }
@@ -641,10 +750,15 @@ class PatchService extends ChangeNotifier {
     }
   }
 
-  /// Reorder the current patch effects to match hardware chain IDs
-  void _applyFxChainOrder(List<int> chainIds) {
-    _hardwareFxChain = List<int>.from(chainIds);
-    final patch = _patches[_currentPatchIndex];
+  /// Reorder the current or target patch effects to match hardware chain IDs
+  void _applyFxChainOrder(List<int> chainIds, {int? targetPatchIndex}) {
+    final patchIdx = targetPatchIndex ?? _currentPatchIndex;
+    if (patchIdx < 0 || patchIdx >= _patches.length) return;
+
+    if (patchIdx == _currentPatchIndex) {
+      _hardwareFxChain = List<int>.from(chainIds);
+    }
+    final patch = _patches[patchIdx];
     final currentEffects = List<EffectBlock>.from(patch.effects);
 
     final orderedEffects = <EffectBlock>[];
@@ -664,7 +778,7 @@ class PatchService extends ChangeNotifier {
       }
     }
 
-    _patches[_currentPatchIndex] = patch.copyWith(effects: orderedEffects);
+    _patches[patchIdx] = patch.copyWith(effects: orderedEffects);
     notifyListeners();
   }
 
@@ -749,11 +863,12 @@ class PatchService extends ChangeNotifier {
       return;
     }
 
-    // C. FX Chain Order Changed in Hardware (60 00 07 20)
-    if (a0 == 0x60 && a1 == 0x00 && a2 == 0x07 && a3 == 0x20 && packet.length >= 32) {
+    // C. FX Chain Order Changed in Hardware (60 00 07 20 or preset 10/20 [idx] 07 20)
+    if ((a0 == 0x60 || a0 == 0x10 || a0 == 0x20) && a2 == 0x07 && a3 == 0x20 && packet.length >= 14) {
       final chainIds = GtSysEx.parseFxChainOrder(packet);
+      final targetIdx = GtSysEx.parseFxChainPatchIndex(packet);
       if (chainIds != null && chainIds.isNotEmpty) {
-        _applyFxChainOrder(chainIds);
+        _applyFxChainOrder(chainIds, targetPatchIndex: targetIdx);
       }
       return;
     }
@@ -1287,13 +1402,16 @@ class PatchService extends ChangeNotifier {
   }
 
   Future<void> _syncFxChainToHardware(List<EffectBlock> updatedList) async {
-    final oldHardwareChain = List<int>.from(_hardwareFxChain);
+    final baseChain = _hardwareFxChain.length == 20
+        ? List<int>.from(_hardwareFxChain)
+        : List<int>.from(GtSysEx.defaultHardwareChain);
+    final oldHardwareChain = List<int>.from(baseChain);
     final visibleChainIds = <int>[];
     for (final eff in updatedList) {
       final cid = GtSysEx.categoryToChainId[eff.category];
       if (cid != null) visibleChainIds.add(cid);
     }
-    final newHardwareChain = List<int>.from(_hardwareFxChain);
+    final newHardwareChain = List<int>.from(baseChain);
     for (int i = 0; i < 9 && i < visibleChainIds.length; i++) {
       newHardwareChain[7 + i] = visibleChainIds[i];
     }

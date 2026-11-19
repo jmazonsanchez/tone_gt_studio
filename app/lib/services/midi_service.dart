@@ -73,6 +73,17 @@ class MidiService extends ChangeNotifier implements MidiTransport {
     _handleIncomingMidi(data);
   }
 
+  @visibleForTesting
+  void setConnectedForTesting(bool connected, {ConnectionType type = ConnectionType.usbOtg}) {
+    _connectionState = connected ? MidiConnectionState.connected : MidiConnectionState.disconnected;
+    _connectionType = type;
+    if (connected) {
+      _connectedDeviceName = 'Boss GT-1B';
+      _hasHadActiveConnection = true;
+    }
+    notifyListeners();
+  }
+
   void _cancelReconnectTimer() {
     _reconnectTimer?.cancel();
     _reconnectTimer = null;

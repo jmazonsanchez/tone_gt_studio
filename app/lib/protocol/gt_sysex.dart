@@ -89,6 +89,24 @@ class GtSysEx {
     );
   }
 
+  /// Request FX chain order for user patch (address 10 [patchIndex] 07 20) or preset factory patch (address 20 [patchIndex] 07 20).
+  /// [patchIndex] ranges from 0 to 98 (representing patch 01 to 99).
+  static Uint8List buildPatchFxChainRequest(
+    int patchIndex, {
+    bool isFactoryPreset = false,
+    List<int> modelId = modelIdGt1b,
+    int deviceId = defaultDeviceId,
+  }) {
+    assert(patchIndex >= 0 && patchIndex <= 98, 'Patch index must be 0..98');
+    final baseAddr = isFactoryPreset ? 0x20 : 0x10;
+    return buildRq1Message(
+      address: [baseAddr, patchIndex, 0x07, 0x20],
+      size: [0x00, 0x00, 0x00, 0x14],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
   /// Request active patch buffer data (address 60 00 00 00, size 127 bytes).
   static Uint8List buildActivePatchDataRequest({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
     return buildRq1Message(
@@ -284,14 +302,27 @@ class GtSysEx {
     EffectCategory.reverb: 9,
   };
 
-  /// Parse FX Chain order from a 60 00 07 20 DT1 response
+  /// Parse FX Chain order from a DT1 response (60 00 07 20, 10 [idx] 07 20, 20 [idx] 07 20)
   static List<int>? parseFxChainOrder(Uint8List packet) {
-    if (packet.length < 34) return null;
+    if (packet.length < 14) return null;
     if (packet[0] != 0xF0 || packet[7] != commandDt1) return null;
-    if (packet[8] != 0x60 || packet[9] != 0x00 || packet[10] != 0x07 || packet[11] != 0x20) {
+    if ((packet[8] != 0x60 && packet[8] != 0x10 && packet[8] != 0x20) ||
+        packet[10] != 0x07 ||
+        packet[11] != 0x20) {
       return null;
     }
-    return packet.sublist(12, 32).toList();
+    final end = (packet.length - 2).clamp(12, 32);
+    if (end <= 12) return null;
+    return packet.sublist(12, end).toList();
+  }
+
+  /// Parse the patch index from an FX Chain DT1 packet if it's from a user/preset patch
+  static int? parseFxChainPatchIndex(Uint8List packet) {
+    if (packet.length < 12) return null;
+    if (packet[10] != 0x07 || packet[11] != 0x20) return null;
+    if (packet[8] == 0x10) return packet[9];
+    if (packet[8] == 0x20) return 99 + packet[9];
+    return null;
   }
 
   /// Parse currently selected patch index (0..98) from 00 01 00 00 DT1 response.

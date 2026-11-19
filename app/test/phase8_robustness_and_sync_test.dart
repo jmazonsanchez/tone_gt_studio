@@ -17,6 +17,7 @@ void main() {
     setUp(() async {
       midi = MidiService();
       patchService = PatchService(midi);
+      patchService.autoSyncOnConnect = false;
       await midi.connect();
     });
 
