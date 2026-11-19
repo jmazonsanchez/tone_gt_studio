@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/effect_block.dart';
+import '../theme/app_theme.dart';
 import 'effect_detail_modal.dart';
 
 /// Interactive draggable stompbox chip for the Memory Edit signal chain line.
@@ -21,7 +22,19 @@ class ChainBlockChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+    final isDark = colors.isDark;
     final active = effect.isEnabled;
+
+    final bgColor = isDark
+        ? (active ? const Color(0xFF222230) : const Color(0xFF181822))
+        : (active
+            ? Color.lerp(effect.accentColor, Colors.white, 0.84)!
+            : const Color(0xFFF1F5F9));
+
+    final borderColor = active
+        ? effect.accentColor
+        : (isSelected ? const Color(0xFFFF9800) : (isDark ? Colors.white12 : const Color(0xFFCBD5E1)));
 
     return GestureDetector(
       onTap: onTap,
@@ -39,23 +52,28 @@ class ChainBlockChip extends StatelessWidget {
         height: 86,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFF222230) : const Color(0xFF181822),
+          color: bgColor,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: active
-                ? effect.accentColor
-                : (isSelected ? const Color(0xFFFF9800) : Colors.white12),
+            color: borderColor,
             width: active ? 1.6 : 1.0,
           ),
           boxShadow: active
               ? [
                   BoxShadow(
-                    color: effect.accentColor.withValues(alpha: 0.35),
+                    color: effect.accentColor.withValues(alpha: isDark ? 0.35 : 0.25),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),
                 ]
-              : null,
+              : [
+                  if (!isDark)
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -66,12 +84,16 @@ class ChainBlockChip extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   decoration: BoxDecoration(
-                    color: Colors.black45,
+                    color: isDark ? Colors.black45 : const Color(0xFFE2E8F0),
                     borderRadius: BorderRadius.circular(3),
                   ),
                   child: Text(
                     '${index + 1}',
-                    style: const TextStyle(fontSize: 8, color: Colors.white54, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 8,
+                      color: isDark ? Colors.white54 : colors.textSecondary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Container(
@@ -79,7 +101,7 @@ class ChainBlockChip extends StatelessWidget {
                   height: 7,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: active ? effect.accentColor : Colors.black87,
+                    color: active ? effect.accentColor : (isDark ? Colors.black87 : const Color(0xFFCBD5E1)),
                     boxShadow: active ? [BoxShadow(color: effect.accentColor, blurRadius: 4)] : null,
                   ),
                 ),
@@ -93,7 +115,9 @@ class ChainBlockChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
-                color: active ? Colors.white : Colors.white38,
+                color: active
+                    ? (isDark ? Colors.white : colors.textPrimary)
+                    : (isDark ? Colors.white38 : colors.textMuted),
                 letterSpacing: 0.6,
               ),
             ),
@@ -102,14 +126,16 @@ class ChainBlockChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 8,
                 fontWeight: FontWeight.bold,
-                color: active ? effect.accentColor : Colors.white24,
+                color: active
+                    ? (isDark ? effect.accentColor : Color.lerp(effect.accentColor, Colors.black, 0.2)!)
+                    : (isDark ? Colors.white24 : colors.textMuted),
               ),
             ),
             const Spacer(),
-            const Icon(
+            Icon(
               Icons.drag_indicator,
               size: 14,
-              color: Colors.white38,
+              color: isDark ? Colors.white38 : colors.textMuted,
             ),
           ],
         ),

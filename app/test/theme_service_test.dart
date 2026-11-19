@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:tone_gt_studio/models/effect_block.dart';
 import 'package:tone_gt_studio/services/midi_service.dart';
 import 'package:tone_gt_studio/services/patch_service.dart';
 import 'package:tone_gt_studio/services/theme_service.dart';
 import 'package:tone_gt_studio/ui/theme/app_theme.dart';
+import 'package:tone_gt_studio/ui/widgets/chain_block_chip.dart';
+import 'package:tone_gt_studio/ui/widgets/effect_editor_panel.dart';
+import 'package:tone_gt_studio/ui/widgets/memory_edit_chain_bar.dart';
+import 'package:tone_gt_studio/ui/widgets/mini_pedal_card.dart';
 import 'package:tone_gt_studio/ui/widgets/system_appearance_tab.dart';
 import 'package:tone_gt_studio/ui/widgets/system_settings_modal.dart';
 
@@ -157,6 +162,85 @@ void main() {
       midi.dispose();
       patchService.dispose();
       themeService.dispose();
+    });
+
+    testWidgets('Light Mode renders light colors in MemoryEditChainBar and MiniPedalCard', (tester) async {
+      tester.view.physicalSize = const Size(1400, 720);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final midi = MidiService();
+      final patchService = PatchService(midi);
+      final effects = patchService.currentPatch.effects;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  MemoryEditChainBar(
+                    effects: effects,
+                    onMoveEffect: (_, __) {},
+                  ),
+                  SizedBox(
+                    height: 200,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: effects.length,
+                      itemBuilder: (ctx, i) => SizedBox(
+                        width: 140,
+                        child: MiniPedalCard(
+                          effect: effects[i],
+                          onToggle: () {},
+                          onOpenDetail: () {},
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('MEMORY EDIT'), findsOneWidget);
+      expect(find.text('INPUT'), findsOneWidget);
+      expect(find.text('OUTPUT'), findsOneWidget);
+      expect(find.byType(ChainBlockChip), findsWidgets);
+      expect(find.byType(MiniPedalCard), findsWidgets);
+
+      midi.dispose();
+      patchService.dispose();
+    });
+
+    testWidgets('Light Mode renders EffectEditorPanel with light theme styling', (tester) async {
+      final midi = MidiService();
+      final patchService = PatchService(midi);
+      final od = patchService.currentPatch.effects.firstWhere((e) => e.category == EffectCategory.odDs);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<PatchService>.value(
+          value: patchService,
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: EffectEditorPanel(effect: od),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('OD/DS'), findsOneWidget);
+      expect(find.text('TYPE:'), findsOneWidget);
+      expect(find.text('DRIVE'), findsOneWidget);
+
+      midi.dispose();
+      patchService.dispose();
     });
   });
 }

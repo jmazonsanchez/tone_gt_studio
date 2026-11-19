@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/effect_block.dart';
 import '../../models/effect_parameter.dart';
 import '../../services/patch_service.dart';
+import '../theme/app_theme.dart';
 import 'param_controls.dart';
 import 'parameter_knob.dart';
 
@@ -24,6 +25,7 @@ class EffectEditorPanel extends StatelessWidget {
     final liveEffect = patchService.currentPatch.effects
         .where((e) => e.category == effect.category)
         .firstOrNull ?? effect;
+    final colors = AppTheme.of(context);
     final active = liveEffect.isEnabled;
     final color = liveEffect.accentColor;
 
@@ -39,23 +41,23 @@ class EffectEditorPanel extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(maxHeight: 520),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-      decoration: const BoxDecoration(
-        color: Color(0xFF14141E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border(top: BorderSide(color: Colors.white12, width: 1)),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border(top: BorderSide(color: colors.borderSubtle, width: 1)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 1. Header Row
-          _buildHeader(context, patchService, liveEffect, active, color),
+          _buildHeader(context, colors, patchService, liveEffect, active, color),
 
           const SizedBox(height: 12),
 
           // 2. Algorithm / Type Selector (if block has a type/mode enum)
           if (typeParam != null) ...[
-            _buildTypeSelector(context, patchService, typeParam, color),
+            _buildTypeSelector(context, colors, patchService, typeParam, color),
             const SizedBox(height: 14),
           ],
 
@@ -64,12 +66,12 @@ class EffectEditorPanel extends StatelessWidget {
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: otherParams.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
                       child: Center(
                         child: Text(
                           'No hay parámetros configurables para este bloque.',
-                          style: TextStyle(color: Colors.white30, fontSize: 13),
+                          style: TextStyle(color: colors.textMuted, fontSize: 13),
                         ),
                       ),
                     )
@@ -111,20 +113,22 @@ class EffectEditorPanel extends StatelessWidget {
 
   Widget _buildHeader(
     BuildContext context,
+    AppColorScheme colors,
     PatchService patchService,
     EffectBlock currentEffect,
     bool active,
     Color color,
   ) {
+    final isDark = colors.isDark;
     return Row(
       children: [
         // Block Icon
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.2),
+            color: color.withValues(alpha: isDark ? 0.2 : 0.12),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: color.withValues(alpha: 0.5)),
+            border: Border.all(color: color.withValues(alpha: isDark ? 0.5 : 0.6)),
           ),
           child: Icon(Icons.tune, color: color, size: 20),
         ),
@@ -140,21 +144,21 @@ class EffectEditorPanel extends StatelessWidget {
                 children: [
                   Text(
                     currentEffect.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.1,
-                      color: Colors.white,
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: active ? color.withValues(alpha: 0.2) : Colors.white10,
+                      color: active ? color.withValues(alpha: isDark ? 0.2 : 0.12) : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: active ? color : Colors.white24,
+                        color: active ? color : (isDark ? Colors.white24 : const Color(0xFFCBD5E1)),
                         width: 0.8,
                       ),
                     ),
@@ -163,7 +167,7 @@ class EffectEditorPanel extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
-                        color: active ? color : Colors.white38,
+                        color: active ? color : colors.textMuted,
                       ),
                     ),
                   ),
@@ -171,7 +175,7 @@ class EffectEditorPanel extends StatelessWidget {
               ),
               Text(
                 currentEffect.subtitle,
-                style: const TextStyle(fontSize: 12, color: Colors.white54),
+                style: TextStyle(fontSize: 12, color: colors.textSecondary),
               ),
             ],
           ),
@@ -189,7 +193,7 @@ class EffectEditorPanel extends StatelessWidget {
         // Close Button
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.close, color: Colors.white60, size: 20),
+          icon: Icon(Icons.close, color: colors.textMuted, size: 20),
           onPressed: onClose ?? () => Navigator.pop(context),
         ),
       ],
@@ -198,18 +202,20 @@ class EffectEditorPanel extends StatelessWidget {
 
   Widget _buildTypeSelector(
     BuildContext context,
+    AppColorScheme colors,
     PatchService patchService,
     EffectParameter typeParam,
     Color color,
   ) {
     final options = typeParam.options ?? [];
+    final isDark = colors.isDark;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E2A),
+        color: isDark ? const Color(0xFF1E1E2A) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: isDark ? Colors.white12 : const Color(0xFFCBD5E1)),
       ),
       child: Row(
         children: [
@@ -217,10 +223,10 @@ class EffectEditorPanel extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '${typeParam.name.toUpperCase()}:',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w900,
-              color: Colors.white54,
+              color: colors.textSecondary,
               letterSpacing: 0.8,
             ),
           ),
@@ -229,7 +235,7 @@ class EffectEditorPanel extends StatelessWidget {
             child: DropdownButtonHideUnderline(
               child: DropdownButton<int>(
                 value: typeParam.value.clamp(0, options.length - 1),
-                dropdownColor: const Color(0xFF222230),
+                dropdownColor: colors.surfaceElevated,
                 isExpanded: true,
                 icon: Icon(Icons.arrow_drop_down, color: color),
                 style: TextStyle(

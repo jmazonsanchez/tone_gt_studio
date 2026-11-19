@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../models/effect_parameter.dart';
+import '../theme/app_theme.dart';
 
 class ParameterKnob extends StatefulWidget {
   final EffectParameter parameter;
@@ -24,6 +25,8 @@ class _ParameterKnobState extends State<ParameterKnob> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+    final isDark = colors.isDark;
     final param = widget.parameter;
     final normalized = (param.value - param.min) / (param.max - param.min);
 
@@ -53,6 +56,7 @@ class _ParameterKnobState extends State<ParameterKnob> {
               painter: _KnobPainter(
                 value: normalized,
                 accentColor: widget.accentColor,
+                isDark: isDark,
               ),
               child: Center(
                 child: Container(
@@ -60,17 +64,22 @@ class _ParameterKnobState extends State<ParameterKnob> {
                   height: 52,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: const RadialGradient(
-                      colors: [Color(0xFF2C2C38), Color(0xFF16161E)],
+                    gradient: RadialGradient(
+                      colors: isDark
+                          ? const [Color(0xFF2C2C38), Color(0xFF16161E)]
+                          : const [Color(0xFFFFFFFF), Color(0xFFE2E8F0)],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.6),
+                        color: isDark ? Colors.black.withOpacity(0.6) : Colors.black.withOpacity(0.08),
                         blurRadius: 6,
                         offset: const Offset(0, 3),
                       ),
                     ],
-                    border: Border.all(color: Colors.white12, width: 1.5),
+                    border: Border.all(
+                      color: isDark ? Colors.white12 : const Color(0xFFCBD5E1),
+                      width: 1.5,
+                    ),
                   ),
                   child: Center(
                     child: Text(
@@ -78,7 +87,7 @@ class _ParameterKnobState extends State<ParameterKnob> {
                       style: TextStyle(
                         fontSize: (param.displayOffset != 0 && param.formattedValue.length > 3) ? 12 : 15,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: colors.textPrimary,
                       ),
                     ),
                   ),
@@ -89,17 +98,17 @@ class _ParameterKnobState extends State<ParameterKnob> {
           const SizedBox(height: 8),
           Text(
             param.name.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: Colors.white70,
+              color: colors.textSecondary,
               letterSpacing: 0.8,
             ),
           ),
           if (param.unit.isNotEmpty)
             Text(
               param.unit,
-              style: const TextStyle(fontSize: 10, color: Colors.white38),
+              style: TextStyle(fontSize: 10, color: colors.textMuted),
             ),
         ],
       ),
@@ -110,8 +119,13 @@ class _ParameterKnobState extends State<ParameterKnob> {
 class _KnobPainter extends CustomPainter {
   final double value; // 0.0 to 1.0
   final Color accentColor;
+  final bool isDark;
 
-  _KnobPainter({required this.value, required this.accentColor});
+  _KnobPainter({
+    required this.value,
+    required this.accentColor,
+    this.isDark = true,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -123,7 +137,7 @@ class _KnobPainter extends CustomPainter {
 
     // Background track arc
     final trackPaint = Paint()
-      ..color = Colors.white12
+      ..color = isDark ? Colors.white12 : const Color(0xFFE2E8F0)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;

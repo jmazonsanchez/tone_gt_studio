@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/effect_parameter.dart';
+import '../theme/app_theme.dart';
 
 class ToggleParamCard extends StatelessWidget {
   final EffectParameter param;
@@ -15,14 +16,16 @@ class ToggleParamCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+    final isDark = colors.isDark;
     final isChecked = param.value > 0;
     return Container(
       width: 110,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A24),
+        color: isDark ? const Color(0xFF1A1A24) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: isChecked ? accentColor : Colors.white10),
+        border: Border.all(color: isChecked ? accentColor : (isDark ? Colors.white10 : const Color(0xFFCBD5E1))),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -30,10 +33,10 @@ class ToggleParamCard extends StatelessWidget {
           Text(
             param.name.toUpperCase(),
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: Colors.white70,
+              color: colors.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -62,14 +65,16 @@ class EnumParamDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+    final isDark = colors.isDark;
     final options = param.options ?? [];
     return Container(
       width: 140,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A24),
+        color: isDark ? const Color(0xFF1A1A24) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFCBD5E1)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -77,16 +82,16 @@ class EnumParamDropdown extends StatelessWidget {
         children: [
           Text(
             param.name.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w800,
-              color: Colors.white54,
+              color: colors.textSecondary,
             ),
           ),
           DropdownButtonHideUnderline(
             child: DropdownButton<int>(
               value: param.value.clamp(0, options.length - 1),
-              dropdownColor: const Color(0xFF222230),
+              dropdownColor: colors.surfaceElevated,
               isDense: true,
               isExpanded: true,
               style: TextStyle(

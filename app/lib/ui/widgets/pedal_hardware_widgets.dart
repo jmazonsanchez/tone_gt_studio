@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../models/effect_parameter.dart';
+import '../theme/app_theme.dart';
 
 /// Corner Screw Rivet decoration for boutique stompbox pedals
 class PedalCornerScrew extends StatelessWidget {
@@ -183,14 +184,16 @@ class PedalMiniKnobs extends StatelessWidget {
         children: displayParams.map((p) {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: _buildSingleKnob(p),
+            child: _buildSingleKnob(context, p),
           );
         }).toList(),
       ),
     );
   }
 
-  Widget _buildSingleKnob(EffectParameter param) {
+  Widget _buildSingleKnob(BuildContext context, EffectParameter param) {
+    final colors = AppTheme.of(context);
+    final isDark = colors.isDark;
     final normalized = (param.value - param.min) / (param.max - param.min);
     final angle = (-135 + (normalized * 270)) * (math.pi / 180);
 
@@ -202,16 +205,20 @@ class PedalMiniKnobs extends StatelessWidget {
           height: 32,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: const RadialGradient(
-              colors: [Color(0xFF4A4A55), Color(0xFF1E1E24)],
+            gradient: RadialGradient(
+              colors: isDark
+                  ? const [Color(0xFF4A4A55), Color(0xFF1E1E24)]
+                  : const [Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
             ),
             border: Border.all(
-              color: active ? accent.withValues(alpha: 0.5) : Colors.white24,
+              color: active
+                  ? accent.withValues(alpha: isDark ? 0.5 : 0.8)
+                  : (isDark ? Colors.white24 : const Color(0xFF94A3B8)),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
+                color: isDark ? Colors.black.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.08),
                 blurRadius: 3,
                 offset: const Offset(0, 2),
               ),
@@ -226,7 +233,7 @@ class PedalMiniKnobs extends StatelessWidget {
                 width: 2.5,
                 height: 7,
                 decoration: BoxDecoration(
-                  color: active ? accent : Colors.white70,
+                  color: active ? accent : (isDark ? Colors.white70 : const Color(0xFF475569)),
                   borderRadius: BorderRadius.circular(1),
                 ),
               ),
@@ -240,14 +247,18 @@ class PedalMiniKnobs extends StatelessWidget {
             fontSize: 8,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
-            color: active ? Colors.white70 : Colors.white30,
+            color: active
+                ? (isDark ? Colors.white70 : const Color(0xFF334155))
+                : (isDark ? Colors.white30 : const Color(0xFF94A3B8)),
           ),
         ),
         Text(
           '${param.value}',
           style: TextStyle(
             fontSize: 7.5,
-            color: active ? accent.withValues(alpha: 0.9) : Colors.white24,
+            color: active
+                ? (isDark ? accent.withValues(alpha: 0.9) : Color.lerp(accent, Colors.black, 0.2)!)
+                : (isDark ? Colors.white24 : const Color(0xFF94A3B8)),
             fontWeight: FontWeight.w600,
           ),
         ),

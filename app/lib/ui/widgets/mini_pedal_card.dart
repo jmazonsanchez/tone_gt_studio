@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/effect_block.dart';
+import '../theme/app_theme.dart';
 import 'pedal_hardware_widgets.dart';
 
 /// Boutique Stompbox Mini-Pedal Widget
@@ -50,21 +51,47 @@ class _MiniPedalCardState extends State<MiniPedalCard> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+    final isDark = colors.isDark;
     final active = widget.effect.isEnabled;
     final accent = widget.effect.accentColor;
+
+    final gradientColors = isDark
+        ? (active
+            ? [
+                Color.lerp(accent, Colors.black, 0.45)!,
+                Color.lerp(accent, Colors.black, 0.75)!,
+                const Color(0xFF16161B),
+              ]
+            : [
+                const Color(0xFF262630),
+                const Color(0xFF181820),
+                const Color(0xFF101014),
+              ])
+        : (active
+            ? [
+                Color.lerp(accent, Colors.white, 0.58)!,
+                Color.lerp(accent, Colors.white, 0.82)!,
+                Colors.white,
+              ]
+            : [
+                Colors.white,
+                const Color(0xFFF8FAFC),
+                const Color(0xFFEEF2F6),
+              ]);
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.6),
+            color: isDark ? Colors.black.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.08),
             blurRadius: 10,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 5),
           ),
           if (active)
             BoxShadow(
-              color: accent.withValues(alpha: 0.25),
+              color: accent.withValues(alpha: isDark ? 0.25 : 0.35),
               blurRadius: 14,
               spreadRadius: 1,
             ),
@@ -77,20 +104,12 @@ class _MiniPedalCardState extends State<MiniPedalCard> with SingleTickerProvider
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: active
-                  ? [
-                      Color.lerp(accent, Colors.black, 0.45)!,
-                      Color.lerp(accent, Colors.black, 0.75)!,
-                      const Color(0xFF16161B),
-                    ]
-                  : [
-                      const Color(0xFF262630),
-                      const Color(0xFF181820),
-                      const Color(0xFF101014),
-                    ],
+              colors: gradientColors,
             ),
             border: Border.all(
-              color: active ? accent.withValues(alpha: 0.8) : Colors.white12,
+              color: active
+                  ? accent.withValues(alpha: isDark ? 0.8 : 0.95)
+                  : (isDark ? Colors.white12 : const Color(0xFFCBD5E1)),
               width: active ? 1.8 : 1.0,
             ),
           ),
@@ -123,7 +142,9 @@ class _MiniPedalCardState extends State<MiniPedalCard> with SingleTickerProvider
                               fontSize: 14,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 1.5,
-                              color: active ? Colors.white : Colors.white60,
+                              color: active
+                                  ? (isDark ? Colors.white : const Color(0xFF0F172A))
+                                  : (isDark ? Colors.white60 : const Color(0xFF64748B)),
                             ),
                           ),
                           Text(
@@ -135,7 +156,9 @@ class _MiniPedalCardState extends State<MiniPedalCard> with SingleTickerProvider
                               fontSize: 9,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.8,
-                              color: active ? accent.withValues(alpha: 0.9) : Colors.white30,
+                              color: active
+                                  ? (isDark ? accent.withValues(alpha: 0.9) : Color.lerp(accent, Colors.black, 0.25)!)
+                                  : (isDark ? Colors.white30 : const Color(0xFF94A3B8)),
                             ),
                           ),
                         ],
@@ -180,7 +203,9 @@ class _MiniPedalCardState extends State<MiniPedalCard> with SingleTickerProvider
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.2,
-                            color: active ? accent : Colors.white30,
+                            color: active
+                                ? (isDark ? accent : Color.lerp(accent, Colors.black, 0.15)!)
+                                : (isDark ? Colors.white30 : const Color(0xFF94A3B8)),
                           ),
                         ),
                       ],

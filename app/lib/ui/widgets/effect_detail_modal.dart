@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/effect_block.dart';
 import '../../services/patch_service.dart';
+import '../theme/app_theme.dart';
 import 'parameter_knob.dart';
 
 class EffectDetailModal extends StatelessWidget {
@@ -11,15 +12,17 @@ class EffectDetailModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+    final isDark = colors.isDark;
     final patchService = context.watch<PatchService>();
     final active = effect.isEnabled;
     final color = effect.accentColor;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      decoration: const BoxDecoration(
-        color: Color(0xFF16161E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -31,7 +34,7 @@ class EffectDetailModal extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  color: color.withOpacity(isDark ? 0.2 : 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(Icons.tune, color: color, size: 24),
@@ -43,15 +46,16 @@ class EffectDetailModal extends StatelessWidget {
                   children: [
                     Text(
                       effect.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.1,
+                        color: colors.textPrimary,
                       ),
                     ),
                     Text(
                       effect.subtitle,
-                      style: const TextStyle(fontSize: 13, color: Colors.white54),
+                      style: TextStyle(fontSize: 13, color: colors.textSecondary),
                     ),
                   ],
                 ),
@@ -64,26 +68,26 @@ class EffectDetailModal extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          const Divider(color: Colors.white12),
+          Divider(color: colors.borderSubtle),
           const SizedBox(height: 16),
 
           // Parameter Knobs Section
-          const Text(
+          Text(
             'PARÁMETROS EN VIVO (DT1 SYSEX)',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: Colors.white38,
+              color: colors.textMuted,
               letterSpacing: 1.2,
             ),
           ),
           const SizedBox(height: 20),
 
           if (effect.parameters.isEmpty)
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('No hay parámetros adicionales para este bloque', style: TextStyle(color: Colors.white30)),
+                padding: const EdgeInsets.all(24),
+                child: Text('No hay parámetros adicionales para este bloque', style: TextStyle(color: colors.textMuted)),
               ),
             )
           else
@@ -112,8 +116,8 @@ class EffectDetailModal extends StatelessWidget {
             child: OutlinedButton(
               onPressed: () => Navigator.pop(context),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white24),
+                foregroundColor: colors.textPrimary,
+                side: BorderSide(color: isDark ? Colors.white24 : const Color(0xFFCBD5E1)),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text('LISTO', style: TextStyle(fontWeight: FontWeight.bold)),

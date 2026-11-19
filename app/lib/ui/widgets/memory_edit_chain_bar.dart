@@ -66,16 +66,16 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(),
+          _buildHeader(colors),
           Divider(height: 1, color: colors.borderSubtle),
-          SizedBox(height: 112, child: _buildDraggableChain()),
-          _buildFooter(),
+          SizedBox(height: 112, child: _buildDraggableChain(colors)),
+          _buildFooter(colors),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppColorScheme colors) {
     final activeCount = widget.effects.where((e) => e.isEnabled).length;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -84,7 +84,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
             decoration: BoxDecoration(
-              color: const Color(0xFF2A1C0E),
+              color: colors.isDark ? const Color(0xFF2A1C0E) : const Color(0xFFFFF3E0),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(color: const Color(0xFFFF9800), width: 1.2),
               boxShadow: [BoxShadow(color: const Color(0xFFFF9800).withValues(alpha: 0.4), blurRadius: 6)],
@@ -99,8 +99,8 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
-            child: Text('SIGNAL CHAIN • CADENA DE EFECTOS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white70, letterSpacing: 1.0)),
+          Expanded(
+            child: Text('SIGNAL CHAIN • CADENA DE EFECTOS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: colors.textSecondary, letterSpacing: 1.0)),
           ),
           IconButton(
             icon: const Icon(Icons.chevron_left, size: 20, color: Color(0xFFFF9800)),
@@ -117,13 +117,13 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
             onPressed: () => _scroll(180),
           ),
           const SizedBox(width: 4),
-          Text('$activeCount/${widget.effects.length} ON', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white38)),
+          Text('$activeCount/${widget.effects.length} ON', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colors.textMuted)),
         ],
       ),
     );
   }
 
-  Widget _buildDraggableChain() {
+  Widget _buildDraggableChain(AppColorScheme colors) {
     return ScrollConfiguration(
       behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
       child: ReorderableListView.builder(
@@ -141,18 +141,18 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
         header: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildTerminalNode(title: 'INPUT', icon: Icons.input, color: const Color(0xFF00ADB5), subtitle: 'BASS IN'),
-            _buildCableConnector(isActive: true),
+            _buildTerminalNode(colors: colors, title: 'INPUT', icon: Icons.input, color: const Color(0xFF00ADB5), subtitle: 'BASS IN'),
+            _buildCableConnector(colors: colors, isActive: true),
           ],
         ),
         footer: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildTerminalNode(title: 'MASTER', icon: Icons.tune, color: const Color(0xFFFF9800), subtitle: 'LEVEL / EQ', onTap: widget.onOpenMaster),
-            _buildCableConnector(isActive: true),
-            _buildTerminalNode(title: 'OUTPUT', icon: Icons.speaker, color: const Color(0xFF4CAF50), subtitle: 'AMP / PA'),
+            _buildTerminalNode(colors: colors, title: 'MASTER', icon: Icons.tune, color: const Color(0xFFFF9800), subtitle: 'LEVEL / EQ', onTap: widget.onOpenMaster),
+            _buildCableConnector(colors: colors, isActive: true),
+            _buildTerminalNode(colors: colors, title: 'OUTPUT', icon: Icons.speaker, color: const Color(0xFF4CAF50), subtitle: 'AMP / PA'),
             const SizedBox(width: 12),
-            _buildConfigNode(),
+            _buildConfigNode(colors),
           ],
         ),
         itemCount: widget.effects.length,
@@ -179,7 +179,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
                     });
                   },
                 ),
-                _buildCableConnector(isActive: effect.isEnabled),
+                _buildCableConnector(colors: colors, isActive: effect.isEnabled),
               ],
             ),
           );
@@ -189,6 +189,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
   }
 
   Widget _buildTerminalNode({
+    required AppColorScheme colors,
     required String title,
     required IconData icon,
     required Color color,
@@ -202,9 +203,9 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
         width: 60,
         height: 86,
         decoration: BoxDecoration(
-          color: const Color(0xFF1B1B26),
+          color: colors.isDark ? const Color(0xFF1B1B26) : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.4), width: 1.2),
+          border: Border.all(color: color.withValues(alpha: colors.isDark ? 0.4 : 0.6), width: 1.2),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -212,14 +213,14 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
             Icon(icon, size: 18, color: color),
             const SizedBox(height: 3),
             Text(title, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.8)),
-            Text(subtitle, style: const TextStyle(fontSize: 7, color: Colors.white38)),
+            Text(subtitle, style: TextStyle(fontSize: 7, color: colors.textMuted)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildConfigNode() {
+  Widget _buildConfigNode(AppColorScheme colors) {
     return InkWell(
       onTap: widget.onOpenConfig,
       borderRadius: BorderRadius.circular(8),
@@ -228,54 +229,57 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
         height: 86,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFF1F1C28),
+          color: colors.isDark ? const Color(0xFF1F1C28) : const Color(0xFFE0F7FA),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: const Color(0xFF00ADB5).withValues(alpha: 0.6), width: 1.2),
           boxShadow: [BoxShadow(color: const Color(0xFF00ADB5).withValues(alpha: 0.15), blurRadius: 6)],
         ),
-        child: const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.settings_input_component, size: 18, color: Color(0xFF00ADB5)),
-            SizedBox(height: 3),
-            Text('CONFIG', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF00ADB5), letterSpacing: 0.8)),
-            Text('CTL/EXP/A1-6', style: TextStyle(fontSize: 7, color: Colors.white60)),
-            Text('I/O LEVELS', style: TextStyle(fontSize: 6, color: Colors.white38)),
+            const Icon(Icons.settings_input_component, size: 18, color: Color(0xFF00ADB5)),
+            const SizedBox(height: 3),
+            const Text('CONFIG', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF00ADB5), letterSpacing: 0.8)),
+            Text('CTL/EXP/A1-6', style: TextStyle(fontSize: 7, color: colors.isDark ? Colors.white60 : const Color(0xFF334155))),
+            Text('I/O LEVELS', style: TextStyle(fontSize: 6, color: colors.textMuted)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCableConnector({required bool isActive}) {
+  Widget _buildCableConnector({required AppColorScheme colors, required bool isActive}) {
+    const activeColor = Color(0xFF00ADB5);
+    final inactiveLine = colors.isDark ? Colors.white12 : const Color(0xFFCBD5E1);
+    final inactiveIcon = colors.isDark ? Colors.white24 : const Color(0xFF94A3B8);
     return SizedBox(
       width: 16,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Container(height: 2, color: isActive ? const Color(0xFF00ADB5) : Colors.white12),
-          Icon(Icons.chevron_right, size: 12, color: isActive ? const Color(0xFF00ADB5) : Colors.white24),
+          Container(height: 2, color: isActive ? activeColor : inactiveLine),
+          Icon(Icons.chevron_right, size: 12, color: isActive ? activeColor : inactiveIcon),
         ],
       ),
     );
   }
 
-  Widget _buildFooter() {
+  Widget _buildFooter(AppColorScheme colors) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0E0E16),
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(12), bottomRight: Radius.circular(12)),
+      decoration: BoxDecoration(
+        color: colors.isDark ? const Color(0xFF0E0E16) : const Color(0xFFE8ECF1),
+        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(12), bottomRight: Radius.circular(12)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.touch_app, size: 11, color: Colors.white38),
-              SizedBox(width: 5),
-              Text('Mantén presionado para reordenar la cadena • Toca para seleccionar', style: TextStyle(fontSize: 9, color: Colors.white38)),
+              Icon(Icons.touch_app, size: 11, color: colors.textMuted),
+              const SizedBox(width: 5),
+              Text('Mantén presionado para reordenar la cadena • Toca para seleccionar', style: TextStyle(fontSize: 9, color: colors.textMuted)),
             ],
           ),
           Text(
