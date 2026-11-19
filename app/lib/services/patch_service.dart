@@ -174,7 +174,7 @@ class PatchService extends ChangeNotifier {
 
       if (_isDisposed || _cancelSyncRequested || !midiService.isConnected) return;
       // 4. Fetch all user and factory presets with names AND FX Chains
-      await syncAllPatchesFromPedal();
+      await _syncAllPatchesInternal();
     } catch (e) {
       debugPrint('Error en autoSyncFromHardware: $e');
     } finally {
@@ -249,31 +249,13 @@ class PatchService extends ChangeNotifier {
   List<EffectBlock> _createDefaultEffects(int patchIdx) {
     return [
       EffectBlock(
-        id: 'pedal_fx',
-        name: 'PEDAL FX',
-        subtitle: 'Wah / Foot Bend',
-        category: EffectCategory.pedalFx,
-        accentColor: const Color(0xFFFF5722), // Deep Flame Orange
-        isEnabled: false,
-        parameters: _paramsFor(EffectCategory.pedalFx),
-      ),
-      EffectBlock(
-        id: 'od_ds',
-        name: 'OD/DS',
-        subtitle: 'Bass Overdrive',
-        category: EffectCategory.odDs,
-        accentColor: const Color(0xFFFB8C00), // Amber Gold
-        isEnabled: false,
-        parameters: _paramsFor(EffectCategory.odDs),
-      ),
-      EffectBlock(
-        id: 'preamp',
-        name: 'PREAMP',
-        subtitle: 'Bass Preamp / Amp',
-        category: EffectCategory.preamp,
-        accentColor: const Color(0xFFD81B60), // Crimson Red
+        id: 'ns',
+        name: 'NS',
+        subtitle: 'Noise Suppressor',
+        category: EffectCategory.noiseSuppressor,
+        accentColor: const Color(0xFF607D8B), // Slate Steel
         isEnabled: true,
-        parameters: _paramsFor(EffectCategory.preamp),
+        parameters: _paramsFor(EffectCategory.noiseSuppressor),
       ),
       EffectBlock(
         id: 'fx1',
@@ -285,13 +267,22 @@ class PatchService extends ChangeNotifier {
         parameters: Gt1bFxAlgorithms.getParametersFor(EffectCategory.fx1, 3), // SUB WAH
       ),
       EffectBlock(
-        id: 'ns',
-        name: 'NS',
-        subtitle: 'Noise Suppressor',
-        category: EffectCategory.noiseSuppressor,
-        accentColor: const Color(0xFF607D8B), // Slate Steel
+        id: 'pedal_fx',
+        name: 'PEDAL FX',
+        subtitle: 'Wah / Foot Bend',
+        category: EffectCategory.pedalFx,
+        accentColor: const Color(0xFFFF5722), // Deep Flame Orange
+        isEnabled: false,
+        parameters: _paramsFor(EffectCategory.pedalFx),
+      ),
+      EffectBlock(
+        id: 'preamp',
+        name: 'PREAMP',
+        subtitle: 'Bass Preamp / Amp',
+        category: EffectCategory.preamp,
+        accentColor: const Color(0xFFD81B60), // Crimson Red
         isEnabled: true,
-        parameters: _paramsFor(EffectCategory.noiseSuppressor),
+        parameters: _paramsFor(EffectCategory.preamp),
       ),
       EffectBlock(
         id: 'foot_volume',
@@ -329,6 +320,15 @@ class PatchService extends ChangeNotifier {
         isEnabled: false,
         parameters: _paramsFor(EffectCategory.reverb),
       ),
+      EffectBlock(
+        id: 'od_ds',
+        name: 'OD/DS',
+        subtitle: 'Bass Overdrive',
+        category: EffectCategory.odDs,
+        accentColor: const Color(0xFFFB8C00), // Amber Gold
+        isEnabled: false,
+        parameters: _paramsFor(EffectCategory.odDs),
+      ),
     ];
   }
 
@@ -355,7 +355,8 @@ class PatchService extends ChangeNotifier {
 
   /// Synchronize all 198 patch names and FX Chains (99 User + 99 Preset) from Boss GT-1B hardware (H9, H11)
   Future<void> syncAllPatchesFromPedal() async {
-    if (_isSyncing || !midiService.isConnected) return;
+    if (!midiService.isConnected) return;
+    if (_isSyncing) return;
     _isSyncing = true;
     _cancelSyncRequested = false;
     _syncProgress = 0.0;
@@ -363,12 +364,21 @@ class PatchService extends ChangeNotifier {
     notifyListeners();
 
     try {
+      await _syncAllPatchesInternal();
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _syncAllPatchesInternal() async {
+    try {
       int consecutiveFails = 0;
       // 1. Leer 99 User Patches (U01 a U99)
       for (int i = 0; i < 99; i++) {
         if (!midiService.isConnected || _cancelSyncRequested) break;
 
-        _syncProgress = (i + 1) / 198.0;
+        _syncProgress = 0.12 + ((i + 1) / 198.0) * 0.85;
         final uNum = (i + 1).toString().padLeft(2, '0');
         _syncStatusText = 'Sincronizando Preset U$uNum/U99 (Nombre y Cadena)...';
         notifyListeners();
@@ -377,7 +387,7 @@ class PatchService extends ChangeNotifier {
         final reqName = GtSysEx.buildPatchNameRequest(i, isFactoryPreset: false);
         final replyName = await midiService.sendSysExRequest(
           reqName,
-          timeout: const Duration(milliseconds: 300),
+          timeout: const Duration(milliseconds: 250),
         );
 
         if (replyName != null) {
@@ -394,7 +404,7 @@ class PatchService extends ChangeNotifier {
         final reqChain = GtSysEx.buildPatchFxChainRequest(i, isFactoryPreset: false);
         final replyChain = await midiService.sendSysExRequest(
           reqChain,
-          timeout: const Duration(milliseconds: 300),
+          timeout: const Duration(milliseconds: 250),
         );
 
         if (replyChain != null) {
@@ -407,8 +417,8 @@ class PatchService extends ChangeNotifier {
           consecutiveFails++;
         }
 
-        if (consecutiveFails > 12) break;
-        await Future.delayed(const Duration(milliseconds: 15));
+        if (consecutiveFails > 20) break;
+        await Future.delayed(const Duration(milliseconds: 8));
       }
 
       // 2. Leer 99 Factory Presets (P01 a P99)
@@ -416,7 +426,7 @@ class PatchService extends ChangeNotifier {
       for (int i = 0; i < 99; i++) {
         if (!midiService.isConnected || _cancelSyncRequested) break;
 
-        _syncProgress = (99 + i + 1) / 198.0;
+        _syncProgress = 0.12 + ((99 + i + 1) / 198.0) * 0.85;
         final pNum = (i + 1).toString().padLeft(2, '0');
         _syncStatusText = 'Sincronizando Preset P$pNum/P99 (Nombre y Cadena)...';
         notifyListeners();
@@ -425,7 +435,7 @@ class PatchService extends ChangeNotifier {
         final reqName = GtSysEx.buildPatchNameRequest(i, isFactoryPreset: true);
         final replyName = await midiService.sendSysExRequest(
           reqName,
-          timeout: const Duration(milliseconds: 300),
+          timeout: const Duration(milliseconds: 250),
         );
 
         if (replyName != null) {
@@ -442,7 +452,7 @@ class PatchService extends ChangeNotifier {
         final reqChain = GtSysEx.buildPatchFxChainRequest(i, isFactoryPreset: true);
         final replyChain = await midiService.sendSysExRequest(
           reqChain,
-          timeout: const Duration(milliseconds: 300),
+          timeout: const Duration(milliseconds: 250),
         );
 
         if (replyChain != null) {
@@ -455,8 +465,8 @@ class PatchService extends ChangeNotifier {
           consecutiveFails++;
         }
 
-        if (consecutiveFails > 12) break;
-        await Future.delayed(const Duration(milliseconds: 15));
+        if (consecutiveFails > 20) break;
+        await Future.delayed(const Duration(milliseconds: 8));
       }
 
       if (!_cancelSyncRequested && midiService.isConnected) {
@@ -465,7 +475,6 @@ class PatchService extends ChangeNotifier {
         await syncWahStateFromPedal();
       }
     } finally {
-      _isSyncing = false;
       _syncProgress = _cancelSyncRequested ? 0.0 : 1.0;
       _syncStatusText = _cancelSyncRequested ? 'Sincronización cancelada' : '¡Presets de tu pedalera cargados!';
       if (!_cancelSyncRequested && midiService.isConnected) {
@@ -791,8 +800,8 @@ class PatchService extends ChangeNotifier {
     if (category == null) return;
     final currentEffects = List<EffectBlock>.from(currentPatch.effects);
     final idx = currentEffects.indexWhere((e) => e.category == category);
-    final targetIdx = (slotIndex >= 7 && slotIndex <= 15) ? (slotIndex - 7) : slotIndex;
-    if (idx >= 0 && targetIdx >= 0 && targetIdx < currentEffects.length) {
+    final targetIdx = slotIndex.clamp(0, currentEffects.length - 1);
+    if (idx >= 0 && targetIdx >= 0 && targetIdx < currentEffects.length && idx != targetIdx) {
       final item = currentEffects.removeAt(idx);
       currentEffects.insert(targetIdx, item);
       _patches[_currentPatchIndex] = currentPatch.copyWith(effects: currentEffects);
@@ -1413,7 +1422,7 @@ class PatchService extends ChangeNotifier {
     }
     final newHardwareChain = List<int>.from(baseChain);
     for (int i = 0; i < 9 && i < visibleChainIds.length; i++) {
-      newHardwareChain[7 + i] = visibleChainIds[i];
+      newHardwareChain[i] = visibleChainIds[i];
     }
     _hardwareFxChain = newHardwareChain;
 
@@ -1422,7 +1431,7 @@ class PatchService extends ChangeNotifier {
     await midiService.sendSysEx(msg);
 
     // 2. Also update individual slots for any hardware firmware revisions that poll individual slot registers
-    for (int i = 7; i <= 15; i++) {
+    for (int i = 0; i < 9; i++) {
       if (i >= oldHardwareChain.length || oldHardwareChain[i] != newHardwareChain[i]) {
         await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x20 + i], newHardwareChain[i]);
         await Future.delayed(const Duration(milliseconds: 8));

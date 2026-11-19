@@ -43,6 +43,12 @@ class FakeTransport implements MidiTransport {
     _setMem([0x60, 0x00, 0x06, 0x20], 0x00); // WAH OFF
     _setMem([0x60, 0x00, 0x06, 0x33], 0x64); // FOOT VOL 100
     _setMem([0x60, 0x00, 0x06, 0x63], 0x01); // NS ON
+
+    // Cadena de efectos por defecto auténtica GT-1B (60 00 07 20 y 10 00 07 20)
+    for (int i = 0; i < GtSysEx.defaultHardwareChain.length; i++) {
+      _setMem([0x60, 0x00, 0x07, 0x20 + i], GtSysEx.defaultHardwareChain[i]);
+      _setMem([0x10, 0x00, 0x07, 0x20 + i], GtSysEx.defaultHardwareChain[i]);
+    }
   }
 
   void _setMem(List<int> addr, int val) {

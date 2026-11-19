@@ -144,22 +144,52 @@ class GatewayScreen extends StatelessWidget {
   }
 
   Widget _buildBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: const Color(0xFF00ADB5).withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF00ADB5).withValues(alpha: 0.4)),
-      ),
-      child: const Text(
-        'PASO 1: CONECTAR A LA PEDALERA',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.2,
-          color: Color(0xFF00ADB5),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFF00ADB5).withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF00ADB5).withValues(alpha: 0.4)),
+          ),
+          child: const Text(
+            'PASO 1: CONECTAR A LA PEDALERA',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+              color: Color(0xFF00ADB5),
+            ),
+          ),
         ),
-      ),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFF9800).withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFFF9800).withValues(alpha: 0.5)),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.speaker, size: 12, color: Color(0xFFFF9800)),
+              SizedBox(width: 4),
+              Text(
+                'MODELO: BOSS GT-1B (BASS)',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8,
+                  color: Color(0xFFFF9800),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

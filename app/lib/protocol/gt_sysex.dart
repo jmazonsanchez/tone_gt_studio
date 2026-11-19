@@ -8,9 +8,9 @@ class GtSysEx {
   static const int rolandManufacturerId = 0x41;
   static const int defaultDeviceId = 0x00; // GT-1B factory default Device ID is 0x00
 
-  // Model IDs
+  // Model ID: Dedicated strictly to BOSS GT-1B (Bass Effects Processor)
   static const List<int> modelIdGt1b = [0x00, 0x00, 0x00, 0x3E]; // GT-1B (Bass)
-  static const List<int> modelIdGt1 = [0x00, 0x00, 0x00, 0x3B];  // GT-1 (Guitar)
+  // Legacy guitar model ID removed to prevent any GT-1 stompbox mapping confusion
 
   // Commands
   static const int commandRq1 = 0x11; // Data Request 1
@@ -147,12 +147,12 @@ class GtSysEx {
     );
   }
 
-  /// Default 20-slot authentic hardware chain order of Boss GT-1B.
-  /// Fixed slots 0..6: [0, 1, 4, 8, 10, 14, 17]
-  /// Movable slots 7..15 (authentic 9 blocks): [5, 2, 13, 15, 12, 11, 7, 6, 9]
-  /// Fixed slots 16..19: [18, 3, 19, 16]
+  /// Default 20-slot authentic hardware chain order of Boss GT-1B (Bass).
+  /// Movable slots 0..8 (authentic 9 blocks): [12, 15, 5, 13, 11, 7, 6, 9, 2]
+  /// (NS=12, FX1=15, PDL=5, PREAMP=13, FV=11, FX2=7, DELAY=6, REVERB=9, OD/DS=2)
+  /// Fixed / internal routing slots 9..19: [0, 1, 3, 4, 8, 10, 14, 16, 17, 18, 19]
   static const List<int> defaultHardwareChain = [
-    0, 1, 4, 8, 10, 14, 17, 5, 2, 13, 15, 12, 11, 7, 6, 9, 18, 3, 19, 16
+    12, 15, 5, 13, 11, 7, 6, 9, 2, 0, 1, 3, 4, 8, 10, 14, 16, 17, 18, 19
   ];
 
   /// Request Block 1 (EQ, FX1 switch, FX1 algorithm type & parameters) (address 60 00 01 00, size 127 bytes).
@@ -247,7 +247,7 @@ class GtSysEx {
   }
 
   /// Build full FX chain order update (address 60 00 07 20, 20 slot IDs).
-  /// If given 9 movable block IDs, maps them into slots 7..15 of the authentic 20-slot chain.
+  /// If given 9 movable block IDs, maps them directly into slots 0..8 of the authentic 20-slot chain.
   /// Replaces any missing positions with authentic valid GT-1B routing IDs (never 0xFF!).
   static Uint8List buildFxChainOrder(List<int> chainIds, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
     List<int> fullChain;
@@ -256,7 +256,7 @@ class GtSysEx {
     } else if (chainIds.length == 9) {
       fullChain = List<int>.from(defaultHardwareChain);
       for (int i = 0; i < 9; i++) {
-        fullChain[7 + i] = chainIds[i];
+        fullChain[i] = chainIds[i];
       }
     } else {
       fullChain = List<int>.from(chainIds);
