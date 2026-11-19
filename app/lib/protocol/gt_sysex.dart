@@ -552,4 +552,55 @@ class GtSysEx {
       deviceId: deviceId,
     );
   }
+
+  /// Build SysEx DT1 command to write the active temporary patch into permanent user memory (U01..U99).
+  /// Target user index must be 0..98 (never >= 99, factory presets are read-only).
+  static Uint8List buildPatchWrite(int targetUserIndex, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    assert(targetUserIndex >= 0 && targetUserIndex < 99, 'Can only write to User patches (0..98)');
+    final high = (targetUserIndex >> 7) & 0x7F;
+    final low = targetUserIndex & 0x7F;
+    return buildDt1Message(
+      address: [0x7F, 0x00, 0x01, 0x04],
+      data: [high, low],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Build SysEx DT1 command to copy a patch from one slot to a user slot (0..98).
+  static Uint8List buildPatchCopy(int fromIndex, int toUserIndex, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    assert(toUserIndex >= 0 && toUserIndex < 99, 'Target of copy must be a User patch (0..98)');
+    final fromHigh = (fromIndex >> 7) & 0x7F;
+    final fromLow = fromIndex & 0x7F;
+    final toHigh = (toUserIndex >> 7) & 0x7F;
+    final toLow = toUserIndex & 0x7F;
+    return buildDt1Message(
+      address: [0x7F, 0x00, 0x01, 0x00],
+      data: [fromHigh, fromLow, toHigh, toLow],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Build SysEx DT1 command to initialize the current patch to default factory state.
+  static Uint8List buildPatchInitialize({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildDt1Message(
+      address: [0x7F, 0x01, 0x00, 0x04],
+      data: [0x01],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Build SysEx DT1 to rename the active patch in temporary buffer (16 ASCII chars).
+  static Uint8List buildPatchNameEdit(String newName, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    final padded = newName.padRight(16, ' ').substring(0, 16);
+    final bytes = padded.codeUnits.map((c) => c & 0x7F).toList();
+    return buildDt1Message(
+      address: [0x60, 0x00, 0x00, 0x00],
+      data: bytes,
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
 }

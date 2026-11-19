@@ -3,6 +3,7 @@ import '../../services/midi_service.dart';
 import '../../services/patch_service.dart';
 import 'assign_editor_modal.dart';
 import 'patch_list_modal.dart';
+import 'patch_write_modal.dart';
 import 'system_settings_modal.dart';
 import 'tuner_modal.dart';
 
@@ -78,25 +79,26 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
           ],
 
           // 3. Central Patch Selector (Large Stage Display)
-          Expanded(
-            child: _buildPatchSelector(context, current, isReadOnly),
-          ),
-
+          Expanded(child: _buildPatchSelector(context, current, isReadOnly)),
           const SizedBox(width: 8),
 
-          // 4. Tuner / Mute Button
+          // 4. Quick Hardware Write / Save Button
+          _buildWriteButton(context),
+          const SizedBox(width: 8),
+
+          // 5. Tuner / Mute Button
           _buildTunerButton(context),
           const SizedBox(width: 8),
 
-          // 5. Phase 5: CTL1 / EXP / Assigns Button
+          // 6. Phase 5: CTL1 / EXP / Assigns Button
           _buildAssignsButton(context),
           const SizedBox(width: 8),
 
-          // 6. Phase 6: System & Utilities Button
+          // 7. Phase 6: System & Utilities Button
           _buildSystemButton(context),
           const SizedBox(width: 8),
 
-          // 7. Library / Presets Button
+          // 8. Library / Presets Button
           _buildLibraryButton(context),
         ],
       ),
@@ -127,18 +129,12 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color, width: 1.2),
-        ),
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20), border: Border.all(color: color, width: 1.2)),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isConnecting)
-              const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber))
-            else
-              Icon(icon, size: 14, color: color),
+            if (isConnecting) const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber))
+            else Icon(icon, size: 14, color: color),
             const SizedBox(width: 6),
             Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.6)),
           ],
@@ -219,6 +215,19 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  Widget _buildWriteButton(BuildContext context) {
+    return IconButton.filledTonal(
+      visualDensity: VisualDensity.compact,
+      style: IconButton.styleFrom(
+        backgroundColor: const Color(0xFF222230),
+        side: const BorderSide(color: Colors.white12, width: 1),
+      ),
+      onPressed: () => PatchWriteModal.show(context, patchService),
+      icon: const Icon(Icons.save, size: 18, color: Color(0xFFFF9800)),
+      tooltip: 'Guardar Preset en Pedalera (Write)',
+    );
+  }
+
   Widget _buildTunerButton(BuildContext context) {
     final active = patchService.isTunerActive;
     return IconButton.filledTonal(
@@ -250,10 +259,7 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
   Widget _buildAssignsButton(BuildContext context) {
     return IconButton.filledTonal(
       visualDensity: VisualDensity.compact,
-      style: IconButton.styleFrom(
-        backgroundColor: const Color(0xFF222230),
-        side: const BorderSide(color: Colors.white12, width: 1),
-      ),
+      style: IconButton.styleFrom(backgroundColor: const Color(0xFF222230), side: const BorderSide(color: Colors.white12, width: 1)),
       onPressed: () => AssignEditorModal.show(context, patchService),
       icon: const Icon(Icons.settings_remote, size: 18, color: Color(0xFF00ADB5)),
       tooltip: 'CTL1 / EXP / Assigns 1-8',
@@ -263,10 +269,7 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
   Widget _buildSystemButton(BuildContext context) {
     return IconButton.filledTonal(
       visualDensity: VisualDensity.compact,
-      style: IconButton.styleFrom(
-        backgroundColor: const Color(0xFF222230),
-        side: const BorderSide(color: Colors.white12, width: 1),
-      ),
+      style: IconButton.styleFrom(backgroundColor: const Color(0xFF222230), side: const BorderSide(color: Colors.white12, width: 1)),
       onPressed: () => SystemSettingsModal.show(context, patchService),
       icon: const Icon(Icons.settings, size: 18, color: Color(0xFF00ADB5)),
       tooltip: 'Sistema y Utilidades GT-1B (Fase 6)',
@@ -276,10 +279,7 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
   Widget _buildLibraryButton(BuildContext context) {
     return IconButton.filledTonal(
       visualDensity: VisualDensity.compact,
-      style: IconButton.styleFrom(
-        backgroundColor: const Color(0xFF222230),
-        side: const BorderSide(color: Colors.white12, width: 1),
-      ),
+      style: IconButton.styleFrom(backgroundColor: const Color(0xFF222230), side: const BorderSide(color: Colors.white12, width: 1)),
       onPressed: () => _openPatchList(context),
       icon: const Icon(Icons.library_music, size: 18, color: Colors.white70),
       tooltip: 'Lista de 198 Presets (U y P)',

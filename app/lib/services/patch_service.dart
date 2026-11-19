@@ -1228,4 +1228,77 @@ class PatchService extends ChangeNotifier {
         return null;
     }
   }
+
+  /// Commit the active temporary patch into permanent hardware user memory (U01..U99).
+  /// Rejects writes to factory presets (index >= 99).
+  Future<bool> writeCurrentPatchToHardware(int targetIndex, {String? newName}) async {
+    if (targetIndex < 0 || targetIndex >= 99) {
+      debugPrint('Cannot write to preset patches (index >= 99)');
+      return false;
+    }
+
+    if (newName != null && newName.trim().isNotEmpty) {
+      await renameCurrentPatch(newName.trim());
+    }
+
+    if (midiService.isConnected) {
+      final msg = GtSysEx.buildPatchWrite(targetIndex);
+      await midiService.sendSysEx(msg);
+    }
+
+    final targetPatch = _patches[targetIndex];
+    _patches[targetIndex] = targetPatch.copyWith(
+      name: (newName != null && newName.trim().isNotEmpty) ? newName.trim() : currentPatch.name,
+      effects: currentPatch.effects.map((e) => e.copyWith()).toList(),
+    );
+    notifyListeners();
+    return true;
+  }
+
+  /// Copy a patch from any slot (U01..U99 or P01..P99) into a user slot (U01..U99).
+  Future<bool> copyPatch(int fromIndex, int toIndex) async {
+    if (toIndex < 0 || toIndex >= 99) return false;
+    if (fromIndex < 0 || fromIndex >= _patches.length) return false;
+
+    if (midiService.isConnected) {
+      final msg = GtSysEx.buildPatchCopy(fromIndex, toIndex);
+      await midiService.sendSysEx(msg);
+    }
+
+    final source = _patches[fromIndex];
+    final target = _patches[toIndex];
+    _patches[toIndex] = target.copyWith(
+      name: source.name,
+      effects: source.effects.map((e) => e.copyWith()).toList(),
+    );
+    notifyListeners();
+    return true;
+  }
+
+  /// Reset the current patch to factory initialization.
+  Future<void> initializeCurrentPatch() async {
+    if (midiService.isConnected) {
+      final msg = GtSysEx.buildPatchInitialize();
+      await midiService.sendSysEx(msg);
+    }
+    _patches[_currentPatchIndex] = Patch(
+      index: _currentPatchIndex,
+      name: _currentPatchIndex < 99 ? 'INITIAL PATCH' : _patches[_currentPatchIndex].name,
+      effects: _createDefaultEffects(_currentPatchIndex),
+    );
+    notifyListeners();
+  }
+
+  /// Edit current patch name and send DT1 to buffer.
+  Future<void> renameCurrentPatch(String newName) async {
+    final clean = newName.trim();
+    if (clean.isEmpty) return;
+    _patches[_currentPatchIndex] = _patches[_currentPatchIndex].copyWith(name: clean);
+    notifyListeners();
+
+    if (midiService.isConnected) {
+      final msg = GtSysEx.buildPatchNameEdit(clean);
+      await midiService.sendSysEx(msg);
+    }
+  }
 }
