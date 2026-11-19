@@ -20,7 +20,7 @@ class DisconnectedScreen extends StatelessWidget {
     final isHorizontal = size.width > size.height;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0C0C12),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

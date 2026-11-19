@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'services/midi_service.dart';
 import 'services/patch_service.dart';
+import 'services/theme_service.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/screens/home_pedalboard_screen.dart';
 
@@ -23,25 +24,32 @@ class ToneGtStudioApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeService()),
         ChangeNotifierProvider(create: (_) => MidiService()),
         ChangeNotifierProxyProvider<MidiService, PatchService>(
           create: (ctx) => PatchService(ctx.read<MidiService>()),
           update: (_, midi, previous) => previous ?? PatchService(midi),
         ),
       ],
-      child: MaterialApp(
-        title: 'ToneStudio',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
-        scrollBehavior: const MaterialScrollBehavior().copyWith(
-          dragDevices: {
-            PointerDeviceKind.mouse,
-            PointerDeviceKind.touch,
-            PointerDeviceKind.stylus,
-            PointerDeviceKind.trackpad,
-          },
-        ),
-        home: const HomePedalboardScreen(),
+      child: Consumer<ThemeService>(
+        builder: (context, themeService, _) {
+          return MaterialApp(
+            title: 'ToneStudio',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeService.themeMode,
+            scrollBehavior: const MaterialScrollBehavior().copyWith(
+              dragDevices: {
+                PointerDeviceKind.mouse,
+                PointerDeviceKind.touch,
+                PointerDeviceKind.stylus,
+                PointerDeviceKind.trackpad,
+              },
+            ),
+            home: const HomePedalboardScreen(),
+          );
+        },
       ),
     );
   }

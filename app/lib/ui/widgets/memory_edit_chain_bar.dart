@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/effect_block.dart';
+import '../theme/app_theme.dart';
 import 'chain_block_chip.dart';
 
 /// Interactive Memory Edit / Signal Chain Widget for Boss GT-1B.
@@ -50,9 +51,11 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF14141E),
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFFF9800).withValues(alpha: 0.35), width: 1.2),
         boxShadow: [
@@ -63,7 +66,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
-          const Divider(height: 1, color: Colors.white12),
+          Divider(height: 1, color: colors.borderSubtle),
           SizedBox(height: 112, child: _buildDraggableChain()),
           _buildFooter(),
         ],

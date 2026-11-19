@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/patch_service.dart';
+import '../theme/app_theme.dart';
+import 'system_appearance_tab.dart';
 import 'system_global_tab.dart';
 import 'system_metronome_tab.dart';
 import 'system_usb_tab.dart';
@@ -27,40 +29,43 @@ class SystemSettingsModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return Container(
       constraints: const BoxConstraints(maxWidth: 780, maxHeight: 520),
       decoration: BoxDecoration(
-        color: const Color(0xFF13131C),
+        color: colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF00ADB5).withValues(alpha: 0.3), width: 1.2),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.35), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.7),
+            color: Colors.black.withValues(alpha: colors.isDark ? 0.7 : 0.15),
             blurRadius: 24,
             spreadRadius: 4,
           ),
         ],
       ),
       child: DefaultTabController(
-        length: 3,
+        length: 4,
         child: Column(
           children: [
             // Modal Header
-            _buildHeader(context),
+            _buildHeader(context, colors),
 
             // Tab Navigation Bar
             Container(
-              color: const Color(0xFF181824),
-              child: const TabBar(
-                indicatorColor: Color(0xFF00ADB5),
+              color: colors.surfaceVariant,
+              child: TabBar(
+                indicatorColor: colors.primary,
                 indicatorWeight: 3,
-                labelColor: Color(0xFF00ADB5),
-                unselectedLabelColor: Colors.white54,
-                labelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.6),
-                tabs: [
+                labelColor: colors.primary,
+                unselectedLabelColor: colors.textMuted,
+                labelStyle: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, letterSpacing: 0.6),
+                tabs: const [
                   Tab(icon: Icon(Icons.tune, size: 16), text: 'GLOBAL & SALIDA'),
                   Tab(icon: Icon(Icons.speed, size: 16), text: 'METRÓNOMO'),
                   Tab(icon: Icon(Icons.usb, size: 16), text: 'USB & HARDWARE'),
+                  Tab(icon: Icon(Icons.palette_outlined, size: 16), text: 'APARIENCIA'),
                 ],
               ),
             ),
@@ -72,6 +77,7 @@ class SystemSettingsModal extends StatelessWidget {
                   SystemGlobalTab(patchService: patchService),
                   SystemMetronomeTab(patchService: patchService),
                   SystemUsbTab(patchService: patchService),
+                  const SystemAppearanceTab(),
                 ],
               ),
             ),
@@ -81,35 +87,35 @@ class SystemSettingsModal extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppColorScheme colors) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1A1A26),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-        border: Border(bottom: BorderSide(color: Colors.white10)),
+      decoration: BoxDecoration(
+        color: colors.surfaceElevated,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+        border: Border(bottom: BorderSide(color: colors.borderSubtle)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.settings, color: Color(0xFF00ADB5), size: 18),
-              SizedBox(width: 8),
+              Icon(Icons.settings, color: colors.primary, size: 18),
+              const SizedBox(width: 8),
               Text(
                 'SISTEMA Y UTILIDADES GT-1B',
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 13,
                   letterSpacing: 1.0,
-                  color: Colors.white,
+                  color: colors.textPrimary,
                 ),
               ),
             ],
           ),
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.close, color: Colors.white54, size: 18),
+            icon: Icon(Icons.close, color: colors.textMuted, size: 18),
             visualDensity: VisualDensity.compact,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),

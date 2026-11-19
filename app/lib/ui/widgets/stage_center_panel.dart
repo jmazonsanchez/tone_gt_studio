@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/effect_block.dart';
 import '../layout/responsive_breakpoints.dart';
+import '../theme/app_theme.dart';
 import 'effect_editor_panel.dart';
 import 'mini_pedal_card.dart';
 import 'memory_edit_chain_bar.dart';
@@ -21,9 +22,11 @@ class StageCenterPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      color: const Color(0xFF0F0F16),
+      color: colors.background,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -38,21 +41,21 @@ class StageCenterPanel extends StatelessWidget {
 
           // 2. Boutique Stompboxes Shelf (Zero vertical scroll)
           Expanded(
-            child: _buildPedalShelf(context),
+            child: _buildPedalShelf(context, colors),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPedalShelf(BuildContext context) {
+  Widget _buildPedalShelf(BuildContext context, AppColorScheme colors) {
     // Stompbox pedal shelf arranged horizontally with smooth horizontal scrolling
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF14141E),
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,

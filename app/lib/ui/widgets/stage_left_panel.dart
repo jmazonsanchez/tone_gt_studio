@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/patch_service.dart';
 import '../layout/responsive_breakpoints.dart';
+import '../theme/app_theme.dart';
 
 /// Dedicated Master Configuration Panel for Boss GT-1B.
 /// Replaces the physical buttons section to provide direct live access to:
@@ -29,13 +30,14 @@ class StageLeftPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     final isCompact = breakpoint == StageBreakpoint.compact;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isCompact ? 6 : 10, vertical: 8),
-      decoration: const BoxDecoration(
-        color: Color(0xFF13131A),
-        border: Border(right: BorderSide(color: Colors.white10, width: 1)),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(right: BorderSide(color: colors.borderSubtle, width: 1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -49,6 +51,7 @@ class StageLeftPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildSliderTile(
+                    colors: colors,
                     label: 'PATCH LEVEL',
                     value: patchService.patchLevel,
                     min: 0,
@@ -57,11 +60,11 @@ class StageLeftPanel extends StatelessWidget {
                     onChanged: (val) => patchService.updateMasterParameter('patch_level', val),
                   ),
                   const SizedBox(height: 8),
-                  _buildTempoAndKeyRow(),
+                  _buildTempoAndKeyRow(colors),
                   const SizedBox(height: 8),
-                  const Divider(color: Colors.white10, height: 12),
+                  Divider(color: colors.borderSubtle, height: 12),
                   const SizedBox(height: 4),
-                  _buildMasterEqSection(),
+                  _buildMasterEqSection(colors),
                 ],
               ),
             ),
@@ -100,11 +103,12 @@ class StageLeftPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildTempoAndKeyRow() {
+  Widget _buildTempoAndKeyRow(AppColorScheme colors) {
     return Row(
       children: [
         Expanded(
           child: _buildSliderTile(
+            colors: colors,
             label: 'BPM',
             value: patchService.masterBpm,
             min: 40,
@@ -116,6 +120,7 @@ class StageLeftPanel extends StatelessWidget {
         const SizedBox(width: 6),
         Expanded(
           child: _buildDropdownCard(
+            colors: colors,
             label: 'KEY',
             valueIndex: patchService.masterKey.clamp(0, musicalKeys.length - 1),
             items: musicalKeys,
@@ -126,16 +131,17 @@ class StageLeftPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildMasterEqSection() {
+  Widget _buildMasterEqSection(AppColorScheme colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'MASTER 4-BAND EQ',
-          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.8, color: Colors.white54),
+          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.8, color: colors.textMuted),
         ),
         const SizedBox(height: 6),
         _buildSliderTile(
+          colors: colors,
           label: 'LOW GAIN',
           value: patchService.masterEqLow,
           min: 0,
@@ -145,6 +151,7 @@ class StageLeftPanel extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         _buildSliderTile(
+          colors: colors,
           label: 'MID GAIN',
           value: patchService.masterEqMidGain,
           min: 0,
@@ -153,9 +160,10 @@ class StageLeftPanel extends StatelessWidget {
           onChanged: (val) => patchService.updateMasterParameter('master_eq_mid_gain', val),
         ),
         const SizedBox(height: 6),
-        _buildMidFreqAndQRow(),
+        _buildMidFreqAndQRow(colors),
         const SizedBox(height: 6),
         _buildSliderTile(
+          colors: colors,
           label: 'HIGH GAIN',
           value: patchService.masterEqHigh,
           min: 0,
@@ -167,12 +175,13 @@ class StageLeftPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildMidFreqAndQRow() {
+  Widget _buildMidFreqAndQRow(AppColorScheme colors) {
     return Row(
       children: [
         Expanded(
           flex: 3,
           child: _buildDropdownCard(
+            colors: colors,
             label: 'MID FREQ',
             valueIndex: patchService.masterEqMidFreq.clamp(0, midFreqLabels.length - 1),
             items: midFreqLabels,
@@ -183,6 +192,7 @@ class StageLeftPanel extends StatelessWidget {
         Expanded(
           flex: 2,
           child: _buildDropdownCard(
+            colors: colors,
             label: 'MID Q',
             valueIndex: patchService.masterEqMidQ.clamp(0, midQLabels.length - 1),
             items: midQLabels,
@@ -194,6 +204,7 @@ class StageLeftPanel extends StatelessWidget {
   }
 
   Widget _buildDropdownCard({
+    required AppColorScheme colors,
     required String label,
     required int valueIndex,
     required List<String> items,
@@ -202,20 +213,20 @@ class StageLeftPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1B26),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.white54)),
+          Text(label, style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: colors.textMuted)),
           DropdownButtonHideUnderline(
             child: DropdownButton<int>(
               value: valueIndex,
               isDense: true,
               isExpanded: true,
-              dropdownColor: const Color(0xFF1E1E2C),
+              dropdownColor: colors.surfaceElevated,
               style: const TextStyle(color: Color(0xFFFF9800), fontWeight: FontWeight.bold, fontSize: 11),
               items: List.generate(items.length, (idx) => DropdownMenuItem(value: idx, child: Text(items[idx]))),
               onChanged: (val) {
@@ -229,6 +240,7 @@ class StageLeftPanel extends StatelessWidget {
   }
 
   Widget _buildSliderTile({
+    required AppColorScheme colors,
     required String label,
     required int value,
     required int min,
@@ -239,9 +251,9 @@ class StageLeftPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1B26),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,7 +264,7 @@ class StageLeftPanel extends StatelessWidget {
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.white54),
+                  style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: colors.textMuted),
                 ),
               ),
               const SizedBox(width: 4),

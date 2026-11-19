@@ -18,7 +18,7 @@ class GatewayScreen extends StatelessWidget {
     final isHorizontal = size.width > size.height;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F14),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

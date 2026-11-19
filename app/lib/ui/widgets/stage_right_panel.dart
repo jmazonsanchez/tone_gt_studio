@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../layout/responsive_breakpoints.dart';
+import '../theme/app_theme.dart';
 
 class StageRightPanel extends StatelessWidget {
   final bool isWahActive;
@@ -21,6 +22,7 @@ class StageRightPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     final isCompact = breakpoint == StageBreakpoint.compact;
 
     return Container(
@@ -28,21 +30,21 @@ class StageRightPanel extends StatelessWidget {
         horizontal: isCompact ? 4 : 8,
         vertical: 8,
       ),
-      decoration: const BoxDecoration(
-        color: Color(0xFF13131A),
-        border: Border(left: BorderSide(color: Colors.white10, width: 1)),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(left: BorderSide(color: colors.borderSubtle, width: 1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Header
           if (!isCompact)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
-                  Icon(Icons.tune, size: 11, color: Colors.deepOrangeAccent),
-                  SizedBox(width: 4),
+                  const Icon(Icons.tune, size: 11, color: Colors.deepOrangeAccent),
+                  const SizedBox(width: 4),
                   Flexible(
                     child: Text(
                       'EXP / VOLUMEN',
@@ -51,7 +53,7 @@ class StageRightPanel extends StatelessWidget {
                         fontSize: 9,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.8,
-                        color: Colors.white54,
+                        color: colors.textMuted,
                       ),
                     ),
                   ),
@@ -85,15 +87,16 @@ class StageRightPanel extends StatelessWidget {
   }
 
   Widget _buildExpTreadle(BuildContext context, bool isCompact) {
+    final colors = AppTheme.of(context);
     const accent = Colors.deepOrangeAccent;
 
     return Container(
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: const Color(0xFF181822),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isWahActive ? accent.withValues(alpha: 0.6) : Colors.white10,
+          color: isWahActive ? accent.withValues(alpha: 0.6) : colors.borderSubtle,
         ),
       ),
       child: Column(
@@ -105,10 +108,10 @@ class StageRightPanel extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               decoration: BoxDecoration(
-                color: isWahActive ? accent.withValues(alpha: 0.2) : const Color(0xFF22222E),
+                color: isWahActive ? accent.withValues(alpha: 0.2) : colors.cardActive,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: isWahActive ? accent : Colors.white12,
+                  color: isWahActive ? accent : colors.borderSubtle,
                 ),
               ),
               child: Row(
@@ -184,24 +187,25 @@ class StageRightPanel extends StatelessWidget {
   }
 
   Widget _buildFootVolumeMeter(BuildContext context, bool isCompact) {
+    final colors = AppTheme.of(context);
     final level = footVolumeLevel.clamp(0, 100);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF181822),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Column(
         children: [
           // Label
           Text(
             isCompact ? 'VOL' : 'FOOT VOL',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 8,
               fontWeight: FontWeight.w900,
-              color: Colors.white38,
+              color: colors.textMuted,
               letterSpacing: 0.5,
             ),
           ),
@@ -232,7 +236,7 @@ class StageRightPanel extends StatelessWidget {
                   height: 6,
                   margin: const EdgeInsets.symmetric(horizontal: 2),
                   decoration: BoxDecoration(
-                    color: isLit ? segmentColor : const Color(0xFF22222E),
+                    color: isLit ? segmentColor : colors.surfaceElevated,
                     borderRadius: BorderRadius.circular(2),
                     boxShadow: [
                       if (isLit)

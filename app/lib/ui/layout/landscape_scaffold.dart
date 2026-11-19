@@ -27,7 +27,7 @@ class LandscapeScaffold extends StatelessWidget {
         );
 
         return Scaffold(
-          backgroundColor: const Color(0xFF0F0F14),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: SafeArea(
             child: Column(
               children: [
