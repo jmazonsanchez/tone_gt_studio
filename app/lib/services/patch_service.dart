@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import '../domain/gt1b_catalog.dart';
 import '../models/effect_block.dart';
 import '../models/effect_parameter.dart';
 import '../models/patch.dart';
@@ -96,6 +97,11 @@ class PatchService extends ChangeNotifier {
     }
   }
 
+  List<EffectParameter> _paramsFor(EffectCategory category) {
+    final defs = Gt1bCatalog.effectParams[category] ?? [];
+    return defs.map((d) => EffectParameter.fromDef(d)).toList();
+  }
+
   List<EffectBlock> _createDefaultEffects(int patchIdx) {
     return [
       EffectBlock(
@@ -105,10 +111,7 @@ class PatchService extends ChangeNotifier {
         category: EffectCategory.comp,
         accentColor: const Color(0xFF1E88E5), // Blue boutique
         isEnabled: false,
-        parameters: [
-          EffectParameter(id: 'comp_tone', name: 'Tone', address: [0x60, 0x00, 0x00, 0x24], value: 50),
-          EffectParameter(id: 'comp_level', name: 'Level', address: [0x60, 0x00, 0x00, 0x25], value: 65),
-        ],
+        parameters: _paramsFor(EffectCategory.comp),
       ),
       EffectBlock(
         id: 'od_ds',
@@ -117,24 +120,16 @@ class PatchService extends ChangeNotifier {
         category: EffectCategory.odDs,
         accentColor: const Color(0xFFFB8C00), // Amber Gold
         isEnabled: false,
-        parameters: [
-          EffectParameter(id: 'od_drive', name: 'Drive', address: [0x60, 0x00, 0x00, 0x32], value: 45),
-          EffectParameter(id: 'od_tone', name: 'Tone', address: [0x60, 0x00, 0x00, 0x34], value: 50),
-          EffectParameter(id: 'od_level', name: 'Level', address: [0x60, 0x00, 0x00, 0x37], value: 60),
-        ],
+        parameters: _paramsFor(EffectCategory.odDs),
       ),
       EffectBlock(
         id: 'preamp',
         name: 'PREAMP',
-        subtitle: 'Concert 810',
+        subtitle: 'Bass Preamp / Amp',
         category: EffectCategory.preamp,
         accentColor: const Color(0xFFD81B60), // Crimson Red
         isEnabled: true,
-        parameters: [
-          EffectParameter(id: 'amp_gain', name: 'Gain', address: [0x60, 0x00, 0x00, 0x52], value: 50),
-          EffectParameter(id: 'amp_bass', name: 'Bass', address: [0x60, 0x00, 0x00, 0x54], value: 55),
-          EffectParameter(id: 'amp_level', name: 'Level', address: [0x60, 0x00, 0x00, 0x58], value: 70),
-        ],
+        parameters: _paramsFor(EffectCategory.preamp),
       ),
       EffectBlock(
         id: 'fx1',
@@ -144,8 +139,8 @@ class PatchService extends ChangeNotifier {
         accentColor: const Color(0xFF8E24AA), // Purple
         isEnabled: false,
         parameters: [
-          EffectParameter(id: 'fx1_sens', name: 'Sens', address: [0x60, 0x00, 0x04, 0x12], value: 60),
-          EffectParameter(id: 'fx1_peak', name: 'Peak', address: [0x60, 0x00, 0x04, 0x14], value: 50),
+          EffectParameter(id: 'fx1_sens', name: 'Sens', address: [0x60, 0x00, 0x01, 0x4E], value: 60),
+          EffectParameter(id: 'fx1_peak', name: 'Peak', address: [0x60, 0x00, 0x01, 0x50], value: 50),
         ],
       ),
       EffectBlock(
@@ -156,22 +151,18 @@ class PatchService extends ChangeNotifier {
         accentColor: const Color(0xFF3949AB), // Cobalt Indigo
         isEnabled: false,
         parameters: [
-          EffectParameter(id: 'fx2_direct', name: 'Direct', address: [0x60, 0x00, 0x05, 0x12], value: 70),
-          EffectParameter(id: 'fx2_oct', name: '-1 Oct', address: [0x60, 0x00, 0x05, 0x14], value: 50),
+          EffectParameter(id: 'fx2_direct', name: 'Direct', address: [0x60, 0x00, 0x04, 0x2C], value: 70),
+          EffectParameter(id: 'fx2_oct', name: '-1 Oct', address: [0x60, 0x00, 0x04, 0x2A], value: 50),
         ],
       ),
       EffectBlock(
         id: 'delay',
         name: 'DELAY',
-        subtitle: 'Tape Echo',
+        subtitle: 'Digital / Analog Delay',
         category: EffectCategory.delay,
         accentColor: const Color(0xFF00897B), // Teal
         isEnabled: false,
-        parameters: [
-          EffectParameter(id: 'dly_time', name: 'Time', address: [0x60, 0x00, 0x05, 0x62], value: 40, unit: 'ms'),
-          EffectParameter(id: 'dly_feedback', name: 'F.Back', address: [0x60, 0x00, 0x10, 0x72], value: 35),
-          EffectParameter(id: 'dly_level', name: 'Level', address: [0x60, 0x00, 0x05, 0x66], value: 50),
-        ],
+        parameters: _paramsFor(EffectCategory.delay),
       ),
       EffectBlock(
         id: 'chorus',
@@ -180,23 +171,16 @@ class PatchService extends ChangeNotifier {
         category: EffectCategory.chorus,
         accentColor: const Color(0xFF00ACC1), // Cyan
         isEnabled: false,
-        parameters: [
-          EffectParameter(id: 'cho_rate', name: 'Rate', address: [0x60, 0x00, 0x07, 0x12], value: 40),
-          EffectParameter(id: 'cho_depth', name: 'Depth', address: [0x60, 0x00, 0x07, 0x14], value: 60),
-          EffectParameter(id: 'cho_level', name: 'Level', address: [0x60, 0x00, 0x07, 0x18], value: 50),
-        ],
+        parameters: _paramsFor(EffectCategory.chorus),
       ),
       EffectBlock(
         id: 'reverb',
         name: 'REVERB',
-        subtitle: 'Plate Reverb',
+        subtitle: 'Plate / Hall Reverb',
         category: EffectCategory.reverb,
         accentColor: const Color(0xFF5E35B1), // Deep Violet
         isEnabled: false,
-        parameters: [
-          EffectParameter(id: 'rev_time', name: 'Time', address: [0x60, 0x00, 0x06, 0x12], value: 45),
-          EffectParameter(id: 'rev_level', name: 'Level', address: [0x60, 0x00, 0x06, 0x18], value: 40),
-        ],
+        parameters: _paramsFor(EffectCategory.reverb),
       ),
       EffectBlock(
         id: 'pedal_fx',
@@ -205,10 +189,7 @@ class PatchService extends ChangeNotifier {
         category: EffectCategory.pedalFx,
         accentColor: const Color(0xFFFF5722), // Deep Flame Orange
         isEnabled: false,
-        parameters: [
-          EffectParameter(id: 'pdl_pos', name: 'Pedal Pos', address: [0x60, 0x00, 0x06, 0x27], value: 50),
-          EffectParameter(id: 'pdl_level', name: 'Effect Level', address: [0x60, 0x00, 0x06, 0x2A], value: 80),
-        ],
+        parameters: _paramsFor(EffectCategory.pedalFx),
       ),
       EffectBlock(
         id: 'eq',
@@ -217,12 +198,7 @@ class PatchService extends ChangeNotifier {
         category: EffectCategory.eq,
         accentColor: const Color(0xFF009688), // Teal Green
         isEnabled: false,
-        parameters: [
-          EffectParameter(id: 'eq_low', name: 'Low', address: [0x60, 0x00, 0x01, 0x33], value: 50),
-          EffectParameter(id: 'eq_mid', name: 'Mid', address: [0x60, 0x00, 0x01, 0x36], value: 50),
-          EffectParameter(id: 'eq_high', name: 'High', address: [0x60, 0x00, 0x01, 0x39], value: 50),
-          EffectParameter(id: 'eq_level', name: 'Level', address: [0x60, 0x00, 0x01, 0x3A], value: 50),
-        ],
+        parameters: _paramsFor(EffectCategory.eq),
       ),
       EffectBlock(
         id: 'foot_volume',
@@ -231,9 +207,7 @@ class PatchService extends ChangeNotifier {
         category: EffectCategory.footVolume,
         accentColor: const Color(0xFF8D6E63), // Copper Bronze
         isEnabled: true,
-        parameters: [
-          EffectParameter(id: 'fv_level', name: 'Level', address: Gt1bAddresses.footVolume, value: 100),
-        ],
+        parameters: _paramsFor(EffectCategory.footVolume),
       ),
       EffectBlock(
         id: 'ns',
@@ -242,10 +216,7 @@ class PatchService extends ChangeNotifier {
         category: EffectCategory.noiseSuppressor,
         accentColor: const Color(0xFF607D8B), // Slate Steel
         isEnabled: true,
-        parameters: [
-          EffectParameter(id: 'ns_threshold', name: 'Threshold', address: Gt1bAddresses.ns1Threshold, value: 50),
-          EffectParameter(id: 'ns_release', name: 'Release', address: Gt1bAddresses.ns1Release, value: 30),
-        ],
+        parameters: _paramsFor(EffectCategory.noiseSuppressor),
       ),
     ];
   }

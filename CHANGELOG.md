@@ -7,6 +7,26 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [0.7.0] - 2026-11-18
+
+### 🚀 Añadido (Fase 3: Edición Profunda de Parámetros)
+- **Catálogo Oficial Roland / Boss GT-1B Completo (`Gt1bCatalog`):**
+  - Extracción y modelado de todas las opciones oficiales de la pedalera: 8 tipos de Compresor, 24 tipos de Overdrive/Distorsión, 13 tipos de Preamp de bajo, 12 tipos de caja/altavoz, 5 tipos de micrófonos, 7 tipos de Delay, 3 modos de Chorus, 7 tipos de Reverb, 7 tipos de Wah, 3 curvas de Foot Volume y 3 fuentes de detección para Noise Suppressor.
+  - Parámetros extendidos en `EffectParameter` con offsets de visualización (`displayOffset`), unidades (`ms`, `dB`, `%`), selectores enum e interruptores toggle.
+- **Panel Genérico de Edición de Parámetros (`EffectEditorPanel` y `param_controls.dart`):**
+  - Panel modal de escenario horizontal optimizado para pantallas táctiles y escritorio sin scroll vertical.
+  - Selector prominente de algoritmos y tipos de amplificador/efecto con nombres de modelos reales (`Concert 810`, `Bass OD`, `Plate`, `Tape Echo`, etc.).
+  - Controles modulares: `ParameterKnob` con dial knurled giratorio, arco de valor iluminado y display de valores ajustados; `ToggleParamCard` para switches booleanos (`Bright`, `Solo Switch`); `EnumParamDropdown` para selectores secundarios (`Speaker Sim`, `Mic Type`, `Detect`).
+- **Sincronización Bidireccional de Perillas Físicas en Tiempo Real:**
+  - El giro físico de las perillas en la GT-1B actualiza inmediatamente los diales en pantalla mediante la captura y ruteo de paquetes SysEx DT1.
+  - La manipulación táctil o con ratón de los diales en la app escribe hacia la pedalera a través de la cola con throttling y supresión de eco.
+- **Calidad y Cobertura:**
+  - 37 pruebas unitarias y de widgets pasando al 100% (`effect_editor_test.dart`).
+  - 0 advertencias o errores en `flutter analyze`.
+  - 10/10 reglas de arquitectura `codegraph` superadas (0 violaciones, 0 ciclos, archivos ≤ 300 líneas).
+
+---
+
 ## [0.6.0] - 2026-11-18
 
 ### 🚀 Añadido (Fase 2: Escenario Horizontal y Espejo en Vivo)

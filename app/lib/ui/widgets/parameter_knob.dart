@@ -74,9 +74,9 @@ class _ParameterKnobState extends State<ParameterKnob> {
                   ),
                   child: Center(
                     child: Text(
-                      '${param.value}',
-                      style: const TextStyle(
-                        fontSize: 15,
+                      param.displayOffset != 0 ? param.formattedValue : '${param.value}',
+                      style: TextStyle(
+                        fontSize: (param.displayOffset != 0 && param.formattedValue.length > 3) ? 12 : 15,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),

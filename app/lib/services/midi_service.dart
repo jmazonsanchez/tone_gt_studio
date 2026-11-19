@@ -51,6 +51,11 @@ class MidiService extends ChangeNotifier implements MidiTransport {
     }
   }
 
+  @visibleForTesting
+  void handleIncomingDataForTesting(Uint8List data) {
+    _handleIncomingMidi(data);
+  }
+
   /// Discover available MIDI devices
   Future<List<String>> getAvailableDevices() async {
     await _driver.init();

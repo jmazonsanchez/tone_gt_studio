@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/effect_block.dart';
 import '../layout/responsive_breakpoints.dart';
-import 'effect_detail_modal.dart';
+import 'effect_editor_panel.dart';
 import 'mini_pedal_card.dart';
 import 'memory_edit_chain_bar.dart';
 
@@ -72,7 +72,7 @@ class StageCenterPanel extends StatelessWidget {
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
-                  builder: (ctx) => EffectDetailModal(effect: effect),
+                  builder: (ctx) => EffectEditorPanel(effect: effect),
                 );
               },
             ),
