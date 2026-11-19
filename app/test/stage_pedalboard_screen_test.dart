@@ -4,6 +4,7 @@ import 'package:tone_gt_studio/core/transport/fake_transport.dart';
 import 'package:tone_gt_studio/services/midi_service.dart';
 import 'package:tone_gt_studio/services/patch_service.dart';
 import 'package:tone_gt_studio/ui/screens/stage_pedalboard_screen.dart';
+import 'package:tone_gt_studio/ui/widgets/stage_header_bar.dart';
 
 void main() {
   group('StagePedalboardScreen Widget Tests', () {
@@ -47,7 +48,7 @@ void main() {
 
       // Verify Header elements
       expect(find.text('MODO DEMO'), findsOneWidget);
-      expect(find.text('U01'), findsOneWidget);
+      expect(find.descendant(of: find.byType(StageHeaderBar), matching: find.text('U01')), findsOneWidget);
 
       // Verify Zone 1 (Left panel Master configuration)
       expect(find.text('CONFIGURACIÓN MASTER'), findsOneWidget);
@@ -88,7 +89,7 @@ void main() {
       await tester.pumpWidget(createTestWidget());
 
       expect(patchService.currentPatchIndex, 0);
-      expect(find.text('U01'), findsOneWidget);
+      expect(find.descendant(of: find.byType(StageHeaderBar), matching: find.text('U01')), findsOneWidget);
 
       // Tap next button
       await tester.tap(find.byKey(const Key('next-patch-btn')));
@@ -96,7 +97,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(patchService.currentPatchIndex, 1);
-      expect(find.text('U02'), findsOneWidget);
+      expect(find.descendant(of: find.byType(StageHeaderBar), matching: find.text('U02')), findsOneWidget);
     });
   });
 }

@@ -45,6 +45,7 @@ class StagePedalboardScreen extends StatelessWidget {
         breakpoint: config.breakpoint,
       ),
       centerPanelBuilder: (ctx, config) => StageCenterPanel(
+        patchService: patchService,
         effects: current.effects,
         onToggleEffect: (effect) => patchService.toggleEffect(effect),
         onMoveEffect: (from, to) => patchService.moveEffect(from, to),

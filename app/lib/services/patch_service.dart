@@ -9,6 +9,7 @@ import '../models/effect_block.dart';
 import '../models/effect_parameter.dart';
 import '../models/patch.dart';
 import '../models/phrase_loop.dart';
+import '../models/quick_preset.dart';
 import '../models/system_settings.dart';
 import '../protocol/gt_sysex.dart';
 import '../protocol/gt1b_addresses.dart';
@@ -39,6 +40,16 @@ class PatchService extends ChangeNotifier {
   double get looperElapsedSeconds => _looperElapsedSeconds;
   double get recordedLoopDuration => _recordedLoopDuration;
   bool get isLooperActive => phraseLoopSettings.isEnabled;
+
+  // Quick Access Presets (Live Shortcuts)
+  final List<QuickPreset> _quickPresets = [
+    const QuickPreset(id: 'qp_1', patchIndex: 0, customLabel: 'SLAP INTRO', colorValue: 0xFF00ADB5),
+    const QuickPreset(id: 'qp_2', patchIndex: 1, customLabel: 'DRIVE VERSO', colorValue: 0xFFFF9800),
+    const QuickPreset(id: 'qp_3', patchIndex: 2, customLabel: 'CHORUS CORO', colorValue: 0xFF9C27B0),
+    const QuickPreset(id: 'qp_4', patchIndex: 3, customLabel: 'SOLO FUZZ', colorValue: 0xFFE53935),
+  ];
+
+  List<QuickPreset> get quickPresets => List.unmodifiable(_quickPresets);
 
   // Master settings (Block 7)
   int _patchLevel = 100;
@@ -1214,6 +1225,63 @@ class PatchService extends ChangeNotifier {
   /// Update auto-stop duration timer
   void updateLooperDurationTimer(int seconds) {
     phraseLoopSettings.maxDurationSeconds = seconds.clamp(0, 32);
+    notifyListeners();
+  }
+
+  /// Add a new quick preset shortcut
+  void addQuickPreset({
+    required int patchIndex,
+    String customLabel = '',
+    int colorValue = 0xFF00ADB5,
+  }) {
+    final id = 'qp_${DateTime.now().microsecondsSinceEpoch}';
+    final targetIndex = patchIndex.clamp(0, patches.isNotEmpty ? patches.length - 1 : 197);
+    final label = customLabel.trim().isNotEmpty
+        ? customLabel.trim()
+        : (patches.isNotEmpty && targetIndex < patches.length
+            ? patches[targetIndex].name
+            : 'Preset $targetIndex');
+    _quickPresets.add(QuickPreset(
+      id: id,
+      patchIndex: targetIndex,
+      customLabel: label,
+      colorValue: colorValue,
+    ));
+    notifyListeners();
+  }
+
+  /// Update an existing quick preset shortcut
+  void updateQuickPreset(
+    String id, {
+    int? patchIndex,
+    String? customLabel,
+    int? colorValue,
+  }) {
+    final idx = _quickPresets.indexWhere((p) => p.id == id);
+    if (idx == -1) return;
+    final current = _quickPresets[idx];
+    final targetIndex = (patchIndex ?? current.patchIndex).clamp(0, patches.isNotEmpty ? patches.length - 1 : 197);
+    _quickPresets[idx] = current.copyWith(
+      patchIndex: targetIndex,
+      customLabel: customLabel?.trim() ?? current.customLabel,
+      colorValue: colorValue ?? current.colorValue,
+    );
+    notifyListeners();
+  }
+
+  /// Remove a quick preset shortcut
+  void removeQuickPreset(String id) {
+    _quickPresets.removeWhere((p) => p.id == id);
+    notifyListeners();
+  }
+
+  /// Reorder quick presets for live performance setlists
+  void reorderQuickPresets(int oldIndex, int newIndex) {
+    if (oldIndex < 0 || oldIndex >= _quickPresets.length) return;
+    if (newIndex < 0 || newIndex > _quickPresets.length) return;
+    if (newIndex > oldIndex) newIndex -= 1;
+    final item = _quickPresets.removeAt(oldIndex);
+    _quickPresets.insert(newIndex, item);
     notifyListeners();
   }
 

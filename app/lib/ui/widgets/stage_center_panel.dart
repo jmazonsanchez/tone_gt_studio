@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../models/effect_block.dart';
+import '../../services/patch_service.dart';
 import '../layout/responsive_breakpoints.dart';
 import '../theme/app_theme.dart';
 import 'effect_editor_panel.dart';
 import 'mini_pedal_card.dart';
 import 'memory_edit_chain_bar.dart';
+import 'quick_preset_bar.dart';
 
 class StageCenterPanel extends StatelessWidget {
+  final PatchService patchService;
   final List<EffectBlock> effects;
   final Function(EffectBlock) onToggleEffect;
   final Function(int fromIndex, int toIndex) onMoveEffect;
@@ -14,6 +17,7 @@ class StageCenterPanel extends StatelessWidget {
 
   const StageCenterPanel({
     super.key,
+    required this.patchService,
     required this.effects,
     required this.onToggleEffect,
     required this.onMoveEffect,
@@ -30,7 +34,12 @@ class StageCenterPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Signal Chain Routing Bar (Memory Edit)
+          // 1. Live Preset Quick Access Bar (Accesos Directos en Vivo)
+          QuickPresetBar(patchService: patchService),
+
+          const SizedBox(height: 8),
+
+          // 2. Signal Chain Routing Bar (Memory Edit)
           MemoryEditChainBar(
             effects: effects,
             onToggle: onToggleEffect,
@@ -39,7 +48,7 @@ class StageCenterPanel extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // 2. Boutique Stompboxes Shelf (Zero vertical scroll)
+          // 3. Boutique Stompboxes Shelf (Zero vertical scroll)
           Expanded(
             child: _buildPedalShelf(context, colors),
           ),
