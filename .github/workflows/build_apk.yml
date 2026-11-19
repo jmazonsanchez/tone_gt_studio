@@ -3,9 +3,14 @@ name: Build Android APK (Mobile & Tablet)
 on:
   push:
     branches: [ main ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -45,3 +50,28 @@ jobs:
         with:
           name: tone-gt-studio-release-apk
           path: app/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        with:
+          tag_name: v1.0.0
+          name: "tone_gt_studio v1.0.0 (Release APK)"
+          body: |
+            ## tone_gt_studio v1.0.0 🎸🎛️
+            
+            Versión final completa para **Android** (Móvil/Tablet) y Web para pedalera **Boss GT-1B**.
+            
+            ### 📦 Descarga directa:
+            Descarga el archivo `app-release.apk` adjunto abajo e instálalo en tu dispositivo Android.
+            
+            ### ✨ Novedades:
+            - **Sincronización bidireccional en tiempo real** con la Boss GT-1B vía cable USB OTG.
+            - **Gestión completa de 198 presets:** 99 de usuario (`U01..U99`) y 99 de fábrica (`P01..P99`).
+            - **Edición profunda de efectos y algoritmos:** Modelado de los 36 tipos de FX1 y FX2.
+            - **Cadena de efectos interactiva Drag & Drop:** Reordenamiento reflejado en la pantalla de la pedalera.
+            - **Panel de control Master:** Level, BPM, Key y EQ de 4 bandas.
+            - **Afinador cromático y configuración de sistema:** Afinador en vivo con aguja neón reactiva, metrónomo y audio USB.
+            - **Librería y persistencia:** Guardado en hardware (Write) y respaldo LiveSet (`.tsl` y JSON).
+          files: app/build/app/outputs/flutter-apk/app-release.apk
+
