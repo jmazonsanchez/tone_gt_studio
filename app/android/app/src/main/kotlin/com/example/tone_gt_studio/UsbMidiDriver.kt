@@ -137,9 +137,10 @@ class UsbMidiDriver(
         val cb = pendingConnectCallback
         pendingConnectCallback = null
         val mgr = usbManager
-        if (device != null && granted && mgr != null) {
-            val success = openDeviceAndStart(mgr, device)
-            val name = getDeviceDisplayName(device)
+        val targetDev = device ?: mgr?.let { findTargetDevice(it.deviceList.values.toList(), null) }
+        if (targetDev != null && granted && mgr != null) {
+            val success = openDeviceAndStart(mgr, targetDev)
+            val name = getDeviceDisplayName(targetDev)
             Handler(Looper.getMainLooper()).post { cb?.invoke(success, name) }
         } else {
             Handler(Looper.getMainLooper()).post { cb?.invoke(false, "") }
@@ -147,13 +148,16 @@ class UsbMidiDriver(
     }
 
     private fun requestUsbPermission(mgr: UsbManager, device: UsbDevice) {
+        val intent = Intent(ACTION_USB_PERMISSION).apply {
+            setPackage(context.packageName)
+        }
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
         } else {
             PendingIntent.FLAG_UPDATE_CURRENT
         }
-        val intent = PendingIntent.getBroadcast(context, 0, Intent(ACTION_USB_PERMISSION), flags)
-        mgr.requestPermission(device, intent)
+        val pIntent = PendingIntent.getBroadcast(context, 0, intent, flags)
+        mgr.requestPermission(device, pIntent)
     }
 
     private fun openDeviceAndStart(mgr: UsbManager, device: UsbDevice): Boolean {
@@ -214,7 +218,7 @@ class UsbMidiDriver(
         if (!prod.isNullOrEmpty()) return prod
         if (device.vendorId == ROLAND_VENDOR_ID) {
             return when (device.productId) {
-                500 -> "Boss GT-1B"
+                499, 500 -> "Boss GT-1B"
                 485, 470 -> "Boss GT-1"
                 else -> "Boss / Roland Device"
             }
