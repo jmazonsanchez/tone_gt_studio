@@ -157,13 +157,15 @@ void main() {
 
       // Tap Metronome Tab
       await tester.tap(find.text('METRÓNOMO'));
-      await tester.pumpAndSettle();
-      expect(find.text('METRÓNOMO INTERNO'), findsOneWidget);
-      expect(find.text('TEMPO (BPM)'), findsOneWidget);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('METRÓNOMO VISUAL (EN PANTALLA)'), findsOneWidget);
+      expect(find.text('PAD DE TAP TEMPO Y PULSO VISUAL'), findsOneWidget);
 
       // Tap USB & Hardware Tab
       await tester.tap(find.text('USB & HARDWARE'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
       expect(find.text('USB AUDIO PRINCIPAL (DAW / GRABACIÓN)'), findsOneWidget);
       expect(find.text('DIRECT MONITOR'), findsOneWidget);
     });
