@@ -21,6 +21,7 @@ class MainActivity : FlutterActivity() {
     private val methodChannelName = "com.example.tone_gt_studio/midi"
     private val eventChannelName = "com.example.tone_gt_studio/midi_events"
 
+    private var usbDriver: UsbMidiDriver? = null
     private var midiManager: MidiManager? = null
     private var openMidiDevice: MidiDevice? = null
     private var inputPort: MidiInputPort? = null
@@ -29,6 +30,10 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        usbDriver = UsbMidiDriver(this) { incomingBytes ->
+            runOnUiThread { eventSink?.success(incomingBytes) }
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             midiManager = getSystemService(Context.MIDI_SERVICE) as? MidiManager
@@ -51,8 +56,8 @@ class MainActivity : FlutterActivity() {
 
     private fun handleMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
-            "init" -> result.success(midiManager != null)
-            "getDevices" -> result.success(getMidiDeviceNames())
+            "init" -> result.success(true)
+            "getDevices" -> result.success(getAllDeviceNames())
             "connect" -> connectToDevice(call.argument<String?>("deviceName"), result)
             "disconnect" -> {
                 disconnectDevice()
@@ -63,43 +68,65 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun getAllDeviceNames(): List<String> {
+        val list = mutableListOf<String>()
+        val usbNames = usbDriver?.getDeviceNames() ?: emptyList()
+        list.addAll(usbNames)
+        val mm = midiManager
+        if (mm != null) {
+            for (info in mm.devices) {
+                list.add(getDeviceDisplayName(info))
+            }
+        }
+        return list
+    }
+
     private fun handleSend(data: ByteArray?, result: MethodChannel.Result) {
-        val port = inputPort
-        if (data == null || port == null) {
+        if (data == null) {
             result.success(false)
             return
         }
-        try {
-            port.send(data, 0, data.size)
-            result.success(true)
-        } catch (_: Exception) {
-            result.success(false)
+
+        val usb = usbDriver
+        if (usb != null && usb.isDeviceConnected()) {
+            val ok = usb.send(data)
+            result.success(ok)
+            return
         }
-    }
 
-    private fun getDeviceDisplayName(info: MidiDeviceInfo): String {
-        return info.properties.getString(MidiDeviceInfo.PROPERTY_NAME)
-            ?: info.properties.getString(MidiDeviceInfo.PROPERTY_PRODUCT)
-            ?: "MIDI Device #${info.id}"
-    }
-
-    private fun getMidiDeviceNames(): List<String> {
-        val mm = midiManager ?: return emptyList()
-        return mm.devices.map { getDeviceDisplayName(it) }
-    }
-
-    private fun findTargetDevice(devices: Array<MidiDeviceInfo>, targetName: String?): MidiDeviceInfo? {
-        if (!targetName.isNullOrEmpty()) {
-            val matched = devices.find { getDeviceDisplayName(it).contains(targetName, ignoreCase = true) }
-            if (matched != null) return matched
+        val port = inputPort
+        if (port != null) {
+            try {
+                port.send(data, 0, data.size)
+                result.success(true)
+            } catch (_: Exception) {
+                result.success(false)
+            }
+            return
         }
-        return devices.find {
-            val name = getDeviceDisplayName(it)
-            name.contains("Boss", ignoreCase = true) || name.contains("GT-1", ignoreCase = true)
-        } ?: devices.firstOrNull()
+
+        result.success(false)
     }
 
     private fun connectToDevice(targetName: String?, result: MethodChannel.Result) {
+        val usb = usbDriver
+        val usbDevices = usb?.getDeviceNames() ?: emptyList()
+
+        if (usb != null && usbDevices.isNotEmpty()) {
+            usb.connect(targetName) { success, name ->
+                if (success) {
+                    result.success(mapOf("success" to true, "name" to name))
+                } else {
+                    tryMidiManagerConnect(targetName, result)
+                }
+            }
+            return
+        }
+
+        tryMidiManagerConnect(targetName, result)
+    }
+
+    private fun tryMidiManagerConnect(targetName: String?, result: MethodChannel.Result) {
         val mm = midiManager
         val devices = mm?.devices
         if (devices == null || devices.isEmpty()) {
@@ -113,10 +140,27 @@ class MainActivity : FlutterActivity() {
             return
         }
 
-        disconnectDevice()
+        disconnectMidiManager()
         mm.openDevice(target, { device ->
             setupOpenedDevice(device, target, result)
         }, Handler(Looper.getMainLooper()))
+    }
+
+    private fun getDeviceDisplayName(info: MidiDeviceInfo): String {
+        return info.properties.getString(MidiDeviceInfo.PROPERTY_NAME)
+            ?: info.properties.getString(MidiDeviceInfo.PROPERTY_PRODUCT)
+            ?: "MIDI Device #${info.id}"
+    }
+
+    private fun findTargetDevice(devices: Array<MidiDeviceInfo>, targetName: String?): MidiDeviceInfo? {
+        if (!targetName.isNullOrEmpty()) {
+            val matched = devices.find { getDeviceDisplayName(it).contains(targetName, ignoreCase = true) }
+            if (matched != null) return matched
+        }
+        return devices.find {
+            val name = getDeviceDisplayName(it)
+            name.contains("Boss", ignoreCase = true) || name.contains("GT-1", ignoreCase = true)
+        } ?: devices.firstOrNull()
     }
 
     private fun setupOpenedDevice(device: MidiDevice?, target: MidiDeviceInfo, result: MethodChannel.Result) {
@@ -159,7 +203,7 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun disconnectDevice() {
+    private fun disconnectMidiManager() {
         try { inputPort?.close() } catch (_: Exception) {}
         inputPort = null
 
@@ -170,7 +214,14 @@ class MainActivity : FlutterActivity() {
         openMidiDevice = null
     }
 
+    private fun disconnectDevice() {
+        usbDriver?.disconnect()
+        disconnectMidiManager()
+    }
+
     override fun onDestroy() {
+        usbDriver?.dispose()
+        usbDriver = null
         disconnectDevice()
         super.onDestroy()
     }
