@@ -231,21 +231,7 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
         backgroundColor: active ? colors.primary.withValues(alpha: 0.25) : colors.surfaceVariant,
         side: BorderSide(color: active ? colors.primary : colors.borderSubtle, width: 1),
       ),
-      onPressed: () {
-        patchService.toggleTuner();
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (ctx) => TunerModal(
-            patchService: patchService,
-            onClose: () {
-              patchService.toggleTuner();
-              Navigator.pop(ctx);
-            },
-          ),
-        );
-      },
+      onPressed: () => TunerModal.show(context, patchService),
       icon: Icon(Icons.tune, size: 18, color: active ? colors.primary : colors.textSecondary),
       tooltip: 'Afinador / Silenciador',
     );

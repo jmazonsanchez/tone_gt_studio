@@ -18,6 +18,8 @@ class PatchService extends ChangeNotifier {
   StreamSubscription<Uint8List>? _sysExSubscription;
   int _currentPatchIndex = 0;
   bool _isTunerActive = false;
+  Timer? _tunerPollingTimer;
+  Timer? _demoTunerTimer;
   bool _isWahActive = false;
   int _wahPosition = 50;
   int _footVolumeLevel = 100;
@@ -68,6 +70,8 @@ class PatchService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _tunerPollingTimer?.cancel();
+    _demoTunerTimer?.cancel();
     _sysExSubscription?.cancel();
     midiService.removeListener(_onMidiStateChanged);
     super.dispose();
@@ -996,9 +1000,74 @@ class PatchService extends ChangeNotifier {
   }
 
   Future<void> toggleTuner() async {
-    _isTunerActive = !_isTunerActive;
+    if (_isTunerActive) {
+      await stopTuner();
+    } else {
+      await startTuner();
+    }
+  }
+
+  /// Start Tuner mode: sends DT1 (7F 00 00 02 01) to Boss GT-1B pedal and requests live pitch stream.
+  Future<void> startTuner() async {
+    _isTunerActive = true;
     notifyListeners();
-    await midiService.toggleTuner(_isTunerActive);
+    await midiService.toggleTuner(true);
+
+    if (midiService.isConnected) {
+      // Query initial pitch
+      await midiService.sendSysEx(GtSysEx.buildRq1Message(
+        address: const [0x7F, 0x00, 0x05, 0x00],
+        size: const [0x00, 0x00, 0x00, 0x02],
+      ));
+
+      _tunerPollingTimer?.cancel();
+      _tunerPollingTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+        if (_isTunerActive && midiService.isConnected) {
+          midiService.sendSysEx(GtSysEx.buildRq1Message(
+            address: const [0x7F, 0x00, 0x05, 0x00],
+            size: const [0x00, 0x00, 0x00, 0x02],
+          ));
+        }
+      });
+    } else {
+      _startDemoTunerSimulation();
+    }
+  }
+
+  /// Stop Tuner mode: sends DT1 (7F 00 00 02 00) to Boss GT-1B pedal and stops timers.
+  Future<void> stopTuner() async {
+    _isTunerActive = false;
+    _tunerPollingTimer?.cancel();
+    _tunerPollingTimer = null;
+    _demoTunerTimer?.cancel();
+    _demoTunerTimer = null;
+    systemSettings.updateLivePitch(-1, 50);
+    notifyListeners();
+    await midiService.toggleTuner(false);
+  }
+
+  void _startDemoTunerSimulation() {
+    _demoTunerTimer?.cancel();
+    int step = 0;
+    const demoNotes = [4, 9, 2, 7]; // E, A, D, G bass notes
+    _demoTunerTimer = Timer.periodic(const Duration(milliseconds: 250), (timer) {
+      if (!_isTunerActive) {
+        timer.cancel();
+        return;
+      }
+      step = (step + 1) % 40;
+      final noteIdx = demoNotes[(step ~/ 10) % demoNotes.length];
+      final centOffset = ((step % 10) - 5) * 4;
+      systemSettings.updateLivePitch(noteIdx, 50 + centOffset);
+      notifyListeners();
+    });
+  }
+
+  /// Manually trigger pitch test (e.g. tapping a bass string reference button in Tuner modal).
+  void setManualPitch(int noteIndex, int centsDeviation) {
+    _demoTunerTimer?.cancel();
+    systemSettings.updateLivePitch(noteIndex, 50 + centsDeviation);
+    notifyListeners();
   }
 
   /// Reorder effect blocks in the active patch's signal chain (Memory Edit)
