@@ -8,6 +8,7 @@ import '../models/assign_model.dart';
 import '../models/effect_block.dart';
 import '../models/effect_parameter.dart';
 import '../models/patch.dart';
+import '../models/system_settings.dart';
 import '../protocol/gt_sysex.dart';
 import '../protocol/gt1b_addresses.dart';
 import 'midi_service.dart';
@@ -37,6 +38,9 @@ class PatchService extends ChangeNotifier {
     8,
     (i) => AssignSetting(index: i + 1),
   );
+
+  // Phase 6: System Settings & Utilities
+  final SystemSettings systemSettings = SystemSettings();
 
   List<int> _hardwareFxChain = [
     0, 1, 4, 8, 10, 14, 17, 5, 2, 6, 11, 15, 12, 13, 7, 9, 18, 3, 19, 16
@@ -470,6 +474,25 @@ class PatchService extends ChangeNotifier {
     await syncFxChainFromPedal();
     await syncWahStateFromPedal();
     await syncCtlExpAndAssignsFromPedal();
+    await syncSystemSettingsFromPedal();
+  }
+
+  /// Synchronize System Settings block (Output select, Global EQ, USB, Metronome) from buffer (00 00 00 00)
+  Future<void> syncSystemSettingsFromPedal() async {
+    if (!midiService.isConnected) return;
+    try {
+      final req = GtSysEx.buildSystemRequest();
+      final reply = await midiService.sendSysExRequest(
+        req,
+        timeout: const Duration(milliseconds: 400),
+      );
+      if (reply != null) {
+        GtSysEx.parseSystemSettings(reply, systemSettings);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error syncing system settings: $e');
+    }
   }
 
   /// Synchronize Block 7 (Master Level, Master EQ, BPM, Key) from buffer (60 00 07 10)
@@ -686,6 +709,23 @@ class PatchService extends ChangeNotifier {
         _isTunerActive = tunerActive;
         notifyListeners();
       }
+      return;
+    }
+
+    // B2. Live Chromatic Tuner Pitch Stream (7F 00 05 00)
+    if (a0 == 0x7F && a1 == 0x00 && a2 == 0x05 && a3 == 0x00) {
+      final pitch = GtSysEx.parseLivePitch(packet);
+      if (pitch != null) {
+        systemSettings.updateLivePitch(pitch.$1, pitch.$2);
+        notifyListeners();
+      }
+      return;
+    }
+
+    // B3. System Settings Block (00 00 00 00)
+    if (a0 == 0x00 && a1 == 0x00 && a2 == 0x00 && a3 == 0x00 && packet.length >= 30) {
+      GtSysEx.parseSystemSettings(packet, systemSettings);
+      notifyListeners();
       return;
     }
 
@@ -1115,6 +1155,77 @@ class PatchService extends ChangeNotifier {
       await midiService.sendSysEx(maxMsg);
       await midiService.sendParameterValue([base[0], base[1], base[2], base[3] + 7], setting.source);
       await midiService.sendParameterValue([base[0], base[1], base[2], base[3] + 8], setting.sourceMode);
+    }
+  }
+
+  /// Update a System / Global configuration parameter and transmit to GT-1B
+  Future<void> updateSystemParameter(String key, int value) async {
+    final addr = _mapSystemParameter(key, value);
+    if (addr == null) return;
+    notifyListeners();
+    if (midiService.isConnected) {
+      await midiService.sendParameterValue(addr, value);
+    }
+  }
+
+  List<int>? _mapSystemParameter(String key, int value) {
+    switch (key) {
+      case 'output_select':
+        systemSettings.outputSelect = value;
+        return [0x00, 0x00, 0x00, 0x70];
+      case 'input_level':
+        systemSettings.inputLevel = value;
+        return [0x00, 0x00, 0x00, 0x71];
+      case 'global_eq_low':
+        systemSettings.eqLowGain = value;
+        return [0x00, 0x00, 0x00, 0x72];
+      case 'global_eq_mid_gain':
+        systemSettings.eqMidGain = value;
+        return [0x00, 0x00, 0x00, 0x73];
+      case 'global_eq_mid_freq':
+        systemSettings.eqMidFreq = value;
+        return [0x00, 0x00, 0x00, 0x74];
+      case 'global_eq_mid_q':
+        systemSettings.eqMidQ = value;
+        return [0x00, 0x00, 0x00, 0x75];
+      case 'global_eq_high':
+        systemSettings.eqHighGain = value;
+        return [0x00, 0x00, 0x00, 0x76];
+      case 'total_reverb':
+        systemSettings.totalReverb = value;
+        return [0x00, 0x00, 0x00, 0x78];
+      case 'metronome_on':
+        systemSettings.metronomeOn = value != 0;
+        return [0x00, 0x00, 0x00, 0x30];
+      case 'metronome_tempo':
+        systemSettings.metronomeTempo = value;
+        return [0x00, 0x00, 0x00, 0x31];
+      case 'metronome_beat':
+        systemSettings.metronomeBeat = value;
+        return [0x00, 0x00, 0x00, 0x33];
+      case 'metronome_level':
+        systemSettings.metronomeLevel = value;
+        return [0x00, 0x00, 0x00, 0x34];
+      case 'tuner_pitch':
+        systemSettings.tunerPitch = value;
+        return [0x00, 0x00, 0x00, 0x20];
+      case 'tuner_output':
+        systemSettings.tunerOutput = value;
+        return [0x00, 0x00, 0x00, 0x21];
+      case 'usb_primary_out':
+        systemSettings.usbPrimaryOut = value;
+        return [0x00, 0x00, 0x00, 0x52];
+      case 'usb_primary_mix':
+        systemSettings.usbPrimaryMix = value;
+        return [0x00, 0x00, 0x00, 0x53];
+      case 'usb_direct_monitor':
+        systemSettings.usbDirectMonitor = value != 0;
+        return [0x00, 0x00, 0x00, 0x54];
+      case 'auto_off':
+        systemSettings.autoOff = value;
+        return [0x00, 0x00, 0x00, 0x60];
+      default:
+        return null;
     }
   }
 }

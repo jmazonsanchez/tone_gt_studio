@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'gt1b_addresses.dart';
 import '../models/effect_block.dart';
+import '../models/system_settings.dart';
 
 /// Roland / Boss SysEx Protocol Engine for Boss GT-1B and GT-1.
 class GtSysEx {
@@ -171,6 +172,57 @@ class GtSysEx {
       modelId: modelId,
       deviceId: deviceId,
     );
+  }
+
+  /// Request System Settings block (address 00 00 00 00, size 127 bytes).
+  static Uint8List buildSystemRequest({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildRq1Message(
+      address: [0x00, 0x00, 0x00, 0x00],
+      size: [0x00, 0x00, 0x00, 0x7F],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Parse real-time live chromatic tuner pitch reading (address 7F 00 05 00).
+  /// Returns (noteIndex 0..11, rawCentValue 0..100) or null.
+  static (int, int)? parseLivePitch(Uint8List packet) {
+    if (packet.length < 15) return null;
+    if (packet[0] != 0xF0 || packet[7] != commandDt1) return null;
+    if (packet[8] != 0x7F || packet[9] != 0x00 || packet[10] != 0x05 || packet[11] != 0x00) {
+      return null;
+    }
+    return (packet[12], packet[13]);
+  }
+
+  /// Parse System Settings packet from GT-1B (address 00 00 00 00).
+  static void parseSystemSettings(Uint8List packet, SystemSettings settings) {
+    if (packet.length < 30) return;
+    if (packet[0] != 0xF0 || packet[7] != commandDt1) return;
+    if (packet[8] != 0x00 || packet[9] != 0x00 || packet[10] != 0x00 || packet[11] != 0x00) {
+      return;
+    }
+    final data = packet.sublist(12, packet.length - 2);
+    if (data.length > 0x20) settings.tunerPitch = data[0x20];
+    if (data.length > 0x21) settings.tunerOutput = data[0x21];
+    if (data.length > 0x30) settings.metronomeOn = data[0x30] != 0;
+    if (data.length > 0x32) settings.metronomeTempo = ((data[0x32] << 7) | data[0x31]).clamp(20, 250);
+    if (data.length > 0x33) settings.metronomeBeat = data[0x33];
+    if (data.length > 0x34) settings.metronomeLevel = data[0x34];
+    if (data.length > 0x51) settings.usbSecondaryIn = data[0x51];
+    if (data.length > 0x52) settings.usbPrimaryOut = data[0x52];
+    if (data.length > 0x53) settings.usbPrimaryMix = data[0x53];
+    if (data.length > 0x54) settings.usbDirectMonitor = data[0x54] != 0;
+    if (data.length > 0x57) settings.usbSecondaryOut = data[0x57];
+    if (data.length > 0x60) settings.autoOff = data[0x60];
+    if (data.length > 0x70) settings.outputSelect = data[0x70];
+    if (data.length > 0x71) settings.inputLevel = data[0x71];
+    if (data.length > 0x72) settings.eqLowGain = data[0x72];
+    if (data.length > 0x73) settings.eqMidGain = data[0x73];
+    if (data.length > 0x74) settings.eqMidFreq = data[0x74];
+    if (data.length > 0x75) settings.eqMidQ = data[0x75];
+    if (data.length > 0x76) settings.eqHighGain = data[0x76];
+    if (data.length > 0x78) settings.totalReverb = data[0x78];
   }
 
   /// Build full FX chain order update (address 60 00 07 20, 20 slot IDs).

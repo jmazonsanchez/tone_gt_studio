@@ -3,6 +3,7 @@ import '../../services/midi_service.dart';
 import '../../services/patch_service.dart';
 import 'assign_editor_modal.dart';
 import 'patch_list_modal.dart';
+import 'system_settings_modal.dart';
 import 'tuner_modal.dart';
 
 class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
@@ -91,7 +92,11 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
           _buildAssignsButton(context),
           const SizedBox(width: 8),
 
-          // 6. Library / Presets Button
+          // 6. Phase 6: System & Utilities Button
+          _buildSystemButton(context),
+          const SizedBox(width: 8),
+
+          // 7. Library / Presets Button
           _buildLibraryButton(context),
         ],
       ),
@@ -228,10 +233,13 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (ctx) => TunerModal(onClose: () {
-            patchService.toggleTuner();
-            Navigator.pop(ctx);
-          }),
+          builder: (ctx) => TunerModal(
+            patchService: patchService,
+            onClose: () {
+              patchService.toggleTuner();
+              Navigator.pop(ctx);
+            },
+          ),
         );
       },
       icon: Icon(Icons.tune, size: 18, color: active ? const Color(0xFF00ADB5) : Colors.white70),
@@ -248,7 +256,20 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       onPressed: () => AssignEditorModal.show(context, patchService),
       icon: const Icon(Icons.settings_remote, size: 18, color: Color(0xFF00ADB5)),
-      tooltip: 'CTL1 / EXP / Assigns 1-8 (Fase 5)',
+      tooltip: 'CTL1 / EXP / Assigns 1-8',
+    );
+  }
+
+  Widget _buildSystemButton(BuildContext context) {
+    return IconButton.filledTonal(
+      visualDensity: VisualDensity.compact,
+      style: IconButton.styleFrom(
+        backgroundColor: const Color(0xFF222230),
+        side: const BorderSide(color: Colors.white12, width: 1),
+      ),
+      onPressed: () => SystemSettingsModal.show(context, patchService),
+      icon: const Icon(Icons.settings, size: 18, color: Color(0xFF00ADB5)),
+      tooltip: 'Sistema y Utilidades GT-1B (Fase 6)',
     );
   }
 
