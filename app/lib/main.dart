@@ -30,7 +30,7 @@ class ToneGtStudioApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'tone_gt_studio',
+        title: 'ToneStudio',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         scrollBehavior: const MaterialScrollBehavior().copyWith(

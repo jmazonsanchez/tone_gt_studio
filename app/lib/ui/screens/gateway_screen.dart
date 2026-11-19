@@ -113,21 +113,31 @@ class GatewayScreen extends StatelessWidget {
 
   Widget _buildPedalIcon() {
     return Container(
-      width: 76,
-      height: 76,
+      width: 90,
+      height: 90,
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A26),
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF00ADB5).withValues(alpha: 0.5), width: 2),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00ADB5).withValues(alpha: 0.25),
+            color: const Color(0xFF00ADB5).withValues(alpha: 0.35),
             blurRadius: 20,
-            spreadRadius: 3,
+            spreadRadius: 2,
           ),
         ],
       ),
-      child: const Icon(Icons.settings_input_hdmi, size: 38, color: Color(0xFF00ADB5)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Image.asset(
+          'assets/images/logo.png',
+          width: 90,
+          height: 90,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            color: const Color(0xFF1A1A26),
+            child: const Icon(Icons.settings_input_hdmi, size: 40, color: Color(0xFF00ADB5)),
+          ),
+        ),
+      ),
     );
   }
 
