@@ -34,6 +34,9 @@ class MainActivity : FlutterActivity() {
         usbDriver = UsbMidiDriver(this) { incomingBytes ->
             runOnUiThread { eventSink?.success(incomingBytes) }
         }
+        usbDriver?.onDisconnectedCallback = {
+            runOnUiThread { eventSink?.success(mapOf("type" to "disconnected")) }
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             midiManager = getSystemService(Context.MIDI_SERVICE) as? MidiManager

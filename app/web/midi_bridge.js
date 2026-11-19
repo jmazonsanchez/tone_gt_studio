@@ -6,6 +6,31 @@ window.toneMidiBridge = {
   selectedOutput: null,
   selectedInput: null,
   messageCallback: null,
+  disconnectCallback: null,
+
+  setDisconnectCallback(callback) {
+    this.disconnectCallback = callback;
+  },
+
+  setMessageCallback(callback) {
+    this.messageCallback = callback;
+  },
+
+  _isPortSelected(port) {
+    if (!port) return false;
+    const isOut = this.selectedOutput && port.id === this.selectedOutput.id;
+    const isIn = this.selectedInput && port.id === this.selectedInput.id;
+    return isOut || isIn || this._isMatchingPort(port.name || "", "gt-1");
+  },
+
+  _handleStateChange(e) {
+    if (e.port.state !== "disconnected") return;
+    if (this._isPortSelected(e.port)) {
+      this.selectedOutput = null;
+      this.selectedInput = null;
+      if (this.disconnectCallback) this.disconnectCallback();
+    }
+  },
 
   async requestAccess() {
     if (!navigator.requestMIDIAccess) {
@@ -15,12 +40,7 @@ window.toneMidiBridge = {
 
     try {
       this.midiAccess = await navigator.requestMIDIAccess({ sysex: true });
-      console.log("✅ Web MIDI access granted with SysEx support.");
-      
-      this.midiAccess.onstatechange = (e) => {
-        console.log("MIDI state change:", e.port.name, e.port.state);
-      };
-
+      this.midiAccess.onstatechange = (e) => this._handleStateChange(e);
       return true;
     } catch (err) {
       console.error("❌ Web MIDI access rejected or failed:", err);
@@ -117,9 +137,8 @@ window.toneMidiBridge = {
     }
     this.selectedOutput = null;
     console.log("MIDI disconnected");
-  },
-
-  setMessageCallback(cb) {
-    this.messageCallback = cb;
+    if (this.disconnectCallback) {
+      this.disconnectCallback();
+    }
   }
 };

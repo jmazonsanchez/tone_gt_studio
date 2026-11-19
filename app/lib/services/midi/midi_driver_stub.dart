@@ -12,6 +12,7 @@ class PlatformMidiDriver implements MidiDriver {
   bool _connected = false;
   String _deviceName = '';
   void Function(Uint8List data)? _onData;
+  void Function()? _onDisconnected;
   StreamSubscription? _eventSubscription;
 
   @override
@@ -82,6 +83,12 @@ class PlatformMidiDriver implements MidiDriver {
   void _listenToEvents() {
     _eventSubscription?.cancel();
     _eventSubscription = _eventChannel.receiveBroadcastStream().listen((data) {
+      if (data is Map && data['type'] == 'disconnected') {
+        _connected = false;
+        _deviceName = '';
+        _onDisconnected?.call();
+        return;
+      }
       if (data is Uint8List) {
         _onData?.call(data);
       } else if (data is List) {
@@ -89,6 +96,9 @@ class PlatformMidiDriver implements MidiDriver {
       }
     }, onError: (err) {
       debugPrint('MIDI event stream error: $err');
+      _connected = false;
+      _deviceName = '';
+      _onDisconnected?.call();
     });
   }
 
@@ -120,5 +130,10 @@ class PlatformMidiDriver implements MidiDriver {
   @override
   void setOnDataReceived(void Function(Uint8List data) callback) {
     _onData = callback;
+  }
+
+  @override
+  void setOnDisconnected(void Function() callback) {
+    _onDisconnected = callback;
   }
 }

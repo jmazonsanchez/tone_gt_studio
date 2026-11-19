@@ -26,6 +26,7 @@ class MidiService extends ChangeNotifier implements MidiTransport {
   ConnectionType _connectionType = ConnectionType.usbOtg;
   String _connectedDeviceName = '';
   String _lastConnectedDevice = '';
+  bool _hasHadActiveConnection = false;
   bool _autoReconnect = true;
   Timer? _reconnectTimer;
   int _reconnectAttempts = 0;
@@ -36,6 +37,7 @@ class MidiService extends ChangeNotifier implements MidiTransport {
   String get connectedDeviceName => _connectedDeviceName;
   @override
   bool get isConnected => _connectionState == MidiConnectionState.connected;
+  bool get hasHadActiveConnection => _hasHadActiveConnection;
   bool get isAutoReconnecting => _connectionState == MidiConnectionState.reconnecting;
   bool get autoReconnect => _autoReconnect;
   set autoReconnect(bool val) {
@@ -50,6 +52,7 @@ class MidiService extends ChangeNotifier implements MidiTransport {
 
   MidiService() {
     _driver.setOnDataReceived(_handleIncomingMidi);
+    _driver.setOnDisconnected(handleUnexpectedDisconnection);
   }
 
   @override
@@ -121,6 +124,7 @@ class MidiService extends ChangeNotifier implements MidiTransport {
       if (success) {
         _connectionState = MidiConnectionState.connected;
         _connectedDeviceName = _driver.connectedDeviceName;
+        _hasHadActiveConnection = true;
         await sendSysEx(GtSysEx.buildEditorMode(enable: true));
         notifyListeners();
         return true;
@@ -151,6 +155,7 @@ class MidiService extends ChangeNotifier implements MidiTransport {
         _connectionState = MidiConnectionState.connected;
         _connectedDeviceName = _driver.connectedDeviceName;
         _lastConnectedDevice = _connectedDeviceName;
+        _hasHadActiveConnection = true;
         // Activate Roland Editor Communication Mode for live bidirectional parameter sync
         await sendSysEx(GtSysEx.buildEditorMode(enable: true));
       } else {

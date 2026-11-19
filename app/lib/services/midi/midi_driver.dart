@@ -11,6 +11,7 @@ abstract class MidiDriver {
   Future<void> disconnect();
   Future<bool> send(Uint8List data);
   void setOnDataReceived(void Function(Uint8List data) callback);
+  void setOnDisconnected(void Function() callback);
 
   factory MidiDriver() => PlatformMidiDriver();
 }

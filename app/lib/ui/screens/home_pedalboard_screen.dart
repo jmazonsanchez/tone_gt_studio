@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/midi_service.dart';
 import '../../services/patch_service.dart';
+import 'disconnected_screen.dart';
 import 'gateway_screen.dart';
 import 'stage_pedalboard_screen.dart';
 
@@ -19,9 +20,27 @@ class _HomePedalboardScreenState extends State<HomePedalboardScreen> {
   Widget build(BuildContext context) {
     final midi = context.watch<MidiService>();
     final patchService = context.watch<PatchService>();
+
+    if (midi.isConnected && _isDemoMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _isDemoMode = false);
+      });
+    }
+
     final isUnlocked = midi.isConnected || _isDemoMode;
 
     if (!isUnlocked) {
+      if (midi.hasHadActiveConnection) {
+        return DisconnectedScreen(
+          midi: midi,
+          onEnterDemoMode: () {
+            setState(() {
+              _isDemoMode = true;
+            });
+          },
+        );
+      }
+
       return GatewayScreen(
         midi: midi,
         onEnterDemoMode: () {

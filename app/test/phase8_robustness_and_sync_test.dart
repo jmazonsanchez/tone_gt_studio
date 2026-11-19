@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tone_gt_studio/services/midi_service.dart';
 import 'package:tone_gt_studio/services/patch_service.dart';
+import 'package:tone_gt_studio/ui/screens/disconnected_screen.dart';
 import 'package:tone_gt_studio/ui/screens/stage_pedalboard_screen.dart';
 import 'package:tone_gt_studio/ui/widgets/stage_header_bar.dart';
 
@@ -138,6 +139,29 @@ void main() {
 
       expect(find.text('RECONECTANDO...'), findsOneWidget);
       midi.cancelAutoReconnect();
+    });
+
+    testWidgets('DisconnectedScreen renders warning badge and reconnection buttons', (tester) async {
+      tester.view.physicalSize = const Size(1280, 720);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: DisconnectedScreen(
+            midi: midi,
+            onEnterDemoMode: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(DisconnectedScreen), findsOneWidget);
+      expect(find.text('Pedalera Desconectada'), findsOneWidget);
+      expect(find.textContaining('Se ha perdido la comunicación'), findsOneWidget);
+      expect(find.text('VOLVER A CONECTAR (USB OTG)'), findsOneWidget);
+      expect(find.text('VOLVER A CONECTAR (BLUETOOTH)'), findsOneWidget);
+      expect(find.text('Continuar en Modo Demo (Sin pedalera)'), findsOneWidget);
     });
   });
 }

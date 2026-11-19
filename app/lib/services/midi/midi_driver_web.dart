@@ -10,6 +10,7 @@ class PlatformMidiDriver implements MidiDriver {
   bool _connected = false;
   String _deviceName = '';
   void Function(Uint8List data)? _onData;
+  void Function()? _onDisconnected;
 
   @override
   bool get isConnected => _connected;
@@ -74,11 +75,28 @@ class PlatformMidiDriver implements MidiDriver {
       _connected = success;
       if (success) {
         _deviceName = deviceName ?? 'Boss GT-1B (USB)';
+        _bindDisconnectCallback();
       }
       return success;
     } catch (e) {
       debugPrint('Error connecting to Web MIDI: $e');
       return false;
+    }
+  }
+
+  void _bindDisconnectCallback() {
+    try {
+      final bridge = toneMidiBridge;
+      if (bridge != null) {
+        final callback = (() {
+          _connected = false;
+          _deviceName = '';
+          _onDisconnected?.call();
+        }).toJS;
+        bridge.callMethod('setDisconnectCallback'.toJS, callback);
+      }
+    } catch (e) {
+      debugPrint('Error registering Web MIDI disconnect callback: $e');
     }
   }
 
@@ -113,5 +131,11 @@ class PlatformMidiDriver implements MidiDriver {
   @override
   void setOnDataReceived(void Function(Uint8List data) callback) {
     _onData = callback;
+  }
+
+  @override
+  void setOnDisconnected(void Function() callback) {
+    _onDisconnected = callback;
+    _bindDisconnectCallback();
   }
 }

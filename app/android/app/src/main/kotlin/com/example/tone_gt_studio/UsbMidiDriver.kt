@@ -38,6 +38,7 @@ class UsbMidiDriver(
     private var isReading = false
     private var readerThread: Thread? = null
     private var pendingConnectCallback: ((Boolean, String) -> Unit)? = null
+    var onDisconnectedCallback: (() -> Unit)? = null
 
     private val usbReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context?, intent: Intent?) {
@@ -50,12 +51,22 @@ class UsbMidiDriver(
                     intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
                 }
                 handlePermissionResult(device, granted)
+            } else if (intent?.action == UsbManager.ACTION_USB_DEVICE_DETACHED) {
+                if (connection != null) {
+                    disconnect()
+                    Handler(Looper.getMainLooper()).post {
+                        onDisconnectedCallback?.invoke()
+                    }
+                }
             }
         }
     }
 
     init {
-        val filter = IntentFilter(ACTION_USB_PERMISSION)
+        val filter = IntentFilter().apply {
+            addAction(ACTION_USB_PERMISSION)
+            addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.registerReceiver(usbReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
@@ -179,6 +190,19 @@ class UsbMidiDriver(
         return true
     }
 
+    private fun handleReadError(): Boolean {
+        val mgr = usbManager
+        if (mgr == null || mgr.deviceList.values.none { it.vendorId == ROLAND_VENDOR_ID }) {
+            isReading = false
+            Handler(Looper.getMainLooper()).post {
+                disconnect()
+                onDisconnectedCallback?.invoke()
+            }
+            return true
+        }
+        return false
+    }
+
     private fun startReaderThread(conn: UsbDeviceConnection, inEp: UsbEndpoint) {
         isReading = true
         val buffer = ByteArray(inEp.maxPacketSize.coerceAtLeast(64))
@@ -189,6 +213,8 @@ class UsbMidiDriver(
                 val read = conn.bulkTransfer(inEp, buffer, buffer.size, 200)
                 if (read > 0) {
                     processIncomingBytes(buffer, read, output)
+                } else if (read < 0 && handleReadError()) {
+                    break
                 }
             }
         }, "UsbMidiReader").apply { start() }
