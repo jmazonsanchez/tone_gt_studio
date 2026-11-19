@@ -128,6 +128,50 @@ class GtSysEx {
     );
   }
 
+  /// Request Block 1 (EQ, FX1 switch, FX1 algorithm type) (address 60 00 01 00, size 80 bytes).
+  static Uint8List buildEffectsBlock1Request({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildRq1Message(
+      address: [0x60, 0x00, 0x01, 0x00],
+      size: [0x00, 0x00, 0x00, 0x50],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Request Block 3 (FX2 switch, FX2 algorithm type) (address 60 00 03 4C, size 4 bytes).
+  static Uint8List buildEffectsBlock3Request({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildRq1Message(
+      address: [0x60, 0x00, 0x03, 0x4C],
+      size: [0x00, 0x00, 0x00, 0x04],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Request Block 5 (DELAY switch, DELAY type) (address 60 00 05 60, size 4 bytes).
+  static Uint8List buildEffectsBlock5Request({List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    return buildRq1Message(
+      address: [0x60, 0x00, 0x05, 0x60],
+      size: [0x00, 0x00, 0x00, 0x04],
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
+  /// Build full FX chain order update (address 60 00 07 20, 20 slot IDs).
+  static Uint8List buildFxChainOrder(List<int> chainIds, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
+    final padded = List<int>.from(chainIds);
+    while (padded.length < 20) {
+      padded.add(0xFF);
+    }
+    return buildDt1Message(
+      address: Gt1bAddresses.fxChainBase,
+      data: padded.sublist(0, 20),
+      modelId: modelId,
+      deviceId: deviceId,
+    );
+  }
+
   /// Mapping from GT-1B hardware FX Chain IDs (0..19) to EffectCategory
   static const Map<int, EffectCategory> chainIdToCategory = {
     0: EffectCategory.pedalFx,
@@ -247,6 +291,34 @@ class GtSysEx {
     }
 
     return result;
+  }
+
+  /// Parse algorithm type for FX1 and FX2 from Block 1 or Block 3 DT1 responses
+  static Map<EffectCategory, int>? parseFxTypes(Uint8List packet) {
+    if (packet.length < 14) return null;
+    if (packet[0] != 0xF0 || packet[7] != commandDt1 || packet[8] != 0x60) {
+      return null;
+    }
+    const base = 12;
+    final addrHigh = packet[9];
+    final addrMid = packet[10];
+    final addrLow = packet[11];
+    final result = <EffectCategory, int>{};
+
+    // Block 60 00 01 00: FX1 type at 60 00 01 41
+    if (addrHigh == 0x00 && addrMid == 0x01 && addrLow == 0x00) {
+      if (packet.length >= base + 0x42) {
+        result[EffectCategory.fx1] = packet[base + 0x41];
+      }
+    }
+    // Block 60 00 03 4C: FX2 type at 60 00 03 4D
+    else if (addrHigh == 0x00 && addrMid == 0x03 && addrLow == 0x4C) {
+      if (packet.length >= base + 2) {
+        result[EffectCategory.fx2] = packet[base + 0x01];
+      }
+    }
+
+    return result.isEmpty ? null : result;
   }
 
   /// Build Roland SysEx DT1 Patch Change for all 198 Presets (U01-U99 and P01-P99).

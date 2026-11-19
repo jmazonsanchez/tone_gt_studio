@@ -21,17 +21,20 @@ class EffectEditorPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final patchService = context.watch<PatchService>();
-    final active = effect.isEnabled;
-    final color = effect.accentColor;
+    final liveEffect = patchService.currentPatch.effects
+        .where((e) => e.category == effect.category)
+        .firstOrNull ?? effect;
+    final active = liveEffect.isEnabled;
+    final color = liveEffect.accentColor;
 
-    // Find primary type parameter if present (e.g. comp_type, od_type, amp_type)
-    final typeParam = effect.parameters.cast<EffectParameter?>().firstWhere(
+    // Find primary type parameter if present (e.g. comp_type, od_type, amp_type, fx_type)
+    final typeParam = liveEffect.parameters.cast<EffectParameter?>().firstWhere(
       (p) => p != null && p.isEnum && (p.name.toLowerCase().contains('type') || p.name.toLowerCase().contains('mode')),
       orElse: () => null,
     );
 
     // Other parameters (knobs, sliders, toggles)
-    final otherParams = effect.parameters.where((p) => p != typeParam).toList();
+    final otherParams = liveEffect.parameters.where((p) => p != typeParam).toList();
 
     return Container(
       constraints: const BoxConstraints(maxHeight: 520),
@@ -46,7 +49,7 @@ class EffectEditorPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 1. Header Row
-          _buildHeader(context, patchService, active, color),
+          _buildHeader(context, patchService, liveEffect, active, color),
 
           const SizedBox(height: 12),
 
@@ -109,6 +112,7 @@ class EffectEditorPanel extends StatelessWidget {
   Widget _buildHeader(
     BuildContext context,
     PatchService patchService,
+    EffectBlock currentEffect,
     bool active,
     Color color,
   ) {
@@ -135,7 +139,7 @@ class EffectEditorPanel extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    effect.name,
+                    currentEffect.name,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
@@ -166,7 +170,7 @@ class EffectEditorPanel extends StatelessWidget {
                 ],
               ),
               Text(
-                effect.subtitle,
+                currentEffect.subtitle,
                 style: const TextStyle(fontSize: 12, color: Colors.white54),
               ),
             ],
@@ -177,7 +181,7 @@ class EffectEditorPanel extends StatelessWidget {
         Switch(
           value: active,
           activeColor: color,
-          onChanged: (val) => patchService.toggleEffect(effect),
+          onChanged: (val) => patchService.toggleEffect(currentEffect),
         ),
 
         const SizedBox(width: 8),

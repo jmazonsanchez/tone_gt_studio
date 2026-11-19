@@ -7,6 +7,29 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [0.8.0] - 2026-11-18
+
+### 🚀 Añadido (Fase 4: Algoritmos Dinámicos FX1 / FX2, Sincronización Completa y Cadena Drag & Drop)
+- **Corrección Crítica de Sincronización de Efectos Activos (Solución al fallo de presets como U01):**
+  - **Causa identificada:** Anteriormente, `selectPatch` y `_autoSyncFromHardware` solo consultaban el Bloque 0 (`60 00 00 00`), que únicamente contiene COMP, OD/DS y PREAMP. Efectos activos en la pedalera como FX1 (`60 00 01 00`), FX2 (`60 00 03 4C`), DELAY (`60 00 05 60`), CHORUS/REVERB (`60 00 06 00`) nunca eran solicitados al cambiar de preset, mostrando solo 2 efectos en pantalla cuando el pedal tenía 4 o más encendidos.
+  - **Solución implementada:** Nuevo método unificado `syncFullActivePatch()` que interroga y procesa en secuencia todos los bloques del buffer temporal de la GT-1B: Bloque 0 (Preamp, OD, Comp), Bloque 1 (EQ, FX1), Bloque 3 (FX2), Bloque 5 (Delay), Bloque 6 (Chorus, Reverb, Wah, Foot Vol, NS) y Bloque 7 (Orden de cadena FX).
+  - Al seleccionar cualquier preset (`U01..U99`, `P01..P99`) o recibir un cambio de programa de hardware, todos los efectos activos físicos se reflejan fielmente al 100%.
+- **Línea de Conexión y Memory Edit Interactiva con Arrastre (`MemoryEditChainBar` & `ChainBlockChip`):**
+  - Corrección de la posición del jack `[OUTPUT]`: ahora está limpiamente anclado a la derecha de la ruta de señal (`AMP / PA`), mientras que `[INPUT]` (`BASS IN`) está fijado a la izquierda.
+  - Soporte de reordenamiento drag-and-drop horizontal mediante `ReorderableListView` con `ReorderableDelayedDragStartListener` y manejador visual táctil (`Icons.drag_indicator`).
+  - Arrastrar cualquier cajita de efecto reordena la cadena en pantalla y transmite automáticamente la nueva configuración física a la pedalera mediante SysEx DT1 (`60 00 07 20`).
+  - Modularización limpia: extracción de `ChainBlockChip` (120 líneas) y optimización de `MemoryEditChainBar` (278 líneas), cumpliendo la regla ≤ 300 líneas.
+- **Catálogo y Motor de Algoritmos Dinámicos FX1 y FX2 (`Gt1bFxAlgorithms`):**
+  - Modelado completo de los 36 algoritmos oficiales de la Boss GT-1B con prioridad en bajo eléctrico: `SUB OD/DS`, `T.WAH`, `AUTO WAH`, `SUB WAH`, `COMPRESSOR`, `LIMITER`, `GRAPHIC EQ`, `PARAMETRIC EQ`, `TONE MODIFY`, `BASS SIM`, `SLOW GEAR`, `DEFRETTER`, `BASS SYNTH`, `SITAR SIM`, `OCTAVE`, `PITCH SHIFTER`, `HARMONIST`, `SOUND HOLD`, `AC.PROCESSOR`, `PHASER`, `FLANGER`, `TREMOLO`, `ROTARY`, `UNI-V`, `PAN`, `SLICER`, `VIBRATO`, `RING MOD`, `HUMANIZER`, `2x2 CHORUS`, `SUB DELAY`, `AC.GUITAR SIM`, `ROTARY 2`, `OVERTONE`, `FEEDBACKER`, `CHORUS`.
+  - Direccionamiento SysEx DT1 exacto para cada parámetro según el bloque (`01/02` para FX1 y `03/04/05/10` para FX2).
+  - Reactividad bidireccional en el panel de edición: al cambiar el algoritmo en el dropdown (o en la pedalera vía `60 00 01 41` o `60 00 03 4D`), las perillas y controles se adaptan inmediatamente a los parámetros del nuevo efecto (ej. Octave muestra Oct Level y Direct Mix; Defretter muestra Attack, Reso, Depth, Sens, Tone).
+- **Calidad y Verificación:**
+  - 46/46 pruebas unitarias y de widgets pasando al 100% (`fx_algorithms_test.dart`, `stage_pedalboard_screen_test.dart`, etc.).
+  - 0 advertencias o errores en `flutter analyze`.
+  - 10/10 reglas de arquitectura `codegraph` superadas (0 violaciones, 0 ciclos, archivos ≤ 300 líneas).
+
+---
+
 ## [0.7.0] - 2026-11-18
 
 ### 🚀 Añadido (Fase 3: Edición Profunda de Parámetros)

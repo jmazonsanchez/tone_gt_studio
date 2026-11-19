@@ -23,7 +23,7 @@ class EffectBlock {
   final EffectCategory category;
   final Color accentColor;
   bool isEnabled;
-  final List<EffectParameter> parameters;
+  List<EffectParameter> parameters;
 
   EffectBlock({
     required this.id,

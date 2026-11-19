@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../domain/gt1b_catalog.dart';
+import '../domain/gt1b_fx_algorithms.dart';
 import '../models/effect_block.dart';
 import '../models/effect_parameter.dart';
 import '../models/patch.dart';
@@ -48,11 +49,8 @@ class PatchService extends ChangeNotifier {
   Future<void> _autoSyncFromHardware() async {
     // 1. Ask GT-1B what patch is currently selected physically
     await syncCurrentPatchNumber();
-    // 2. Fetch the active patch settings, effect states and WAH status
-    await syncActivePatchFromPedal();
-    await syncEffectsBlock6FromPedal();
-    await syncFxChainFromPedal();
-    await syncWahStateFromPedal();
+    // 2. Fetch full active patch settings, all effect blocks, algorithms and chain
+    await syncFullActivePatch();
     // 3. Fetch all 99 preset names from the physical pedal in background
     await syncAllPatchesFromPedal();
   }
@@ -138,10 +136,7 @@ class PatchService extends ChangeNotifier {
         category: EffectCategory.fx1,
         accentColor: const Color(0xFF8E24AA), // Purple
         isEnabled: false,
-        parameters: [
-          EffectParameter(id: 'fx1_sens', name: 'Sens', address: [0x60, 0x00, 0x01, 0x4E], value: 60),
-          EffectParameter(id: 'fx1_peak', name: 'Peak', address: [0x60, 0x00, 0x01, 0x50], value: 50),
-        ],
+        parameters: Gt1bFxAlgorithms.getParametersFor(EffectCategory.fx1, 3), // SUB WAH
       ),
       EffectBlock(
         id: 'fx2',
@@ -150,10 +145,7 @@ class PatchService extends ChangeNotifier {
         category: EffectCategory.fx2,
         accentColor: const Color(0xFF3949AB), // Cobalt Indigo
         isEnabled: false,
-        parameters: [
-          EffectParameter(id: 'fx2_direct', name: 'Direct', address: [0x60, 0x00, 0x04, 0x2C], value: 70),
-          EffectParameter(id: 'fx2_oct', name: '-1 Oct', address: [0x60, 0x00, 0x04, 0x2A], value: 50),
-        ],
+        parameters: Gt1bFxAlgorithms.getParametersFor(EffectCategory.fx2, 14), // OCTAVE
       ),
       EffectBlock(
         id: 'delay',
@@ -348,6 +340,117 @@ class PatchService extends ChangeNotifier {
     }
   }
 
+  /// Synchronize Block 1 (EQ, FX1 switch, FX1 algorithm type) from buffer (60 00 01 00)
+  Future<void> syncEffectsBlock1FromPedal() async {
+    if (!midiService.isConnected) return;
+    try {
+      final req = GtSysEx.buildEffectsBlock1Request();
+      final reply = await midiService.sendSysExRequest(
+        req,
+        timeout: const Duration(milliseconds: 400),
+      );
+      if (reply != null) {
+        final switches = GtSysEx.parseActiveEffectSwitches(reply);
+        if (switches != null) {
+          for (final effect in currentPatch.effects) {
+            if (switches.containsKey(effect.category)) {
+              effect.isEnabled = switches[effect.category]!;
+            }
+          }
+        }
+        final fxTypes = GtSysEx.parseFxTypes(reply);
+        if (fxTypes != null && fxTypes.containsKey(EffectCategory.fx1)) {
+          _applyFxAlgorithm(EffectCategory.fx1, fxTypes[EffectCategory.fx1]!);
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error syncing block 1: $e');
+    }
+  }
+
+  /// Synchronize Block 3 (FX2 switch, FX2 algorithm type) from buffer (60 00 03 4C)
+  Future<void> syncEffectsBlock3FromPedal() async {
+    if (!midiService.isConnected) return;
+    try {
+      final req = GtSysEx.buildEffectsBlock3Request();
+      final reply = await midiService.sendSysExRequest(
+        req,
+        timeout: const Duration(milliseconds: 400),
+      );
+      if (reply != null) {
+        final switches = GtSysEx.parseActiveEffectSwitches(reply);
+        if (switches != null && switches.containsKey(EffectCategory.fx2)) {
+          final fx2 = currentPatch.effects.where((e) => e.category == EffectCategory.fx2).firstOrNull;
+          if (fx2 != null) fx2.isEnabled = switches[EffectCategory.fx2]!;
+        }
+        final fxTypes = GtSysEx.parseFxTypes(reply);
+        if (fxTypes != null && fxTypes.containsKey(EffectCategory.fx2)) {
+          _applyFxAlgorithm(EffectCategory.fx2, fxTypes[EffectCategory.fx2]!);
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error syncing block 3: $e');
+    }
+  }
+
+  /// Synchronize Block 5 (DELAY switch) from buffer (60 00 05 60)
+  Future<void> syncEffectsBlock5FromPedal() async {
+    if (!midiService.isConnected) return;
+    try {
+      final req = GtSysEx.buildEffectsBlock5Request();
+      final reply = await midiService.sendSysExRequest(
+        req,
+        timeout: const Duration(milliseconds: 400),
+      );
+      if (reply != null) {
+        final switches = GtSysEx.parseActiveEffectSwitches(reply);
+        if (switches != null && switches.containsKey(EffectCategory.delay)) {
+          final dly = currentPatch.effects.where((e) => e.category == EffectCategory.delay).firstOrNull;
+          if (dly != null) {
+            dly.isEnabled = switches[EffectCategory.delay]!;
+            notifyListeners();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error syncing block 5: $e');
+    }
+  }
+
+  /// Full synchronization of the active patch settings, effect blocks, algorithms and chain
+  Future<void> syncFullActivePatch() async {
+    if (!midiService.isConnected) return;
+    await syncActivePatchFromPedal();
+    await syncEffectsBlock1FromPedal();
+    await syncEffectsBlock3FromPedal();
+    await syncEffectsBlock5FromPedal();
+    await syncEffectsBlock6FromPedal();
+    await syncFxChainFromPedal();
+    await syncWahStateFromPedal();
+  }
+
+  /// Apply FX algorithm dynamically to an active effect block
+  void _applyFxAlgorithm(EffectCategory category, int algorithmIndex) {
+    for (final effect in currentPatch.effects) {
+      if (effect.category == category) {
+        effect.parameters = Gt1bFxAlgorithms.getParametersFor(category, algorithmIndex);
+        notifyListeners();
+        break;
+      }
+    }
+  }
+
+  /// Select and set a new FX algorithm for FX1 or FX2 and send DT1 to pedal
+  Future<void> setFxAlgorithm(EffectCategory category, int algorithmIndex) async {
+    _applyFxAlgorithm(category, algorithmIndex);
+    final address = category == EffectCategory.fx1
+        ? [0x60, 0x00, 0x01, 0x41]
+        : [0x60, 0x00, 0x03, 0x4D];
+    await midiService.sendParameterValue(address, algorithmIndex);
+  }
+
   /// Synchronize secondary effect switches (Chorus, Reverb, Wah, Foot Vol, NS) from buffer (60 00 06 00)
   Future<void> syncEffectsBlock6FromPedal() async {
     if (!midiService.isConnected) return;
@@ -446,10 +549,7 @@ class PatchService extends ChangeNotifier {
       if (patchIdx >= 0 && patchIdx < _patches.length && patchIdx != _currentPatchIndex) {
         _currentPatchIndex = patchIdx;
         notifyListeners();
-        syncActivePatchFromPedal();
-        syncEffectsBlock6FromPedal();
-        syncFxChainFromPedal();
-        syncWahStateFromPedal();
+        syncFullActivePatch();
       }
       return;
     }
@@ -470,10 +570,7 @@ class PatchService extends ChangeNotifier {
       if (patchIdx != null && patchIdx >= 0 && patchIdx < _patches.length && patchIdx != _currentPatchIndex) {
         _currentPatchIndex = patchIdx;
         notifyListeners();
-        syncActivePatchFromPedal();
-        syncEffectsBlock6FromPedal();
-        syncFxChainFromPedal();
-        syncWahStateFromPedal();
+        syncFullActivePatch();
       }
       return;
     }
@@ -530,9 +627,19 @@ class PatchService extends ChangeNotifier {
         _updateEffectEnabled(EffectCategory.fx1, val != 0);
         return;
       }
+      // FX1 FX TYPE: 60 00 01 41
+      if (a2 == 0x01 && a3 == 0x41) {
+        _applyFxAlgorithm(EffectCategory.fx1, val);
+        return;
+      }
       // FX2 SW: 60 00 03 4C
       if (a2 == 0x03 && a3 == 0x4C) {
         _updateEffectEnabled(EffectCategory.fx2, val != 0);
+        return;
+      }
+      // FX2 FX TYPE: 60 00 03 4D
+      if (a2 == 0x03 && a3 == 0x4D) {
+        _applyFxAlgorithm(EffectCategory.fx2, val);
         return;
       }
       // DELAY SW: 60 00 05 60
@@ -659,10 +766,9 @@ class PatchService extends ChangeNotifier {
     notifyListeners();
     await midiService.changePatch(index);
 
-    // Give the GT-1B DSP 150ms to load buffer, then sync effect states & WAH
+    // Give the GT-1B DSP 150ms to load buffer, then sync all active blocks & WAH
     await Future.delayed(const Duration(milliseconds: 150));
-    await syncActivePatchFromPedal();
-    await syncWahStateFromPedal();
+    await syncFullActivePatch();
   }
 
   Future<void> nextPatch() async {
@@ -690,6 +796,13 @@ class PatchService extends ChangeNotifier {
   Future<void> updateParameter(EffectParameter param, int newValue) async {
     param.value = newValue.clamp(param.min, param.max);
     notifyListeners();
+
+    if (param.id == 'fx1_type') {
+      _applyFxAlgorithm(EffectCategory.fx1, param.value);
+    } else if (param.id == 'fx2_type') {
+      _applyFxAlgorithm(EffectCategory.fx2, param.value);
+    }
+
     await midiService.sendParameterValue(param.address, param.value);
   }
 
@@ -704,16 +817,10 @@ class PatchService extends ChangeNotifier {
     if (newIndex > oldIndex) {
       newIndex -= 1;
     }
-    final patch = _patches[_currentPatchIndex];
-    final updatedList = List<EffectBlock>.from(patch.effects);
-    final movedItem = updatedList.removeAt(oldIndex);
-    updatedList.insert(newIndex, movedItem);
-
-    _patches[_currentPatchIndex] = patch.copyWith(effects: updatedList);
-    notifyListeners();
+    moveEffect(oldIndex, newIndex);
   }
 
-  /// Shift an effect block left/earlier or right/later in the chain
+  /// Shift an effect block left/earlier or right/later in the chain and send to hardware
   void moveEffect(int fromIndex, int toIndex) {
     final patch = _patches[_currentPatchIndex];
     if (fromIndex < 0 || fromIndex >= patch.effects.length) return;
@@ -725,5 +832,16 @@ class PatchService extends ChangeNotifier {
 
     _patches[_currentPatchIndex] = patch.copyWith(effects: updatedList);
     notifyListeners();
+
+    // Transmit updated chain order to hardware GT-1B
+    if (midiService.isConnected) {
+      final chainIds = <int>[];
+      for (final eff in updatedList) {
+        final cid = GtSysEx.categoryToChainId[eff.category];
+        if (cid != null) chainIds.add(cid);
+      }
+      final msg = GtSysEx.buildFxChainOrder(chainIds);
+      midiService.sendSysEx(msg);
+    }
   }
 }
