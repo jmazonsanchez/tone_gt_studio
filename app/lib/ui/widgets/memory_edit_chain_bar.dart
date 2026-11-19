@@ -7,7 +7,7 @@ import 'chain_block_chip.dart';
 /// [INPUT] -> [PEDAL FX] -> [COMP] -> [OD/DS] -> [PREAMP] -> ... -> [OUTPUT]
 class MemoryEditChainBar extends StatefulWidget {
   final List<EffectBlock> effects;
-  final Function(EffectBlock effect) onToggle;
+  final Function(EffectBlock effect)? onToggle;
   final Function(int fromIndex, int toIndex) onMoveEffect;
   final VoidCallback? onToggleMemoryEdit;
   final bool isExpanded;
@@ -15,7 +15,7 @@ class MemoryEditChainBar extends StatefulWidget {
   const MemoryEditChainBar({
     super.key,
     required this.effects,
-    required this.onToggle,
+    this.onToggle,
     required this.onMoveEffect,
     this.onToggleMemoryEdit,
     this.isExpanded = true,
@@ -125,18 +125,20 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
   }
 
   Widget _buildDraggableChain() {
-    return Scrollbar(
-      controller: _scrollController,
-      thumbVisibility: true,
-      trackVisibility: true,
-      thickness: 4,
-      radius: const Radius.circular(4),
-      child: ReorderableListView.builder(
-        scrollController: _scrollController,
-        scrollDirection: Axis.horizontal,
-        buildDefaultDragHandles: false,
-        cacheExtent: 2500,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    return ReorderableListView.builder(
+      scrollController: _scrollController,
+      scrollDirection: Axis.horizontal,
+      buildDefaultDragHandles: false,
+      cacheExtent: 2500,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      proxyDecorator: (child, index, animation) {
+        return Material(
+          color: Colors.transparent,
+          elevation: 8,
+          shadowColor: const Color(0xFFFF9800).withValues(alpha: 0.6),
+          child: child,
+        );
+      },
       header: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -182,7 +184,6 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
                   setState(() {
                     _selectedBlockIndex = (_selectedBlockIndex == index) ? null : index;
                   });
-                  widget.onToggle(effect);
                 },
               ),
               _buildCableConnector(isActive: effect.isEnabled),
@@ -190,7 +191,6 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
           ),
         );
       },
-      ),
     );
   }
 
@@ -267,10 +267,10 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
         children: [
           const Row(
             children: [
-              Icon(Icons.swipe, size: 11, color: Colors.white38),
+              Icon(Icons.touch_app, size: 11, color: Colors.white38),
               SizedBox(width: 5),
               Text(
-                'Arrastra para reordenar la cadena • Toca para conmutar ON/OFF',
+                'Mantén presionado para reordenar la cadena • Toca para seleccionar',
                 style: TextStyle(fontSize: 9, color: Colors.white38),
               ),
             ],

@@ -8,6 +8,7 @@ class ChainBlockChip extends StatelessWidget {
   final int index;
   final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback? onDoubleTap;
 
   const ChainBlockChip({
     super.key,
@@ -15,6 +16,7 @@ class ChainBlockChip extends StatelessWidget {
     required this.index,
     required this.isSelected,
     required this.onTap,
+    this.onDoubleTap,
   });
 
   @override
@@ -23,7 +25,7 @@ class ChainBlockChip extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      onLongPress: () {
+      onDoubleTap: onDoubleTap ?? () {
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
@@ -104,13 +106,10 @@ class ChainBlockChip extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            ReorderableDragStartListener(
-              index: index,
-              child: const Icon(
-                Icons.drag_indicator,
-                size: 14,
-                color: Colors.white38,
-              ),
+            const Icon(
+              Icons.drag_indicator,
+              size: 14,
+              color: Colors.white38,
             ),
           ],
         ),

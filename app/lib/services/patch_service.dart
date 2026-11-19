@@ -1046,15 +1046,17 @@ class PatchService extends ChangeNotifier {
     }
     _hardwareFxChain = newHardwareChain;
 
+    // 1. Send the full 20-byte atomic DT1 block message first (address 60 00 07 20)
+    final msg = GtSysEx.buildFxChainOrder(_hardwareFxChain);
+    await midiService.sendSysEx(msg);
+
+    // 2. Also update individual slots for any hardware firmware revisions that poll individual slot registers
     for (int i = 0; i < 20; i++) {
       if (i >= oldHardwareChain.length || oldHardwareChain[i] != newHardwareChain[i]) {
         await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x20 + i], newHardwareChain[i]);
-        await Future.delayed(const Duration(milliseconds: 5));
+        await Future.delayed(const Duration(milliseconds: 8));
       }
     }
-
-    final msg = GtSysEx.buildFxChainOrder(_hardwareFxChain);
-    await midiService.sendSysEx(msg);
   }
 
   void _applyMasterMap(Map<String, int> map) {
@@ -1255,6 +1257,11 @@ class PatchService extends ChangeNotifier {
     }
 
     if (midiService.isConnected) {
+      // Ensure current chain order is explicitly committed to temporary buffer before writing to EEPROM
+      final chainMsg = GtSysEx.buildFxChainOrder(_hardwareFxChain);
+      await midiService.sendSysEx(chainMsg);
+      await Future.delayed(const Duration(milliseconds: 25));
+
       final msg = GtSysEx.buildPatchWrite(targetIndex);
       await midiService.sendSysEx(msg);
     }
