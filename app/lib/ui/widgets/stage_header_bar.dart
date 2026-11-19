@@ -31,6 +31,7 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
     final current = patchService.currentPatch;
     final isConnected = midi.isConnected;
     final isConnecting = midi.connectionState == MidiConnectionState.connecting;
+    final isReconnecting = midi.connectionState == MidiConnectionState.reconnecting;
     final isReadOnly = current.isReadOnly;
 
     return Container(
@@ -43,7 +44,7 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
       child: Row(
         children: [
           // 1. Connection Status Badge
-          _buildConnectionStatus(context, isConnected, isConnecting),
+          _buildConnectionStatus(context, isConnected, isConnecting, isReconnecting),
 
           const SizedBox(width: 8),
 
@@ -51,11 +52,7 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
           if (isDemoMode && !isConnected) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.purple.withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.purpleAccent, width: 0.8),
-              ),
+              decoration: BoxDecoration(color: Colors.purple.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.purpleAccent, width: 0.8)),
               child: InkWell(
                 onTap: onExitDemo,
                 child: const Row(
@@ -63,14 +60,7 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
                   children: [
                     Icon(Icons.exit_to_app, size: 12, color: Colors.purpleAccent),
                     SizedBox(width: 4),
-                    Text(
-                      'SALIR DEMO',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.purpleAccent,
-                      ),
-                    ),
+                    Text('SALIR DEMO', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purpleAccent)),
                   ],
                 ),
               ),
@@ -105,7 +95,7 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _buildConnectionStatus(BuildContext context, bool isConnected, bool isConnecting) {
+  Widget _buildConnectionStatus(BuildContext context, bool isConnected, bool isConnecting, bool isReconnecting) {
     Color color = Colors.redAccent;
     String label = 'DESCONECTADO';
     IconData icon = Icons.usb_off;
@@ -118,6 +108,10 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
       color = Colors.amber;
       label = 'CONECTANDO...';
       icon = Icons.sync;
+    } else if (isReconnecting) {
+      color = Colors.orangeAccent;
+      label = 'RECONECTANDO...';
+      icon = Icons.sync_problem;
     } else if (isDemoMode) {
       color = Colors.purpleAccent;
       label = 'MODO DEMO';
@@ -133,8 +127,10 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isConnecting) const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amber))
-            else Icon(icon, size: 14, color: color),
+            if (isConnecting || isReconnecting)
+              SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: color))
+            else
+              Icon(icon, size: 14, color: color),
             const SizedBox(width: 6),
             Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.6)),
           ],
@@ -218,10 +214,7 @@ class StageHeaderBar extends StatelessWidget implements PreferredSizeWidget {
   Widget _buildWriteButton(BuildContext context) {
     return IconButton.filledTonal(
       visualDensity: VisualDensity.compact,
-      style: IconButton.styleFrom(
-        backgroundColor: const Color(0xFF222230),
-        side: const BorderSide(color: Colors.white12, width: 1),
-      ),
+      style: IconButton.styleFrom(backgroundColor: const Color(0xFF222230), side: const BorderSide(color: Colors.white12, width: 1)),
       onPressed: () => PatchWriteModal.show(context, patchService),
       icon: const Icon(Icons.save, size: 18, color: Color(0xFFFF9800)),
       tooltip: 'Guardar Preset en Pedalera (Write)',

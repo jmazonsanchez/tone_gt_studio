@@ -1,7 +1,6 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../models/effect_block.dart';
-import '../../models/effect_parameter.dart';
+import 'pedal_hardware_widgets.dart';
 
 /// Boutique Stompbox Mini-Pedal Widget
 /// Faithfully replicates the physical look, knurled knobs, jewel LED, and chrome footswitch of a boutique pedal.
@@ -98,10 +97,10 @@ class _MiniPedalCardState extends State<MiniPedalCard> with SingleTickerProvider
           child: Stack(
             children: [
               // Corner Screw Rivets
-              _buildCornerScrew(top: 6, left: 6),
-              _buildCornerScrew(top: 6, right: 6),
-              _buildCornerScrew(bottom: 6, left: 6),
-              _buildCornerScrew(bottom: 6, right: 6),
+              const PedalCornerScrew(top: 6, left: 6),
+              const PedalCornerScrew(top: 6, right: 6),
+              const PedalCornerScrew(bottom: 6, left: 6),
+              const PedalCornerScrew(bottom: 6, right: 6),
 
               // Main Pedal Face Content
               Column(
@@ -115,10 +114,8 @@ class _MiniPedalCardState extends State<MiniPedalCard> with SingleTickerProvider
                       padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
                       child: Column(
                         children: [
-                          // Jewel LED
-                          _buildJewelLed(active, accent),
+                          PedalJewelLed(active: active, accent: accent),
                           const SizedBox(height: 6),
-                          // Pedal Model Stamped Title
                           Text(
                             widget.effect.name,
                             textAlign: TextAlign.center,
@@ -154,7 +151,11 @@ class _MiniPedalCardState extends State<MiniPedalCard> with SingleTickerProvider
                     behavior: HitTestBehavior.opaque,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: _buildMiniKnobs(widget.effect.parameters, active, accent),
+                      child: PedalMiniKnobs(
+                        params: widget.effect.parameters,
+                        active: active,
+                        accent: accent,
+                      ),
                     ),
                   ),
 
@@ -165,16 +166,14 @@ class _MiniPedalCardState extends State<MiniPedalCard> with SingleTickerProvider
                     padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
                     child: Column(
                       children: [
-                        // Chrome Footswitch
                         GestureDetector(
                           onTap: _handleStompTap,
                           child: ScaleTransition(
                             scale: _switchAnim,
-                            child: _buildChromeFootswitch(active, accent),
+                            child: PedalChromeFootswitch(active: active, accent: accent),
                           ),
                         ),
                         const SizedBox(height: 6),
-                        // Bypass / Active Indicator
                         Text(
                           active ? 'ACTIVE' : 'BYPASS',
                           style: TextStyle(
@@ -190,217 +189,6 @@ class _MiniPedalCardState extends State<MiniPedalCard> with SingleTickerProvider
                 ],
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCornerScrew({double? top, double? bottom, double? left, double? right}) {
-    return Positioned(
-      top: top,
-      bottom: bottom,
-      left: left,
-      right: right,
-      child: Container(
-        width: 6,
-        height: 6,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: const Color(0xFF555560),
-          border: Border.all(color: Colors.black45, width: 0.5),
-        ),
-        child: Center(
-          child: Container(
-            width: 4,
-            height: 1,
-            color: Colors.black87,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildJewelLed(bool active, Color accent) {
-    return Container(
-      width: 14,
-      height: 14,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: active ? accent : const Color(0xFF202025),
-        border: Border.all(
-          color: active ? Colors.white : Colors.white24,
-          width: 1.5,
-        ),
-        boxShadow: active
-            ? [
-                BoxShadow(
-                  color: accent,
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-                BoxShadow(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  blurRadius: 3,
-                ),
-              ]
-            : [],
-      ),
-      child: active
-          ? Center(
-              child: Container(
-                width: 4,
-                height: 4,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                ),
-              ),
-            )
-          : null,
-    );
-  }
-
-  Widget _buildMiniKnobs(List<EffectParameter> params, bool active, Color accent) {
-    if (params.isEmpty) {
-      return const SizedBox(height: 40);
-    }
-
-    final displayParams = params.take(3).toList();
-
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: displayParams.map((p) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: _buildSingleMiniKnob(p, active, accent),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildSingleMiniKnob(EffectParameter param, bool active, Color accent) {
-    // Calculate angle: 0 to 100 maps to -135 deg to +135 deg
-    final normalized = (param.value - param.min) / (param.max - param.min);
-    final angle = (-135 + (normalized * 270)) * (math.pi / 180);
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const RadialGradient(
-              colors: [Color(0xFF4A4A55), Color(0xFF1E1E24)],
-            ),
-            border: Border.all(
-              color: active ? accent.withValues(alpha: 0.5) : Colors.white24,
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 3,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Transform.rotate(
-            angle: angle,
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: Container(
-                margin: const EdgeInsets.only(top: 2),
-                width: 2.5,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: active ? accent : Colors.white70,
-                  borderRadius: BorderRadius.circular(1),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          param.name.toUpperCase(),
-          style: TextStyle(
-            fontSize: 8,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-            color: active ? Colors.white70 : Colors.white30,
-          ),
-        ),
-        Text(
-          '${param.value}',
-          style: TextStyle(
-            fontSize: 7.5,
-            color: active ? accent.withValues(alpha: 0.9) : Colors.white24,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildChromeFootswitch(bool active, Color accent) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const RadialGradient(
-          colors: [
-            Color(0xFFDCDCDC),
-            Color(0xFF888894),
-            Color(0xFF484850),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.7),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-          if (active)
-            BoxShadow(
-              color: accent.withValues(alpha: 0.4),
-              blurRadius: 8,
-            ),
-        ],
-        border: Border.all(color: const Color(0xFF6A6A74), width: 1.5),
-      ),
-      child: Center(
-        child: Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFFFFFF),
-                Color(0xFFA0A0A8),
-                Color(0xFF606068),
-              ],
-            ),
-            border: Border.all(color: Colors.black26, width: 1),
-          ),
-          child: Center(
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF383840),
-              ),
-            ),
           ),
         ),
       ),

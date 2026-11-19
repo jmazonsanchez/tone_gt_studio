@@ -38,18 +38,20 @@ Open-source patch editor, librarian, and controller for **Boss GT-1B** (Bass) an
 | **Interfaz Móvil (UI)** | Modal de Afinador cromático en vivo | ✅ Completado | Pantalla con aguja gráfica de afinación, nota detectada y botón Mute. |
 | **Interfaz Móvil (UI)** | Sincronización y lector de 99 patches de usuario | ✅ Completado | Botón de sincronización con barra de progreso interactiva y lectura directa de la memoria de la GT-1B. |
 | **Interfaz Móvil (UI)** | Reordenamiento de cadena (MEMORY EDIT) | ✅ Completado | Widget `MemoryEditChainBar` con línea de conexión serie ([IN] ➔ [FX] ➔ [OUT]), conmutación táctil y cambio de posición dinámica. |
-| **Interfaz Móvil (UI)** | Editor de asignaciones (EXP Pedal / CTL1) | ⏳ Pendiente | Configuración de rangos mínimos/máximos del pedal de expresión y switches auxiliares. |
+| **Interfaz Móvil (UI)** | Editor de asignaciones (EXP Pedal / CTL1 / Assigns 1-8) | ✅ Completado | `AssignEditorModal` con configuración de CTL1, EXP, Toe Switch y las 8 matrices Assign. |
 | **Conectividad** | Script de verificación interactiva de hardware (PC) | ✅ Completado | `tools/test_gt1b_hardware.sh` con detección de bloqueo de puertos y prueba en vivo de parches, afinador y efectos. |
 | **Conectividad** | Pruebas físicas con pedalera real | ✅ Completado | Boss GT-1B probada exitosamente por USB: responde a identidad, conmuta efectos y cambia presets. |
-| **Conectividad** | Conexión directa por cable USB OTG (Móvil) | 🔄 En progreso | Integración de backend USB MIDI con `flutter_midi_command` para Android. |
+| **Conectividad** | Conexión directa USB OTG y Web MIDI API | ✅ Completado | Conexión directa Plug & Play con reconexión automática periódica y recuperación de fallos. |
 | **Conectividad** | Firmware para puente ESP32-S3 (BLE MIDI) | ✅ Código base | Código fuente funcional en `firmware/esp32_ble_midi_bridge/`. |
 | **Conectividad** | Firmware para Arduino Uno + USB Host + HC-06 | ✅ Código base | Código de referencia en `firmware/arduino_usb_host_bridge/`. |
-| **Librería & Datos** | Respaldo y exportación de patches (.tsl / JSON) | ⏳ Pendiente | Guardar y cargar bancos completos en almacenamiento local del teléfono o nube. |
-| **Librería & Datos** | Importador de archivos Boss Tone Studio (.tsl) | ⏳ Pendiente | Parser para cargar presets comunitarios oficiales de Roland/Boss. |
+| **Librería & Datos** | Respaldo y exportación de patches (.tsl / JSON) | ✅ Completado | `TslSerializer` con exportación de LiveSets Boss Tone Studio (.tsl) y respaldo portable JSON. |
+| **Librería & Datos** | Importador de archivos Boss Tone Studio (.tsl) | ✅ Completado | Parser y restaurador compatible al 100% con presets oficiales Boss Tone Studio. |
+| **Librería & Datos** | Guardado en memoria física (Write a hardware) | ✅ Completado | Escritura directa `7F 00 01 04` en slots U01..U99 con protección de solo-lectura para P01..P99. |
+| **Sistema & Utilidades** | Afinador en vivo, Global EQ, Metrónomo, USB | ✅ Completado | `SystemSettingsModal` y afinador cromático de alta precisión con aguja de centésimas en tiempo real. |
 | **Multi-dispositivo** | Soporte para Smartphones y Tablets (Android/iOS) | ✅ Completado | Diseño responsivo adaptativo (2 columnas en móviles, 3-4 en tablets/iPad) con soporte vertical y apaisado. |
 | **Multi-dispositivo** | Detección automática USB OTG (Plug & Play) | ✅ Completado | Filtro `device_filter.xml` con Vendor ID Boss `1410` (0x0582) y Product ID GT-1B `500` (0x01F3). |
 | **Multi-dispositivo** | Compilación automática de APK (GitHub Actions) | ✅ Completado | Workflow CI/CD que compila el APK de release y corre los tests en cada push. |
-| **Multi-dispositivo** | Soporte y selector para Boss GT-1 (Guitarra) | ⏳ Pendiente | Selector de Model ID (`0x3B`) y carga del mapa de amplificadores de guitarra. |
+| **Multi-dispositivo** | Soporte y selector para Boss GT-1 (Guitarra) | ⏳ Siguiente | Arquitectura modular desacoplada lista para cargar Model ID (`0x3B`). |
 
 **Leyenda:**  
 * ✅ **Completado:** Implementado, verificado en tests y probado con hardware real.  

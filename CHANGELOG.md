@@ -7,6 +7,50 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.0.0] - 2026-11-19
+
+### 🚀 Publicación Final y Cierre de Fases (Fases 5, 6, 7 y 8)
+
+#### 🎛️ Fase 5: Control, EXP y Matrices Assign (CTL1 / EXP / Toe Switch & Assigns 1-8)
+- Modelado completo e inmutable de asignaciones (`AssignSetting`, `CtlExpSetting`) en `app/lib/models/assign_model.dart`.
+- Catálogo oficial Roland de funciones asignables, fuentes físicas y targets de modulación en `gt1b_assigns.dart`.
+- Modal `AssignEditorModal` con dos pestañas de escenario:
+  - `AssignCtlTab`: Configuración rápida de CTL1 (Función y Modo Latch/Momentary), EXP Pedal (Función, Min, Max) y Toe Switch (EXP SW).
+  - `AssignMatrixTab`: Editor matricial de las 8 matrices Assign con switch ON/OFF, selección de target, rango calibrado (min/max), fuente física y modo.
+- Ruteo SysEx DT1 bidireccional hacia las direcciones del buffer `60 00 07 50` y `60 00 08 10`.
+- Rediseño del panel izquierdo (`StageLeftPanel`) como configurador puro de Master: Patch Level, Master BPM, Master Key y Master EQ de 4 bandas.
+
+#### 🎚️ Fase 6: Sistema y Utilidades GT-1B
+- Modelo integral `SystemSettings` en `app/lib/models/system_settings.dart`.
+- Afinador cromático de alta precisión (`TunerModal`) con nota musical gigante en display neón, aguja reactiva de centésimas (-50..+50) procesando en tiempo real el flujo continuo DT1 `7F 00 05 00`, calibración de tono base (435..445 Hz) y selector de salida (Mute / Bypass).
+- Modal `SystemSettingsModal` con 3 pestañas:
+  - `SystemGlobalTab`: Selección de tipo de salida (Output Select para ampli o PA), nivel de entrada general, Global 4-Band Parametric EQ y Total Reverb.
+  - `SystemMetronomeTab`: Metrónomo interno con tempo BPM (20..250), compás (1/4..7/8) y volumen.
+  - `SystemUsbTab`: Ruteo USB Audio (Primary/Secondary, Direct Monitor) y configuración de apagado automático (Auto Off).
+- Sincronización y lectura completa del bloque de sistema (`00 00 00 00`).
+
+#### 💾 Fase 7: Librería y Persistencia
+- Protocolo de escritura en memoria de hardware GT-1B (`buildPatchWrite`) con direccionamiento `7F 00 01 04`.
+- Protección estricta de presets de fábrica: escritura bloqueada para índices ≥ 99 (`P01..P99`), garantizando la integridad de la ROM de la pedalera.
+- Modal de guardado `PatchWriteModal` con selector de slot de usuario destino (`U01..U99`) y campo de renombrado con padding exacto de 16 caracteres ASCII.
+- Copia directa de presets (`copyPatch`, `7F 00 01 00`) desde cualquier origen (incluso de fábrica) hacia un slot de usuario.
+- Serializador bidireccional `TslSerializer`:
+  - Exportación e importación de LiveSets oficiales compatibles con Boss Tone Studio (`.tsl`).
+  - Respaldo portable individual en formato JSON.
+- Modal de biblioteca `PatchListModal` reestructurado en tres pestañas: `USER (U01-U99)`, `FÁBRICA (P01-P99)` y `BACKUP & TSL`.
+
+#### 🛡️ Fase 8: Robustez, Auto-Reconexión y Publicación
+- Manejo resiliente de desconexiones imprevistas con transición automática a `MidiConnectionState.reconnecting`.
+- Bucle periódico de reconexión sin bloqueo de interfaz y re-activación automática del Modo Editor Roland (`GtSysEx.buildEditorMode(enable: true)`).
+- Barra visual interactiva de estado de reconexión en `StagePedalboardScreen` y badge en `StageHeaderBar`.
+- Pacing seguro de peticiones masivas en el bus USB-MIDI (40 msg/s con timeout adaptativo) y soporte de cancelación instantánea (`cancelSync()`).
+- Modularización de widgets de hardware en `pedal_hardware_widgets.dart`, asegurando que el 100% de los archivos de UI midan ≤ 300 líneas.
+- 80/80 tests unitarios y de widgets superados con 100% de éxito.
+- Compilación web para producción verificada (`flutter build web --release`).
+- 10/10 reglas de arquitectura `codegraph` superadas (0 violaciones, 0 advertencias, 0 ciclos).
+
+---
+
 ## [0.8.0] - 2026-11-18
 
 ### 🚀 Añadido (Fase 4: Algoritmos Dinámicos FX1 / FX2, Sincronización Completa y Cadena Drag & Drop)

@@ -9,6 +9,7 @@ enum MidiConnectionState {
   disconnected,
   connecting,
   connected,
+  reconnecting,
 }
 
 enum ConnectionType {
@@ -24,6 +25,10 @@ class MidiService extends ChangeNotifier implements MidiTransport {
   MidiConnectionState _connectionState = MidiConnectionState.disconnected;
   ConnectionType _connectionType = ConnectionType.usbOtg;
   String _connectedDeviceName = '';
+  String _lastConnectedDevice = '';
+  bool _autoReconnect = true;
+  Timer? _reconnectTimer;
+  int _reconnectAttempts = 0;
 
   MidiConnectionState get connectionState => _connectionState;
   ConnectionType get connectionType => _connectionType;
@@ -31,6 +36,14 @@ class MidiService extends ChangeNotifier implements MidiTransport {
   String get connectedDeviceName => _connectedDeviceName;
   @override
   bool get isConnected => _connectionState == MidiConnectionState.connected;
+  bool get isAutoReconnecting => _connectionState == MidiConnectionState.reconnecting;
+  bool get autoReconnect => _autoReconnect;
+  set autoReconnect(bool val) {
+    _autoReconnect = val;
+    if (!val) _cancelReconnectTimer();
+  }
+  int get reconnectAttempts => _reconnectAttempts;
+
   @override
   Stream<Uint8List> get onDataReceived => _sysExController.stream;
   Stream<Uint8List> get onSysExReceived => _sysExController.stream;
@@ -41,6 +54,7 @@ class MidiService extends ChangeNotifier implements MidiTransport {
 
   @override
   void dispose() {
+    _cancelReconnectTimer();
     _sysExController.close();
     super.dispose();
   }
@@ -56,6 +70,67 @@ class MidiService extends ChangeNotifier implements MidiTransport {
     _handleIncomingMidi(data);
   }
 
+  void _cancelReconnectTimer() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _reconnectAttempts = 0;
+  }
+
+  void cancelAutoReconnect() {
+    _cancelReconnectTimer();
+    if (_connectionState == MidiConnectionState.reconnecting) {
+      _connectionState = MidiConnectionState.disconnected;
+      notifyListeners();
+    }
+  }
+
+  /// Triggered when the physical connection is lost unexpectedly
+  void handleUnexpectedDisconnection() {
+    if (!isConnected && _connectionState != MidiConnectionState.reconnecting) return;
+    _driver.disconnect();
+    if (_autoReconnect) {
+      _connectionState = MidiConnectionState.reconnecting;
+      notifyListeners();
+      _startReconnectLoop();
+    } else {
+      _connectionState = MidiConnectionState.disconnected;
+      _connectedDeviceName = '';
+      notifyListeners();
+    }
+  }
+
+  void _startReconnectLoop() {
+    _cancelReconnectTimer();
+    _reconnectAttempts = 0;
+    _reconnectTimer = Timer.periodic(const Duration(milliseconds: 2000), (timer) async {
+      _reconnectAttempts++;
+      final success = await _attemptReconnect();
+      if (success) {
+        _cancelReconnectTimer();
+      }
+    });
+  }
+
+  Future<bool> reconnect() async {
+    return await _attemptReconnect();
+  }
+
+  Future<bool> _attemptReconnect() async {
+    try {
+      final success = await _driver.connect(_lastConnectedDevice.isNotEmpty ? _lastConnectedDevice : null);
+      if (success) {
+        _connectionState = MidiConnectionState.connected;
+        _connectedDeviceName = _driver.connectedDeviceName;
+        await sendSysEx(GtSysEx.buildEditorMode(enable: true));
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Reconnection attempt failed: $e');
+    }
+    return false;
+  }
+
   /// Discover available MIDI devices
   Future<List<String>> getAvailableDevices() async {
     await _driver.init();
@@ -65,6 +140,7 @@ class MidiService extends ChangeNotifier implements MidiTransport {
   /// Connect to Boss GT-1B via USB OTG or Web MIDI
   @override
   Future<bool> connect({ConnectionType type = ConnectionType.usbOtg, String? deviceName}) async {
+    _cancelReconnectTimer();
     _connectionState = MidiConnectionState.connecting;
     _connectionType = type;
     notifyListeners();
@@ -74,6 +150,7 @@ class MidiService extends ChangeNotifier implements MidiTransport {
       if (success) {
         _connectionState = MidiConnectionState.connected;
         _connectedDeviceName = _driver.connectedDeviceName;
+        _lastConnectedDevice = _connectedDeviceName;
         // Activate Roland Editor Communication Mode for live bidirectional parameter sync
         await sendSysEx(GtSysEx.buildEditorMode(enable: true));
       } else {
@@ -94,6 +171,7 @@ class MidiService extends ChangeNotifier implements MidiTransport {
   /// Disconnect current session
   @override
   Future<void> disconnect() async {
+    _cancelReconnectTimer();
     if (isConnected) {
       try {
         await sendSysEx(GtSysEx.buildEditorMode(enable: false));

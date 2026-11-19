@@ -47,9 +47,18 @@ class PatchService extends ChangeNotifier {
   ];
 
   bool _isSyncing = false;
+  bool _cancelSyncRequested = false;
   double _syncProgress = 0.0;
   String _syncStatusText = '';
   bool _wasConnected = false;
+
+  void cancelSync() {
+    if (_isSyncing) {
+      _cancelSyncRequested = true;
+      _syncStatusText = 'Cancelando sincronización...';
+      notifyListeners();
+    }
+  }
 
   PatchService(this.midiService) {
     _initializeDefaultPatches();
@@ -277,6 +286,7 @@ class PatchService extends ChangeNotifier {
   Future<void> syncAllPatchesFromPedal() async {
     if (_isSyncing || !midiService.isConnected) return;
     _isSyncing = true;
+    _cancelSyncRequested = false;
     _syncProgress = 0.0;
     _syncStatusText = 'Leyendo presets de la GT-1B...';
     notifyListeners();
@@ -285,7 +295,7 @@ class PatchService extends ChangeNotifier {
       int consecutiveFails = 0;
       // 1. Leer 99 User Patches (U01 a U99)
       for (int i = 0; i < 99; i++) {
-        if (!midiService.isConnected) break;
+        if (!midiService.isConnected || _cancelSyncRequested) break;
 
         _syncProgress = (i + 1) / 198.0;
         _syncStatusText = 'Leyendo U${(i + 1).toString().padLeft(2, '0')}/U99...';
@@ -313,7 +323,7 @@ class PatchService extends ChangeNotifier {
       // 2. Leer 99 Factory Presets (P01 a P99)
       consecutiveFails = 0;
       for (int i = 0; i < 99; i++) {
-        if (!midiService.isConnected) break;
+        if (!midiService.isConnected || _cancelSyncRequested) break;
 
         _syncProgress = (99 + i + 1) / 198.0;
         _syncStatusText = 'Leyendo P${(i + 1).toString().padLeft(2, '0')}/P99...';
@@ -338,12 +348,15 @@ class PatchService extends ChangeNotifier {
         await Future.delayed(const Duration(milliseconds: 25));
       }
 
-      await syncActivePatchFromPedal();
-      await syncWahStateFromPedal();
+      if (!_cancelSyncRequested && midiService.isConnected) {
+        await syncActivePatchFromPedal();
+        await syncWahStateFromPedal();
+      }
     } finally {
       _isSyncing = false;
-      _syncProgress = 1.0;
-      _syncStatusText = '¡Presets de tu pedalera cargados!';
+      _syncProgress = _cancelSyncRequested ? 0.0 : 1.0;
+      _syncStatusText = _cancelSyncRequested ? 'Sincronización cancelada' : '¡Presets de tu pedalera cargados!';
+      _cancelSyncRequested = false;
       notifyListeners();
     }
   }
