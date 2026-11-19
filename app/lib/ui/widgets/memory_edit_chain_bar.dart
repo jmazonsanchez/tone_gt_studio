@@ -27,6 +27,26 @@ class MemoryEditChainBar extends StatefulWidget {
 
 class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
   int? _selectedBlockIndex;
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scroll(double delta) {
+    if (_scrollController.hasClients) {
+      final target = (_scrollController.offset + delta).clamp(0.0, _scrollController.position.maxScrollExtent);
+      _scrollController.animateTo(target, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,16 +54,9 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
       decoration: BoxDecoration(
         color: const Color(0xFF14141E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFFF9800).withValues(alpha: 0.35),
-          width: 1.2,
-        ),
+        border: Border.all(color: const Color(0xFFFF9800).withValues(alpha: 0.35), width: 1.2),
         boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF9800).withValues(alpha: 0.08),
-            blurRadius: 10,
-            spreadRadius: 1,
-          ),
+          BoxShadow(color: const Color(0xFFFF9800).withValues(alpha: 0.08), blurRadius: 10, spreadRadius: 1),
         ],
       ),
       child: Column(
@@ -51,10 +64,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
         children: [
           _buildHeader(),
           const Divider(height: 1, color: Colors.white12),
-          SizedBox(
-            height: 108,
-            child: _buildDraggableChain(),
-          ),
+          SizedBox(height: 112, child: _buildDraggableChain()),
           _buildFooter(),
         ],
       ),
@@ -64,7 +74,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
   Widget _buildHeader() {
     final activeCount = widget.effects.where((e) => e.isEnabled).length;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       child: Row(
         children: [
           Container(
@@ -74,10 +84,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
               borderRadius: BorderRadius.circular(6),
               border: Border.all(color: const Color(0xFFFF9800), width: 1.2),
               boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFF9800).withValues(alpha: 0.4),
-                  blurRadius: 6,
-                ),
+                BoxShadow(color: const Color(0xFFFF9800).withValues(alpha: 0.4), blurRadius: 6),
               ],
             ),
             child: const Row(
@@ -85,37 +92,32 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
               children: [
                 Icon(Icons.alt_route, size: 13, color: Color(0xFFFF9800)),
                 SizedBox(width: 5),
-                Text(
-                  'MEMORY EDIT',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFFFF9800),
-                    letterSpacing: 1.2,
-                  ),
-                ),
+                Text('MEMORY EDIT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFFFF9800), letterSpacing: 1.2)),
               ],
             ),
           ),
           const SizedBox(width: 10),
           const Expanded(
-            child: Text(
-              'SIGNAL CHAIN • CADENA DE EFECTOS',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: Colors.white70,
-                letterSpacing: 1.0,
-              ),
-            ),
+            child: Text('SIGNAL CHAIN • CADENA DE EFECTOS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white70, letterSpacing: 1.0)),
           ),
+          IconButton(
+            icon: const Icon(Icons.chevron_left, size: 20, color: Color(0xFFFF9800)),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+            tooltip: 'Desplazar cadena a la izquierda',
+            onPressed: () => _scroll(-180),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right, size: 20, color: Color(0xFFFF9800)),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+            tooltip: 'Desplazar cadena a la derecha',
+            onPressed: () => _scroll(180),
+          ),
+          const SizedBox(width: 4),
           Text(
             '$activeCount/${widget.effects.length} ON',
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Colors.white38,
-            ),
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white38),
           ),
         ],
       ),
@@ -123,11 +125,18 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
   }
 
   Widget _buildDraggableChain() {
-    return ReorderableListView.builder(
-      scrollDirection: Axis.horizontal,
-      buildDefaultDragHandles: false,
-      cacheExtent: 2500,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+    return Scrollbar(
+      controller: _scrollController,
+      thumbVisibility: true,
+      trackVisibility: true,
+      thickness: 4,
+      radius: const Radius.circular(4),
+      child: ReorderableListView.builder(
+        scrollController: _scrollController,
+        scrollDirection: Axis.horizontal,
+        buildDefaultDragHandles: false,
+        cacheExtent: 2500,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       header: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -181,6 +190,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
           ),
         );
       },
+      ),
     );
   }
 
