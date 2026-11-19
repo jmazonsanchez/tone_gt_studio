@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/gt1b_assigns.dart';
 import '../../services/patch_service.dart';
+import '../theme/app_theme.dart';
 
 /// Tab for Boss GT-1B Assign Matrices A1 to A6.
 class AssignMatrixTab extends StatefulWidget {
@@ -17,6 +18,7 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     final assigns = widget.patchService.assigns;
     if (_selectedAssignIndex >= assigns.length) {
       _selectedAssignIndex = 0;
@@ -41,10 +43,10 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isSel ? const Color(0xFF1E2838) : const Color(0xFF181824),
+                      color: isSel ? (colors.isDark ? const Color(0xFF1E2838) : colors.cardActive) : colors.surfaceVariant,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isSel ? const Color(0xFF00ADB5) : Colors.white10,
+                        color: isSel ? colors.primary : colors.borderSubtle,
                         width: isSel ? 1.4 : 1.0,
                       ),
                     ),
@@ -57,7 +59,7 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: isSel ? const Color(0xFF00ADB5) : Colors.white70,
+                              color: isSel ? colors.primary : colors.textPrimary,
                             ),
                           ),
                         ),
@@ -66,7 +68,7 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
                           height: 8,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: a.isEnabled ? const Color(0xFF00ADB5) : Colors.white24,
+                            color: a.isEnabled ? colors.primary : colors.textMuted.withValues(alpha: 0.3),
                           ),
                         ),
                       ],
@@ -77,7 +79,7 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
             },
           ),
         ),
-        const VerticalDivider(width: 24, color: Colors.white12),
+        VerticalDivider(width: 24, color: colors.borderSubtle),
         // Active Assign Detail Form
         Expanded(
           child: SingleChildScrollView(
@@ -89,11 +91,11 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
                   children: [
                     Text(
                       'ASIGNACIÓN A${_selectedAssignIndex + 1}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF00ADB5)),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: colors.primary),
                     ),
                     Switch(
                       value: currentAssign.isEnabled,
-                      activeColor: const Color(0xFF00ADB5),
+                      activeColor: colors.primary,
                       onChanged: (val) {
                         widget.patchService.updateAssign(
                           _selectedAssignIndex,
@@ -105,10 +107,11 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
                 ),
                 const SizedBox(height: 10),
                 _buildDropdown(
-                  label: 'TARGET PARAMETER',
-                  value: currentAssign.target.clamp(0, Gt1bAssigns.targetNames.length - 1),
-                  items: Gt1bAssigns.targetNames,
-                  onChanged: (val) => widget.patchService.updateAssign(
+                  colors,
+                  'TARGET PARAMETER',
+                  currentAssign.target.clamp(0, Gt1bAssigns.targetNames.length - 1),
+                  Gt1bAssigns.targetNames,
+                  (val) => widget.patchService.updateAssign(
                     _selectedAssignIndex,
                     currentAssign.copyWith(target: val),
                   ),
@@ -118,9 +121,10 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
                   children: [
                     Expanded(
                       child: _buildSlider(
-                        label: 'TARGET MIN',
-                        value: currentAssign.targetMin,
-                        onChanged: (v) => widget.patchService.updateAssign(
+                        colors,
+                        'TARGET MIN',
+                        currentAssign.targetMin,
+                        (v) => widget.patchService.updateAssign(
                           _selectedAssignIndex,
                           currentAssign.copyWith(targetMin: v),
                         ),
@@ -129,9 +133,10 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
                     const SizedBox(width: 14),
                     Expanded(
                       child: _buildSlider(
-                        label: 'TARGET MAX',
-                        value: currentAssign.targetMax,
-                        onChanged: (v) => widget.patchService.updateAssign(
+                        colors,
+                        'TARGET MAX',
+                        currentAssign.targetMax,
+                        (v) => widget.patchService.updateAssign(
                           _selectedAssignIndex,
                           currentAssign.copyWith(targetMax: v),
                         ),
@@ -144,10 +149,11 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
                   children: [
                     Expanded(
                       child: _buildDropdown(
-                        label: 'SOURCE',
-                        value: currentAssign.source.clamp(0, Gt1bAssigns.assignSourceNames.length - 1),
-                        items: Gt1bAssigns.assignSourceNames,
-                        onChanged: (val) => widget.patchService.updateAssign(
+                        colors,
+                        'SOURCE',
+                        currentAssign.source.clamp(0, Gt1bAssigns.assignSourceNames.length - 1),
+                        Gt1bAssigns.assignSourceNames,
+                        (val) => widget.patchService.updateAssign(
                           _selectedAssignIndex,
                           currentAssign.copyWith(source: val),
                         ),
@@ -156,10 +162,11 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
                     const SizedBox(width: 14),
                     Expanded(
                       child: _buildDropdown(
-                        label: 'SOURCE MODE',
-                        value: currentAssign.sourceMode.clamp(0, Gt1bAssigns.sourceModeNames.length - 1),
-                        items: Gt1bAssigns.sourceModeNames,
-                        onChanged: (val) => widget.patchService.updateAssign(
+                        colors,
+                        'SOURCE MODE',
+                        currentAssign.sourceMode.clamp(0, Gt1bAssigns.sourceModeNames.length - 1),
+                        Gt1bAssigns.sourceModeNames,
+                        (val) => widget.patchService.updateAssign(
                           _selectedAssignIndex,
                           currentAssign.copyWith(sourceMode: val),
                         ),
@@ -175,33 +182,26 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
     );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required int value,
-    required List<String> items,
-    required ValueChanged<int> onChanged,
-  }) {
+  Widget _buildDropdown(AppColorScheme colors, String label, int value, List<String> items, ValueChanged<int> onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(fontSize: 9, color: colors.textMuted, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
           decoration: BoxDecoration(
-            color: const Color(0xFF222230),
+            color: colors.surfaceVariant,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.white12),
+            border: Border.all(color: colors.borderSubtle),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<int>(
               value: value,
               isExpanded: true,
-              dropdownColor: const Color(0xFF1E1E2C),
-              style: const TextStyle(color: Color(0xFF00ADB5), fontSize: 12, fontWeight: FontWeight.bold),
-              items: List.generate(items.length, (idx) {
-                return DropdownMenuItem(value: idx, child: Text(items[idx]));
-              }),
+              dropdownColor: colors.surfaceElevated,
+              style: TextStyle(color: colors.primary, fontSize: 12, fontWeight: FontWeight.bold),
+              items: List.generate(items.length, (idx) => DropdownMenuItem(value: idx, child: Text(items[idx]))),
               onChanged: (val) {
                 if (val != null) onChanged(val);
               },
@@ -212,29 +212,25 @@ class _AssignMatrixTabState extends State<AssignMatrixTab> {
     );
   }
 
-  Widget _buildSlider({
-    required String label,
-    required int value,
-    required ValueChanged<int> onChanged,
-  }) {
+  Widget _buildSlider(AppColorScheme colors, String label, int value, ValueChanged<int> onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.bold)),
-            Text('$value', style: const TextStyle(fontSize: 10, color: Color(0xFF00ADB5), fontWeight: FontWeight.bold)),
+            Text(label, style: TextStyle(fontSize: 9, color: colors.textMuted, fontWeight: FontWeight.bold)),
+            Text('$value', style: TextStyle(fontSize: 10, color: colors.primary, fontWeight: FontWeight.bold)),
           ],
         ),
         SliderTheme(
-          data: const SliderThemeData(
+          data: SliderThemeData(
             trackHeight: 2,
-            thumbShape: RoundSliderThumbShape(enabledThumbRadius: 5),
-            overlayShape: RoundSliderOverlayShape(overlayRadius: 8),
-            activeTrackColor: Color(0xFF00ADB5),
-            inactiveTrackColor: Colors.white10,
-            thumbColor: Color(0xFF00ADB5),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 8),
+            activeTrackColor: colors.primary,
+            inactiveTrackColor: colors.sliderInactiveTrack,
+            thumbColor: colors.primary,
           ),
           child: Slider(
             value: value.toDouble().clamp(0, 100),

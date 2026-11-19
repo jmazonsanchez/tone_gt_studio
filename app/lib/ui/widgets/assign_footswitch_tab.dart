@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/gt1b_assigns.dart';
 import '../../services/patch_service.dart';
+import '../theme/app_theme.dart';
 
 /// Tab for Footswitches (Down / Up) and System I/O Levels (In Level / Out Level).
 class AssignFootswitchTab extends StatelessWidget {
@@ -10,30 +11,34 @@ class AssignFootswitchTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     final ctl = patchService.ctlExpSetting;
     return SingleChildScrollView(
       child: Column(
         children: [
           _buildCard(
+            colors: colors,
             title: 'FOOTSWITCH DOWN',
             icon: Icons.arrow_downward,
             child: Row(
               children: [
                 Expanded(
                   child: _buildDropdown(
-                    label: 'FUNCTION',
-                    value: ctl.downFunc.clamp(0, Gt1bAssigns.downFuncNames.length - 1),
-                    items: Gt1bAssigns.downFuncNames,
-                    onChanged: (val) => patchService.updateCtlExp(ctl.copyWith(downFunc: val)),
+                    colors,
+                    'FUNCTION',
+                    ctl.downFunc.clamp(0, Gt1bAssigns.downFuncNames.length - 1),
+                    Gt1bAssigns.downFuncNames,
+                    (val) => patchService.updateCtlExp(ctl.copyWith(downFunc: val)),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildDropdown(
-                    label: 'MODE',
-                    value: ctl.downMode.clamp(0, Gt1bAssigns.sourceModeNames.length - 1),
-                    items: Gt1bAssigns.sourceModeNames,
-                    onChanged: (val) => patchService.updateCtlExp(ctl.copyWith(downMode: val)),
+                    colors,
+                    'MODE',
+                    ctl.downMode.clamp(0, Gt1bAssigns.sourceModeNames.length - 1),
+                    Gt1bAssigns.sourceModeNames,
+                    (val) => patchService.updateCtlExp(ctl.copyWith(downMode: val)),
                   ),
                 ),
               ],
@@ -41,25 +46,28 @@ class AssignFootswitchTab extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _buildCard(
+            colors: colors,
             title: 'FOOTSWITCH UP',
             icon: Icons.arrow_upward,
             child: Row(
               children: [
                 Expanded(
                   child: _buildDropdown(
-                    label: 'FUNCTION',
-                    value: ctl.upFunc.clamp(0, Gt1bAssigns.upFuncNames.length - 1),
-                    items: Gt1bAssigns.upFuncNames,
-                    onChanged: (val) => patchService.updateCtlExp(ctl.copyWith(upFunc: val)),
+                    colors,
+                    'FUNCTION',
+                    ctl.upFunc.clamp(0, Gt1bAssigns.upFuncNames.length - 1),
+                    Gt1bAssigns.upFuncNames,
+                    (val) => patchService.updateCtlExp(ctl.copyWith(upFunc: val)),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildDropdown(
-                    label: 'MODE',
-                    value: ctl.upMode.clamp(0, Gt1bAssigns.sourceModeNames.length - 1),
-                    items: Gt1bAssigns.sourceModeNames,
-                    onChanged: (val) => patchService.updateCtlExp(ctl.copyWith(upMode: val)),
+                    colors,
+                    'MODE',
+                    ctl.upMode.clamp(0, Gt1bAssigns.sourceModeNames.length - 1),
+                    Gt1bAssigns.sourceModeNames,
+                    (val) => patchService.updateCtlExp(ctl.copyWith(upMode: val)),
                   ),
                 ),
               ],
@@ -67,23 +75,26 @@ class AssignFootswitchTab extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _buildCard(
+            colors: colors,
             title: 'NIVELES GLOBALES DE ENTRADA Y SALIDA (I/O)',
             icon: Icons.volume_up,
             child: Row(
               children: [
                 Expanded(
                   child: _buildSlider(
-                    label: 'IN LEVEL (ENTRADA)',
-                    value: ctl.inLevel,
-                    onChanged: (v) => patchService.updateCtlExp(ctl.copyWith(inLevel: v)),
+                    colors,
+                    'IN LEVEL (ENTRADA)',
+                    ctl.inLevel,
+                    (v) => patchService.updateCtlExp(ctl.copyWith(inLevel: v)),
                   ),
                 ),
                 const SizedBox(width: 20),
                 Expanded(
                   child: _buildSlider(
-                    label: 'OUT LEVEL (SALIDA)',
-                    value: ctl.outLevel,
-                    onChanged: (v) => patchService.updateCtlExp(ctl.copyWith(outLevel: v)),
+                    colors,
+                    'OUT LEVEL (SALIDA)',
+                    ctl.outLevel,
+                    (v) => patchService.updateCtlExp(ctl.copyWith(outLevel: v)),
                   ),
                 ),
               ],
@@ -94,24 +105,29 @@ class AssignFootswitchTab extends StatelessWidget {
     );
   }
 
-  Widget _buildCard({required String title, required IconData icon, required Widget child}) {
+  Widget _buildCard({
+    required AppColorScheme colors,
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1B26),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 14, color: const Color(0xFF00ADB5)),
+              Icon(icon, size: 14, color: colors.primary),
               const SizedBox(width: 6),
               Text(
                 title,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white70),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: colors.textPrimary),
               ),
             ],
           ),
@@ -122,33 +138,26 @@ class AssignFootswitchTab extends StatelessWidget {
     );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required int value,
-    required List<String> items,
-    required ValueChanged<int> onChanged,
-  }) {
+  Widget _buildDropdown(AppColorScheme colors, String label, int value, List<String> items, ValueChanged<int> onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(fontSize: 9, color: colors.textMuted, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
           decoration: BoxDecoration(
-            color: const Color(0xFF222230),
+            color: colors.surfaceVariant,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.white12),
+            border: Border.all(color: colors.borderSubtle),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<int>(
               value: value,
               isExpanded: true,
-              dropdownColor: const Color(0xFF1E1E2C),
-              style: const TextStyle(color: Color(0xFF00ADB5), fontSize: 12, fontWeight: FontWeight.bold),
-              items: List.generate(items.length, (idx) {
-                return DropdownMenuItem(value: idx, child: Text(items[idx]));
-              }),
+              dropdownColor: colors.surfaceElevated,
+              style: TextStyle(color: colors.primary, fontSize: 12, fontWeight: FontWeight.bold),
+              items: List.generate(items.length, (idx) => DropdownMenuItem(value: idx, child: Text(items[idx]))),
               onChanged: (val) {
                 if (val != null) onChanged(val);
               },
@@ -159,29 +168,25 @@ class AssignFootswitchTab extends StatelessWidget {
     );
   }
 
-  Widget _buildSlider({
-    required String label,
-    required int value,
-    required ValueChanged<int> onChanged,
-  }) {
+  Widget _buildSlider(AppColorScheme colors, String label, int value, ValueChanged<int> onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.bold)),
-            Text('$value', style: const TextStyle(fontSize: 10, color: Color(0xFF00ADB5), fontWeight: FontWeight.bold)),
+            Text(label, style: TextStyle(fontSize: 9, color: colors.textMuted, fontWeight: FontWeight.bold)),
+            Text('$value', style: TextStyle(fontSize: 10, color: colors.primary, fontWeight: FontWeight.bold)),
           ],
         ),
         SliderTheme(
-          data: const SliderThemeData(
+          data: SliderThemeData(
             trackHeight: 2,
-            thumbShape: RoundSliderThumbShape(enabledThumbRadius: 5),
-            overlayShape: RoundSliderOverlayShape(overlayRadius: 8),
-            activeTrackColor: Color(0xFF00ADB5),
-            inactiveTrackColor: Colors.white10,
-            thumbColor: Color(0xFF00ADB5),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 8),
+            activeTrackColor: colors.primary,
+            inactiveTrackColor: colors.sliderInactiveTrack,
+            thumbColor: colors.primary,
           ),
           child: Slider(
             value: value.toDouble().clamp(0, 100),

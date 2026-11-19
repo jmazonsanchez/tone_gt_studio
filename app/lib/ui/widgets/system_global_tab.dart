@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/system_settings.dart';
 import '../../services/patch_service.dart';
+import '../theme/app_theme.dart';
 
 /// Global Audio I/O & Global EQ Tab for Boss GT-1B
 class SystemGlobalTab extends StatelessWidget {
@@ -18,6 +19,7 @@ class SystemGlobalTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     final sys = patchService.systemSettings;
 
     return SingleChildScrollView(
@@ -26,16 +28,12 @@ class SystemGlobalTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Output Select & Input Level
-          _buildIoSection(sys),
+          _buildIoSection(sys, colors),
           const SizedBox(height: 14),
-
-          // 2. Global 4-Band Parametric EQ
-          _buildGlobalEqSection(sys),
+          _buildGlobalEqSection(sys, colors),
           const SizedBox(height: 14),
-
-          // 3. Total Reverb Level
           _buildSliderCard(
+            colors: colors,
             label: 'TOTAL REVERB LEVEL',
             value: sys.totalReverb,
             min: 0,
@@ -48,18 +46,18 @@ class SystemGlobalTab extends StatelessWidget {
     );
   }
 
-  Widget _buildIoSection(SystemSettings sys) {
+  Widget _buildIoSection(SystemSettings sys, AppColorScheme colors) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1B26),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('RUTEO DE SALIDA Y ENTRADA', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
+          Text('RUTEO DE SALIDA Y ENTRADA', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colors.textMuted)),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -68,15 +66,15 @@ class SystemGlobalTab extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('OUTPUT SELECT', style: TextStyle(fontSize: 9, color: Colors.white70)),
+                    Text('OUTPUT SELECT', style: TextStyle(fontSize: 9, color: colors.textMuted)),
                     const SizedBox(height: 2),
                     DropdownButtonHideUnderline(
                       child: DropdownButton<int>(
                         value: sys.outputSelect.clamp(0, SystemSettings.outputSelectOptions.length - 1),
                         isDense: true,
                         isExpanded: true,
-                        dropdownColor: const Color(0xFF1E1E2C),
-                        style: const TextStyle(color: Color(0xFF00ADB5), fontWeight: FontWeight.bold, fontSize: 11),
+                        dropdownColor: colors.surfaceElevated,
+                        style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 11),
                         items: List.generate(SystemSettings.outputSelectOptions.length, (idx) {
                           return DropdownMenuItem(value: idx, child: Text(SystemSettings.outputSelectOptions[idx]));
                         }),
@@ -92,6 +90,7 @@ class SystemGlobalTab extends StatelessWidget {
               Expanded(
                 flex: 2,
                 child: _buildSliderCard(
+                  colors: colors,
                   label: 'INPUT LEVEL',
                   value: sys.inputLevel,
                   min: 0,
@@ -107,26 +106,27 @@ class SystemGlobalTab extends StatelessWidget {
     );
   }
 
-  Widget _buildGlobalEqSection(SystemSettings sys) {
+  Widget _buildGlobalEqSection(SystemSettings sys, AppColorScheme colors) {
     final freqIdx = sys.eqMidFreq.clamp(0, midFreqLabels.length - 1);
     final qIdx = sys.eqMidQ.clamp(0, midQLabels.length - 1);
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1B26),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('GLOBAL 4-BAND EQ (HARDWARE MASTER)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
+          Text('GLOBAL 4-BAND EQ (HARDWARE MASTER)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colors.textMuted)),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: _buildSliderCard(
+                  colors: colors,
                   label: 'LOW GAIN',
                   value: sys.eqLowGain,
                   min: 0,
@@ -138,6 +138,7 @@ class SystemGlobalTab extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: _buildSliderCard(
+                  colors: colors,
                   label: 'MID GAIN',
                   value: sys.eqMidGain,
                   min: 0,
@@ -155,20 +156,21 @@ class SystemGlobalTab extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF14141E),
+                    color: colors.surfaceVariant,
                     borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: colors.borderSubtle),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('MID FREQ', style: TextStyle(fontSize: 8, color: Colors.white54)),
+                      Text('MID FREQ', style: TextStyle(fontSize: 8, color: colors.textMuted)),
                       DropdownButtonHideUnderline(
                         child: DropdownButton<int>(
                           value: freqIdx,
                           isDense: true,
                           isExpanded: true,
-                          dropdownColor: const Color(0xFF1E1E2C),
-                          style: const TextStyle(color: Color(0xFF00ADB5), fontWeight: FontWeight.bold, fontSize: 11),
+                          dropdownColor: colors.surfaceElevated,
+                          style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 11),
                           items: List.generate(midFreqLabels.length, (i) => DropdownMenuItem(value: i, child: Text(midFreqLabels[i]))),
                           onChanged: (v) {
                             if (v != null) patchService.updateSystemParameter('global_eq_mid_freq', v);
@@ -184,20 +186,21 @@ class SystemGlobalTab extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF14141E),
+                    color: colors.surfaceVariant,
                     borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: colors.borderSubtle),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('MID Q', style: TextStyle(fontSize: 8, color: Colors.white54)),
+                      Text('MID Q', style: TextStyle(fontSize: 8, color: colors.textMuted)),
                       DropdownButtonHideUnderline(
                         child: DropdownButton<int>(
                           value: qIdx,
                           isDense: true,
                           isExpanded: true,
-                          dropdownColor: const Color(0xFF1E1E2C),
-                          style: const TextStyle(color: Color(0xFF00ADB5), fontWeight: FontWeight.bold, fontSize: 11),
+                          dropdownColor: colors.surfaceElevated,
+                          style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 11),
                           items: List.generate(midQLabels.length, (i) => DropdownMenuItem(value: i, child: Text(midQLabels[i]))),
                           onChanged: (v) {
                             if (v != null) patchService.updateSystemParameter('global_eq_mid_q', v);
@@ -211,6 +214,7 @@ class SystemGlobalTab extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: _buildSliderCard(
+                  colors: colors,
                   label: 'HIGH GAIN',
                   value: sys.eqHighGain,
                   min: 0,
@@ -227,6 +231,7 @@ class SystemGlobalTab extends StatelessWidget {
   }
 
   Widget _buildSliderCard({
+    required AppColorScheme colors,
     required String label,
     required int value,
     required int min,
@@ -237,8 +242,9 @@ class SystemGlobalTab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF14141E),
+        color: colors.surfaceVariant,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,18 +252,18 @@ class SystemGlobalTab extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: Text(label, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.white54))),
-              Text(displayValue, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF00ADB5))),
+              Expanded(child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: colors.textMuted))),
+              Text(displayValue, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: colors.primary)),
             ],
           ),
           SliderTheme(
-            data: const SliderThemeData(
+            data: SliderThemeData(
               trackHeight: 2,
-              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 4),
-              overlayShape: RoundSliderOverlayShape(overlayRadius: 8),
-              activeTrackColor: Color(0xFF00ADB5),
-              inactiveTrackColor: Colors.white10,
-              thumbColor: Color(0xFF00ADB5),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 8),
+              activeTrackColor: colors.primary,
+              inactiveTrackColor: colors.sliderInactiveTrack,
+              thumbColor: colors.primary,
             ),
             child: Slider(
               value: value.clamp(min, max).toDouble(),

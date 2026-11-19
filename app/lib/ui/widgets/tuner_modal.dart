@@ -73,12 +73,12 @@ class TunerModal extends StatelessWidget {
           const SizedBox(height: 12),
           _buildCentGauge(cents, accentColor, colors),
           const SizedBox(height: 6),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('♭ BEMOL (-50)', style: TextStyle(fontSize: 9, color: Colors.white38, fontWeight: FontWeight.bold)),
-              Text('EN TONO (0)', style: TextStyle(fontSize: 10, color: Color(0xFF00FF88), fontWeight: FontWeight.w900)),
-              Text('SOSTENIDO (+50) ♯', style: TextStyle(fontSize: 9, color: Colors.white38, fontWeight: FontWeight.bold)),
+              Text('♭ BEMOL (-50)', style: TextStyle(fontSize: 9, color: colors.textMuted, fontWeight: FontWeight.bold)),
+              const Text('EN TONO (0)', style: TextStyle(fontSize: 10, color: Color(0xFF00FF88), fontWeight: FontWeight.w900)),
+              Text('SOSTENIDO (+50) ♯', style: TextStyle(fontSize: 9, color: colors.textMuted, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 12),

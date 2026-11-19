@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/system_settings.dart';
 import '../../services/patch_service.dart';
+import '../theme/app_theme.dart';
 
 /// USB Audio & Hardware Utilities Tab for Boss GT-1B
 class SystemUsbTab extends StatelessWidget {
@@ -10,6 +11,7 @@ class SystemUsbTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     final sys = patchService.systemSettings;
 
     return SingleChildScrollView(
@@ -18,38 +20,34 @@ class SystemUsbTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. USB Primary Audio (DAW Output & Mix)
-          _buildUsbPrimarySection(sys),
+          _buildUsbPrimarySection(sys, colors),
           const SizedBox(height: 14),
-
-          // 2. Direct Monitor & Secondary Audio
-          _buildUsbSecondarySection(sys),
+          _buildUsbSecondarySection(sys, colors),
           const SizedBox(height: 14),
-
-          // 3. Hardware Auto-Off
-          _buildAutoOffCard(sys),
+          _buildAutoOffCard(sys, colors),
         ],
       ),
     );
   }
 
-  Widget _buildUsbPrimarySection(SystemSettings sys) {
+  Widget _buildUsbPrimarySection(SystemSettings sys, AppColorScheme colors) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1B26),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('USB AUDIO PRINCIPAL (DAW / GRABACIÓN)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
+          Text('USB AUDIO PRINCIPAL (DAW / GRABACIÓN)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colors.textMuted)),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: _buildSlider(
+                  colors: colors,
                   label: 'PRIMARY OUTPUT',
                   value: sys.usbPrimaryOut,
                   displayValue: '${sys.usbPrimaryOut} %',
@@ -59,6 +57,7 @@ class SystemUsbTab extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildSlider(
+                  colors: colors,
                   label: 'PRIMARY MIX',
                   value: sys.usbPrimaryMix,
                   displayValue: '${sys.usbPrimaryMix} %',
@@ -72,63 +71,58 @@ class SystemUsbTab extends StatelessWidget {
     );
   }
 
-  Widget _buildUsbSecondarySection(SystemSettings sys) {
+  Widget _buildUsbSecondarySection(SystemSettings sys, AppColorScheme colors) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1B26),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderSubtle),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('DIRECT MONITOR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-                  Text('Escucha directa sin latencia de la señal del bajo', style: TextStyle(fontSize: 9, color: Colors.white38)),
-                ],
-              ),
-              Switch(
-                value: sys.usbDirectMonitor,
-                activeColor: const Color(0xFF00ADB5),
-                onChanged: (val) => patchService.updateSystemParameter('usb_direct_monitor', val ? 1 : 0),
-              ),
+              Text('DIRECT MONITOR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: colors.textPrimary)),
+              Text('Escucha directa sin latencia de la señal del bajo', style: TextStyle(fontSize: 9, color: colors.textMuted)),
             ],
+          ),
+          Switch(
+            value: sys.usbDirectMonitor,
+            activeColor: colors.primary,
+            onChanged: (val) => patchService.updateSystemParameter('usb_direct_monitor', val ? 1 : 0),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAutoOffCard(SystemSettings sys) {
+  Widget _buildAutoOffCard(SystemSettings sys, AppColorScheme colors) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1B26),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('AUTO OFF (APAGADO AUTOMÁTICO)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-              Text('Apaga la pedalera tras 10 horas de inactividad', style: TextStyle(fontSize: 9, color: Colors.white38)),
+              Text('AUTO OFF (APAGADO AUTOMÁTICO)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: colors.textPrimary)),
+              Text('Apaga la pedalera tras 10 horas de inactividad', style: TextStyle(fontSize: 9, color: colors.textMuted)),
             ],
           ),
           DropdownButtonHideUnderline(
             child: DropdownButton<int>(
               value: sys.autoOff.clamp(0, 1),
               isDense: true,
-              dropdownColor: const Color(0xFF1E1E2C),
-              style: const TextStyle(color: Color(0xFF00ADB5), fontWeight: FontWeight.bold, fontSize: 11),
+              dropdownColor: colors.surfaceElevated,
+              style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 11),
               items: const [
                 DropdownMenuItem(value: 0, child: Text('DESACTIVADO')),
                 DropdownMenuItem(value: 1, child: Text('10 HORAS')),
@@ -144,6 +138,7 @@ class SystemUsbTab extends StatelessWidget {
   }
 
   Widget _buildSlider({
+    required AppColorScheme colors,
     required String label,
     required int value,
     required String displayValue,
@@ -152,8 +147,9 @@ class SystemUsbTab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF14141E),
+        color: colors.surfaceVariant,
         borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,18 +157,18 @@ class SystemUsbTab extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: Text(label, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 8, color: Colors.white54))),
-              Text(displayValue, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF00ADB5))),
+              Expanded(child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 8, color: colors.textMuted))),
+              Text(displayValue, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: colors.primary)),
             ],
           ),
           SliderTheme(
-            data: const SliderThemeData(
+            data: SliderThemeData(
               trackHeight: 2,
-              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 4),
-              overlayShape: RoundSliderOverlayShape(overlayRadius: 8),
-              activeTrackColor: Color(0xFF00ADB5),
-              inactiveTrackColor: Colors.white10,
-              thumbColor: Color(0xFF00ADB5),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 8),
+              activeTrackColor: colors.primary,
+              inactiveTrackColor: colors.sliderInactiveTrack,
+              thumbColor: colors.primary,
             ),
             child: Slider(
               value: value.clamp(0, 100).toDouble(),

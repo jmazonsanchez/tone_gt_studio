@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/patch_service.dart';
+import '../theme/app_theme.dart';
 
 /// Modal dialog to save/commit the active temporary patch into GT-1B permanent user flash memory (U01..U99).
 class PatchWriteModal extends StatefulWidget {
@@ -52,17 +53,22 @@ class _PatchWriteModalState extends State<PatchWriteModal> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     final userPatches = widget.patchService.patches.sublist(0, 99);
     final targetPatch = userPatches[_selectedTarget];
 
     return Container(
       constraints: const BoxConstraints(maxWidth: 520),
       decoration: BoxDecoration(
-        color: const Color(0xFF14141E),
+        color: colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF00ADB5).withValues(alpha: 0.4), width: 1.2),
-        boxShadow: const [
-          BoxShadow(color: Colors.black87, blurRadius: 24, spreadRadius: 4),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.4), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: colors.isDark ? 0.7 : 0.12),
+            blurRadius: 24,
+            spreadRadius: 4,
+          ),
         ],
       ),
       padding: const EdgeInsets.all(20),
@@ -74,19 +80,24 @@ class _PatchWriteModalState extends State<PatchWriteModal> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.save, color: Color(0xFF00ADB5), size: 20),
-                  SizedBox(width: 8),
+                  Icon(Icons.save, color: colors.primary, size: 20),
+                  const SizedBox(width: 8),
                   Text(
                     'GUARDAR PRESET EN GT-1B',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1.0, color: Colors.white),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                      letterSpacing: 1.0,
+                      color: colors.textPrimary,
+                    ),
                   ),
                 ],
               ),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close, color: Colors.white54, size: 18),
+                icon: Icon(Icons.close, color: colors.textMuted, size: 18),
                 visualDensity: VisualDensity.compact,
               ),
             ],
@@ -94,16 +105,19 @@ class _PatchWriteModalState extends State<PatchWriteModal> {
           const SizedBox(height: 16),
 
           // Patch Name TextField
-          const Text('NOMBRE DEL PRESET (MÁX. 16 CARACTERES)', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white54)),
+          Text(
+            'NOMBRE DEL PRESET (MÁX. 16 CARACTERES)',
+            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: colors.textMuted),
+          ),
           const SizedBox(height: 6),
           TextField(
             controller: _nameController,
             maxLength: 16,
-            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+            style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary, fontSize: 14),
             decoration: InputDecoration(
               filled: true,
-              fillColor: const Color(0xFF1B1B26),
-              counterStyle: const TextStyle(color: Colors.white30, fontSize: 10),
+              fillColor: colors.surfaceVariant,
+              counterStyle: TextStyle(color: colors.textMuted, fontSize: 10),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
@@ -111,21 +125,24 @@ class _PatchWriteModalState extends State<PatchWriteModal> {
           const SizedBox(height: 14),
 
           // Target User Slot Selector
-          const Text('DESTINO EN MEMORIA DE USUARIO (U01-U99)', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white54)),
+          Text(
+            'DESTINO EN MEMORIA DE USUARIO (U01-U99)',
+            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: colors.textMuted),
+          ),
           const SizedBox(height: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF1B1B26),
+              color: colors.surfaceVariant,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(color: colors.borderSubtle),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<int>(
                 value: _selectedTarget,
                 isExpanded: true,
-                dropdownColor: const Color(0xFF1B1B26),
-                style: const TextStyle(color: Color(0xFF00ADB5), fontWeight: FontWeight.bold, fontSize: 13),
+                dropdownColor: colors.surfaceElevated,
+                style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 13),
                 items: List.generate(userPatches.length, (idx) {
                   final p = userPatches[idx];
                   return DropdownMenuItem(
@@ -156,7 +173,10 @@ class _PatchWriteModalState extends State<PatchWriteModal> {
                 Expanded(
                   child: Text(
                     'Se sobrescribirá el contenido de ${targetPatch.displayNumber} (${targetPatch.name}) en la memoria de la pedalera.',
-                    style: const TextStyle(fontSize: 11, color: Colors.amber),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colors.isDark ? Colors.amber : const Color(0xFFB45309),
+                    ),
                   ),
                 ),
               ],
@@ -173,7 +193,7 @@ class _PatchWriteModalState extends State<PatchWriteModal> {
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('CANCELAR', style: TextStyle(color: Colors.white54)),
+                child: Text('CANCELAR', style: TextStyle(color: colors.textSecondary)),
               ),
               ElevatedButton.icon(
                 onPressed: _isSaving ? null : _handleSave,
@@ -182,7 +202,7 @@ class _PatchWriteModalState extends State<PatchWriteModal> {
                     : const Icon(Icons.check, size: 18),
                 label: Text(_isSaving ? 'GUARDANDO...' : 'GUARDAR EN HARDWARE'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00ADB5),
+                  backgroundColor: colors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

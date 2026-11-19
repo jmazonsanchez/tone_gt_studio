@@ -136,7 +136,7 @@ class StageRightPanel extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 8,
                         fontWeight: FontWeight.w900,
-                        color: isWahActive ? accent : Colors.white38,
+                        color: isWahActive ? accent : colors.textMuted,
                       ),
                     ),
                   ],
@@ -155,10 +155,10 @@ class StageRightPanel extends StatelessWidget {
                 data: SliderThemeData(
                   trackHeight: 18,
                   thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
-                  activeTrackColor: isWahActive ? accent : const Color(0xFF00ADB5),
-                  inactiveTrackColor: const Color(0xFF242432),
-                  thumbColor: Colors.white,
-                  overlayColor: (isWahActive ? accent : const Color(0xFF00ADB5)).withValues(alpha: 0.2),
+                  activeTrackColor: isWahActive ? accent : colors.primary,
+                  inactiveTrackColor: colors.sliderInactiveTrack,
+                  thumbColor: colors.isDark ? Colors.white : colors.primary,
+                  overlayColor: (isWahActive ? accent : colors.primary).withValues(alpha: 0.2),
                 ),
                 child: Slider(
                   value: wahPosition.clamp(0, 100).toDouble(),
@@ -175,10 +175,10 @@ class StageRightPanel extends StatelessWidget {
           // Position text
           Text(
             'EXP $wahPosition%',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w900,
-              color: Colors.white70,
+              color: colors.textPrimary,
             ),
           ),
         ],
@@ -227,7 +227,7 @@ class StageRightPanel extends StatelessWidget {
                 } else if (idx < 5) {
                   segmentColor = Colors.amber;
                 } else {
-                  segmentColor = const Color(0xFF00ADB5);
+                  segmentColor = colors.primary;
                 }
 
                 return AnimatedContainer(
@@ -236,7 +236,7 @@ class StageRightPanel extends StatelessWidget {
                   height: 6,
                   margin: const EdgeInsets.symmetric(horizontal: 2),
                   decoration: BoxDecoration(
-                    color: isLit ? segmentColor : colors.surfaceElevated,
+                    color: isLit ? segmentColor : colors.sliderInactiveTrack,
                     borderRadius: BorderRadius.circular(2),
                     boxShadow: [
                       if (isLit)
@@ -256,10 +256,10 @@ class StageRightPanel extends StatelessWidget {
 
           Text(
             '$level%',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF00ADB5),
+              color: colors.primary,
             ),
           ),
         ],

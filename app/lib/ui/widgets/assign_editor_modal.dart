@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/patch_service.dart';
+import '../theme/app_theme.dart';
 import 'assign_ctl_tab.dart';
 import 'assign_footswitch_tab.dart';
 import 'assign_matrix_tab.dart';
@@ -41,14 +42,15 @@ class _AssignEditorModalState extends State<AssignEditorModal>
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return AnimatedBuilder(
       animation: widget.patchService,
       builder: (context, _) {
         return Dialog(
-          backgroundColor: const Color(0xFF14141E),
+          backgroundColor: colors.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF00ADB5), width: 1.5),
+            side: BorderSide(color: colors.primary, width: 1.5),
           ),
           child: Container(
             width: 760,
@@ -56,12 +58,12 @@ class _AssignEditorModalState extends State<AssignEditorModal>
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _buildHeader(),
+                _buildHeader(colors),
                 TabBar(
                   controller: _tabController,
-                  indicatorColor: const Color(0xFF00ADB5),
-                  labelColor: const Color(0xFF00ADB5),
-                  unselectedLabelColor: Colors.white54,
+                  indicatorColor: colors.primary,
+                  labelColor: colors.primary,
+                  unselectedLabelColor: colors.textMuted,
                   tabs: const [
                     Tab(icon: Icon(Icons.settings_remote, size: 16), text: 'CTL & EXP'),
                     Tab(icon: Icon(Icons.swap_vert, size: 16), text: 'DOWN / UP & NIVELES'),
@@ -87,21 +89,21 @@ class _AssignEditorModalState extends State<AssignEditorModal>
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppColorScheme colors) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Expanded(
+        Expanded(
           child: Row(
             children: [
-              Icon(Icons.tune, color: Color(0xFF00ADB5), size: 20),
-              SizedBox(width: 8),
+              Icon(Icons.tune, color: colors.primary, size: 20),
+              const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   'CONFIGURACIÓN GT-1B (CTL / EXP / A1–A6 / I-O)',
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colors.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.0,
@@ -112,7 +114,7 @@ class _AssignEditorModalState extends State<AssignEditorModal>
           ),
         ),
         IconButton(
-          icon: const Icon(Icons.close, color: Colors.white38, size: 18),
+          icon: Icon(Icons.close, color: colors.textMuted, size: 18),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ],

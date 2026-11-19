@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../domain/tsl_serializer.dart';
 import '../../services/patch_service.dart';
+import '../theme/app_theme.dart';
 
 /// Backup & Tone Studio (.tsl) LiveSet Import/Export Tab
 class PatchBackupTab extends StatefulWidget {
@@ -25,35 +26,32 @@ class _PatchBackupTabState extends State<PatchBackupTab> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       physics: const BouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Export Tone Studio LiveSet (.tsl)
-          _buildExportCard(),
+          _buildExportCard(colors),
           const SizedBox(height: 14),
-
-          // 2. Export Active Patch JSON
-          _buildActivePatchCard(),
+          _buildActivePatchCard(colors),
           const SizedBox(height: 14),
-
-          // 3. Import Box
-          _buildImportCard(),
+          _buildImportCard(colors),
 
           if (_statusMessage.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF00ADB5).withValues(alpha: 0.15),
+                color: colors.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF00ADB5)),
+                border: Border.all(color: colors.primary),
               ),
               child: Text(
                 _statusMessage,
-                style: const TextStyle(fontSize: 11, color: Color(0xFF00ADB5), fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 11, color: colors.primary, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -62,36 +60,36 @@ class _PatchBackupTabState extends State<PatchBackupTab> {
     );
   }
 
-  Widget _buildExportCard() {
+  Widget _buildExportCard(AppColorScheme colors) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1B26),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.folder_zip, color: Color(0xFF00ADB5), size: 18),
-              SizedBox(width: 8),
+              Icon(Icons.folder_zip, color: colors.primary, size: 18),
+              const SizedBox(width: 8),
               Text(
                 'EXPORTAR LIVESET BOSS TONE STUDIO (.TSL)',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: colors.textPrimary),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Genera un archivo .tsl compatible con Boss Tone Studio conteniendo los 99 presets de Usuario.',
-            style: TextStyle(fontSize: 10, color: Colors.white54),
+            style: TextStyle(fontSize: 10, color: colors.textMuted),
           ),
           const SizedBox(height: 10),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00ADB5),
+              backgroundColor: colors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
@@ -105,39 +103,39 @@ class _PatchBackupTabState extends State<PatchBackupTab> {
     );
   }
 
-  Widget _buildActivePatchCard() {
+  Widget _buildActivePatchCard(AppColorScheme colors) {
     final current = widget.patchService.currentPatch;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1B26),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.tune, color: Color(0xFFFF9800), size: 18),
+              Icon(Icons.tune, color: colors.accent, size: 18),
               const SizedBox(width: 8),
               Text(
                 'EXPORTAR PRESET ACTIVO: ${current.displayNumber} (${current.name})',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: colors.textPrimary),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Exporta la configuración completa de potenciómetros, ruteo y switches de este preset en JSON.',
-            style: TextStyle(fontSize: 10, color: Colors.white54),
+            style: TextStyle(fontSize: 10, color: colors.textMuted),
           ),
           const SizedBox(height: 10),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF252538),
-              foregroundColor: const Color(0xFFFF9800),
-              side: const BorderSide(color: Color(0xFFFF9800), width: 0.8),
+              backgroundColor: colors.isDark ? const Color(0xFF252538) : colors.surfaceVariant,
+              foregroundColor: colors.accent,
+              side: BorderSide(color: colors.accent, width: 0.8),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
@@ -150,24 +148,24 @@ class _PatchBackupTabState extends State<PatchBackupTab> {
     );
   }
 
-  Widget _buildImportCard() {
+  Widget _buildImportCard(AppColorScheme colors) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1B26),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.file_download, color: Color(0xFF00ADB5), size: 18),
-              SizedBox(width: 8),
+              Icon(Icons.file_download, color: colors.primary, size: 18),
+              const SizedBox(width: 8),
               Text(
                 'IMPORTAR PRESET O LIVESET (.TSL / JSON)',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: colors.textPrimary),
               ),
             ],
           ),
@@ -175,11 +173,12 @@ class _PatchBackupTabState extends State<PatchBackupTab> {
           TextField(
             controller: _importController,
             maxLines: 4,
-            style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: Colors.white),
+            style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: colors.textPrimary),
             decoration: InputDecoration(
               hintText: 'Pega aquí el contenido JSON del archivo .tsl o del preset exportado...',
+              hintStyle: TextStyle(color: colors.textMuted, fontSize: 11),
               filled: true,
-              fillColor: const Color(0xFF14141E),
+              fillColor: colors.surfaceVariant,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
               contentPadding: const EdgeInsets.all(10),
             ),
@@ -187,7 +186,7 @@ class _PatchBackupTabState extends State<PatchBackupTab> {
           const SizedBox(height: 10),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00ADB5),
+              backgroundColor: colors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),

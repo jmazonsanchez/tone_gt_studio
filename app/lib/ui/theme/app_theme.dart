@@ -39,6 +39,7 @@ class AppColorScheme {
   });
 
   bool get isDark => brightness == Brightness.dark;
+  Color get sliderInactiveTrack => isDark ? const Color(0x33FFFFFF) : const Color(0xFFCBD5E1);
 }
 
 class AppTheme {

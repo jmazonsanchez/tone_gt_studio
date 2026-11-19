@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/patch.dart';
 import '../../services/patch_service.dart';
+import '../theme/app_theme.dart';
 import 'patch_write_modal.dart';
 
 /// Factory Presets Tab (P01..P99) - Read-only presets with Clone to User support
@@ -23,6 +24,7 @@ class _PatchPresetTabState extends State<PatchPresetTab> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     final presetPatches = widget.patchService.patches.sublist(99);
     final filtered = presetPatches.where((p) {
       final q = _search.toLowerCase();
@@ -40,14 +42,18 @@ class _PatchPresetTabState extends State<PatchPresetTab> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.lock, size: 14, color: Colors.amber),
-              SizedBox(width: 8),
+              const Icon(Icons.lock, size: 14, color: Colors.amber),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Los presets P01-P99 son de solo lectura de fábrica. Para editarlos, pulsa "Copiar a User".',
-                  style: TextStyle(fontSize: 10, color: Colors.amber, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: colors.isDark ? Colors.amber : const Color(0xFFB45309),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -59,11 +65,13 @@ class _PatchPresetTabState extends State<PatchPresetTab> {
           padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
           child: TextField(
             onChanged: (v) => setState(() => _search = v),
+            style: TextStyle(color: colors.textPrimary, fontSize: 13),
             decoration: InputDecoration(
               hintText: 'Buscar en presets de Fábrica (P01-P99)...',
-              prefixIcon: const Icon(Icons.search, size: 18, color: Colors.white38),
+              hintStyle: TextStyle(color: colors.textMuted, fontSize: 12),
+              prefixIcon: Icon(Icons.search, size: 18, color: colors.textMuted),
               filled: true,
-              fillColor: const Color(0xFF1B1B26),
+              fillColor: colors.surfaceVariant,
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
@@ -76,10 +84,11 @@ class _PatchPresetTabState extends State<PatchPresetTab> {
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             itemCount: filtered.length,
-            separatorBuilder: (_, __) => const Divider(color: Colors.white10, height: 1),
+            separatorBuilder: (_, __) => Divider(color: colors.borderSubtle, height: 1),
             itemBuilder: (context, idx) {
               final patch = filtered[idx];
               final isCurrent = patch.index == widget.patchService.currentPatchIndex;
+              final accentAmber = colors.isDark ? Colors.amber : const Color(0xFFD97706);
 
               return Material(
                 color: Colors.transparent,
@@ -90,7 +99,7 @@ class _PatchPresetTabState extends State<PatchPresetTab> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
-                      color: isCurrent ? Colors.amber : Colors.white54,
+                      color: isCurrent ? accentAmber : colors.textMuted,
                     ),
                   ),
                   title: Row(
@@ -101,7 +110,7 @@ class _PatchPresetTabState extends State<PatchPresetTab> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                            color: isCurrent ? Colors.white : Colors.white70,
+                            color: isCurrent ? (colors.isDark ? Colors.white : accentAmber) : colors.textPrimary,
                           ),
                         ),
                       ),
@@ -112,7 +121,7 @@ class _PatchPresetTabState extends State<PatchPresetTab> {
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(color: Colors.amber.withValues(alpha: 0.4), width: 0.8),
                         ),
-                        child: const Text('FÁBRICA', style: TextStyle(fontSize: 8, color: Colors.amber, fontWeight: FontWeight.bold)),
+                        child: Text('FÁBRICA', style: TextStyle(fontSize: 8, color: accentAmber, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -121,8 +130,8 @@ class _PatchPresetTabState extends State<PatchPresetTab> {
                     children: [
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF00ADB5), width: 0.8),
-                          foregroundColor: const Color(0xFF00ADB5),
+                          side: BorderSide(color: colors.primary, width: 0.8),
+                          foregroundColor: colors.primary,
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -136,12 +145,12 @@ class _PatchPresetTabState extends State<PatchPresetTab> {
                       ),
                       const SizedBox(width: 8),
                       if (isCurrent)
-                        const Icon(Icons.check_circle, color: Colors.amber, size: 18)
+                        Icon(Icons.check_circle, color: accentAmber, size: 18)
                       else
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF222232),
-                            foregroundColor: Colors.white70,
+                            backgroundColor: colors.surfaceVariant,
+                            foregroundColor: colors.textPrimary,
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -151,7 +160,7 @@ class _PatchPresetTabState extends State<PatchPresetTab> {
                         ),
                     ],
                   ),
-                  tileColor: isCurrent ? Colors.amber.withValues(alpha: 0.1) : null,
+                  tileColor: isCurrent ? Colors.amber.withValues(alpha: colors.isDark ? 0.1 : 0.08) : null,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   onTap: () => _selectPatch(patch),
                 ),

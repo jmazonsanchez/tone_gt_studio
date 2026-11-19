@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/patch.dart';
 import '../../services/patch_service.dart';
+import '../theme/app_theme.dart';
 import 'patch_write_modal.dart';
 
 /// User Presets Tab (U01..U99) with full editing, selection and write support
@@ -23,6 +24,7 @@ class _PatchUserTabState extends State<PatchUserTab> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     final userPatches = widget.patchService.patches.sublist(0, 99);
     final filtered = userPatches.where((p) {
       final q = _search.toLowerCase();
@@ -36,11 +38,13 @@ class _PatchUserTabState extends State<PatchUserTab> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: TextField(
             onChanged: (v) => setState(() => _search = v),
+            style: TextStyle(color: colors.textPrimary, fontSize: 13),
             decoration: InputDecoration(
               hintText: 'Buscar en presets de Usuario (U01-U99)...',
-              prefixIcon: const Icon(Icons.search, size: 18, color: Colors.white38),
+              hintStyle: TextStyle(color: colors.textMuted, fontSize: 12),
+              prefixIcon: Icon(Icons.search, size: 18, color: colors.textMuted),
               filled: true,
-              fillColor: const Color(0xFF1B1B26),
+              fillColor: colors.surfaceVariant,
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
@@ -53,7 +57,7 @@ class _PatchUserTabState extends State<PatchUserTab> {
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             itemCount: filtered.length,
-            separatorBuilder: (_, __) => const Divider(color: Colors.white10, height: 1),
+            separatorBuilder: (_, __) => Divider(color: colors.borderSubtle, height: 1),
             itemBuilder: (context, idx) {
               final patch = filtered[idx];
               final isCurrent = patch.index == widget.patchService.currentPatchIndex;
@@ -67,7 +71,7 @@ class _PatchUserTabState extends State<PatchUserTab> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
-                      color: isCurrent ? const Color(0xFF00ADB5) : Colors.white54,
+                      color: isCurrent ? colors.primary : colors.textMuted,
                     ),
                   ),
                   title: Text(
@@ -75,24 +79,24 @@ class _PatchUserTabState extends State<PatchUserTab> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                      color: isCurrent ? Colors.white : Colors.white70,
+                      color: isCurrent ? (colors.isDark ? Colors.white : colors.primary) : colors.textPrimary,
                     ),
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.save_as, size: 16, color: Color(0xFF00ADB5)),
+                        icon: Icon(Icons.save_as, size: 16, color: colors.primary),
                         tooltip: 'Sobrescribir este slot (Guardar)',
                         onPressed: () => PatchWriteModal.show(context, widget.patchService, targetIndex: patch.index),
                       ),
                       if (isCurrent)
-                        const Icon(Icons.check_circle, color: Color(0xFF00ADB5), size: 18)
+                        Icon(Icons.check_circle, color: colors.primary, size: 18)
                       else
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF222232),
-                            foregroundColor: Colors.white70,
+                            backgroundColor: colors.surfaceVariant,
+                            foregroundColor: colors.textPrimary,
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -102,7 +106,7 @@ class _PatchUserTabState extends State<PatchUserTab> {
                         ),
                     ],
                   ),
-                  tileColor: isCurrent ? const Color(0xFF00ADB5).withValues(alpha: 0.12) : null,
+                  tileColor: isCurrent ? colors.cardActive : null,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   onTap: () => _selectPatch(patch),
                 ),

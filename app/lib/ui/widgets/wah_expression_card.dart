@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 /// Interactive Expression Pedal & WAH Footswitch Widget
 /// Models the Boss GT-1B Expression Pedal with Toe Footswitch and filter sweep treadle.
@@ -48,21 +49,22 @@ class _WahExpressionCardState extends State<WahExpressionCard> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     final active = widget.isWahActive;
     const accentColor = Colors.deepOrangeAccent;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF16161E),
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: active ? accentColor.withValues(alpha: 0.7) : Colors.white12,
+          color: active ? accentColor.withValues(alpha: 0.7) : colors.borderSubtle,
           width: active ? 1.6 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.6),
+            color: Colors.black.withValues(alpha: colors.isDark ? 0.6 : 0.08),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -88,7 +90,7 @@ class _WahExpressionCardState extends State<WahExpressionCard> with SingleTicker
                     height: 10,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: active ? accentColor : const Color(0xFF33333D),
+                      color: active ? accentColor : colors.surfaceElevated,
                       boxShadow: active
                           ? [
                               const BoxShadow(
@@ -101,13 +103,13 @@ class _WahExpressionCardState extends State<WahExpressionCard> with SingleTicker
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'PEDAL EXP / FOOTSWITCH WAH',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.1,
-                      color: Colors.white,
+                      color: colors.textPrimary,
                     ),
                   ),
                 ],
@@ -115,16 +117,16 @@ class _WahExpressionCardState extends State<WahExpressionCard> with SingleTicker
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: active ? accentColor.withValues(alpha: 0.2) : Colors.white10,
+                  color: active ? accentColor.withValues(alpha: 0.2) : colors.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: active ? accentColor : Colors.white24, width: 0.8),
+                  border: Border.all(color: active ? accentColor : colors.borderSubtle, width: 0.8),
                 ),
                 child: Text(
                   active ? 'WAH ACTIVO' : 'VOLUMEN (BYPASS)',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: active ? accentColor : Colors.white60,
+                    color: active ? accentColor : colors.textSecondary,
                   ),
                 ),
               ),
@@ -156,13 +158,13 @@ class _WahExpressionCardState extends State<WahExpressionCard> with SingleTicker
                       border: Border.all(color: Colors.black54, width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.7),
+                          color: Colors.black.withValues(alpha: colors.isDark ? 0.7 : 0.2),
                           blurRadius: 6,
                           offset: const Offset(0, 3),
                         ),
                         if (active)
-                          BoxShadow(
-                            color: accentColor.withValues(alpha: 0.5),
+                          const BoxShadow(
+                            color: accentColor,
                             blurRadius: 10,
                           ),
                       ],
@@ -224,14 +226,14 @@ class _WahExpressionCardState extends State<WahExpressionCard> with SingleTicker
                       children: [
                         Text(
                           active ? 'BARRIDO DE FILTRO (WAH)' : 'POSICIÓN DE PEDAL',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70),
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colors.textPrimary),
                         ),
                         Text(
                           '${widget.wahPosition}%',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w900,
-                            color: active ? accentColor : const Color(0xFF00ADB5),
+                            color: active ? accentColor : colors.primary,
                           ),
                         ),
                       ],
@@ -242,9 +244,9 @@ class _WahExpressionCardState extends State<WahExpressionCard> with SingleTicker
                         trackHeight: 12,
                         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
                         overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
-                        activeTrackColor: active ? accentColor : const Color(0xFF00ADB5),
-                        inactiveTrackColor: const Color(0xFF242430),
-                        thumbColor: Colors.white,
+                        activeTrackColor: active ? accentColor : colors.primary,
+                        inactiveTrackColor: colors.sliderInactiveTrack,
+                        thumbColor: colors.isDark ? Colors.white : colors.primary,
                       ),
                       child: Slider(
                         value: widget.wahPosition.toDouble(),
@@ -255,11 +257,11 @@ class _WahExpressionCardState extends State<WahExpressionCard> with SingleTicker
                         },
                       ),
                     ),
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('TALÓN (0%)', style: TextStyle(fontSize: 8.5, color: Colors.white38, fontWeight: FontWeight.w600)),
-                        Text('PUNTA (100%)', style: TextStyle(fontSize: 8.5, color: Colors.white38, fontWeight: FontWeight.w600)),
+                        Text('TALÓN (0%)', style: TextStyle(fontSize: 8.5, color: colors.textMuted, fontWeight: FontWeight.w600)),
+                        Text('PUNTA (100%)', style: TextStyle(fontSize: 8.5, color: colors.textMuted, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ],
