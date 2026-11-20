@@ -117,8 +117,13 @@ class _MiniPedalCardState extends State<MiniPedalCard> with SingleTickerProvider
                 // Main Face
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: SizedBox(
+                      width: 105,
+                      height: 160,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Top Deck
                       GestureDetector(
@@ -196,6 +201,8 @@ class _MiniPedalCardState extends State<MiniPedalCard> with SingleTickerProvider
                     ],
                   ),
                 ),
+              ),
+            ),
               ],
             ),
           ),

@@ -66,11 +66,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colors.borderSubtle, width: 1.0),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: colors.isDark ? 0.2 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: colors.isDark ? 0.2 : 0.04), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -161,7 +157,15 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(width: 8),
-                _buildTerminalNode(colors: colors, title: 'OUTPUT', icon: Icons.speaker_rounded, color: const Color(0xFF4CAF50), subtitle: 'AMP / PA'),
+                _buildTerminalNode(
+                  colors: colors, title: 'OUTPUT', icon: Icons.tune_rounded, color: const Color(0xFF4CAF50),
+                  subtitle: (widget.selectedIndex ?? _selectedBlockIndex) == 999 ? 'MASTER' : 'AMP / PA',
+                  isSelected: (widget.selectedIndex ?? _selectedBlockIndex) == 999,
+                  onTap: () {
+                    setState(() => _selectedBlockIndex = 999);
+                    widget.onSelectIndex?.call(999);
+                  },
+                ),
               ],
             ),
             itemCount: widget.effects.length,
@@ -203,7 +207,6 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
         final t = Curves.easeOutCubic.transform(animation.value);
         final effect = index < widget.effects.length ? widget.effects[index] : null;
         final glowColor = (effect != null && effect.isEnabled) ? effect.accentColor : const Color(0xFF00ADB5);
-
         return Transform.scale(
           scale: 1.0 + (0.04 * t),
           child: Material(
@@ -214,9 +217,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(color: glowColor.withValues(alpha: colors.isDark ? 0.35 : 0.2), blurRadius: 10 * t, spreadRadius: 1),
-                ],
+                boxShadow: [BoxShadow(color: glowColor.withValues(alpha: colors.isDark ? 0.35 : 0.2), blurRadius: 10 * t, spreadRadius: 1)],
               ),
               child: child,
             ),
@@ -233,8 +234,14 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
     required IconData icon,
     required Color color,
     required String subtitle,
+    bool isSelected = false,
     VoidCallback? onTap,
   }) {
+    final borderColor = isSelected ? color : color.withValues(alpha: colors.isDark ? 0.4 : 0.5);
+    final bgColor = isSelected
+        ? color.withValues(alpha: colors.isDark ? 0.22 : 0.12)
+        : (colors.isDark ? const Color(0xFF191924) : const Color(0xFFF8FAFC));
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -242,11 +249,15 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
         width: 62,
         height: 82,
         decoration: BoxDecoration(
-          color: colors.isDark ? const Color(0xFF191924) : const Color(0xFFF8FAFC),
+          color: bgColor,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withValues(alpha: colors.isDark ? 0.4 : 0.5)),
+          border: Border.all(color: borderColor, width: isSelected ? 1.6 : 1.0),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: colors.isDark ? 0.15 : 0.03), blurRadius: 4, offset: const Offset(0, 1)),
+            BoxShadow(
+              color: isSelected ? color.withValues(alpha: 0.25) : Colors.black.withValues(alpha: colors.isDark ? 0.15 : 0.03),
+              blurRadius: isSelected ? 8 : 4,
+              offset: const Offset(0, 1),
+            ),
           ],
         ),
         child: Column(
@@ -255,7 +266,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
             Icon(icon, size: 18, color: color),
             const SizedBox(height: 3),
             Text(title, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.6)),
-            Text(subtitle, style: TextStyle(fontSize: 7, color: colors.textMuted)),
+            Text(subtitle, style: TextStyle(fontSize: 7, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? color : colors.textMuted)),
           ],
         ),
       ),
@@ -280,10 +291,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
               Text('Mantén presionado para reordenar • Toca para seleccionar', style: TextStyle(fontSize: 9, color: colors.textMuted)),
             ],
           ),
-          Text(
-            'ROUTING: SERIE',
-            style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: const Color(0xFFFF9800).withValues(alpha: 0.7), letterSpacing: 0.8),
-          ),
+          Text('ROUTING: SERIE', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: const Color(0xFFFF9800).withValues(alpha: 0.7), letterSpacing: 0.8)),
         ],
       ),
     );

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import '../../services/patch_service.dart';
 import '../layout/responsive_breakpoints.dart';
 import '../theme/app_theme.dart';
+import 'master_settings_modal.dart';
 
 /// Studio Master Console Panel for Boss GT-1B.
 /// Direct live access to Patch Level, Master BPM, Master Key, and Master 4-Band Parametric EQ.
 class StageLeftPanel extends StatelessWidget {
   final PatchService patchService;
   final StageBreakpoint breakpoint;
+  final VoidCallback? onOpenMaster;
 
   static const List<String> musicalKeys = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
   static const List<String> midFreqLabels = [
@@ -17,7 +19,12 @@ class StageLeftPanel extends StatelessWidget {
   ];
   static const List<String> midQLabels = ['0.5', '1', '2', '4', '8', '16'];
 
-  const StageLeftPanel({super.key, required this.patchService, required this.breakpoint});
+  const StageLeftPanel({
+    super.key,
+    required this.patchService,
+    required this.breakpoint,
+    this.onOpenMaster,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +44,7 @@ class StageLeftPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeader(colors),
+          _buildHeader(context, colors),
           const SizedBox(height: 8),
           Expanded(
             child: SingleChildScrollView(
@@ -68,27 +75,32 @@ class StageLeftPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(AppColorScheme colors) {
+  Widget _buildHeader(BuildContext context, AppColorScheme colors) {
     const amber = Color(0xFFFF9800);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: colors.isDark ? const Color(0xFF0F0F18) : const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(color: amber.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: amber, boxShadow: [BoxShadow(color: amber.withValues(alpha: 0.6), blurRadius: 4, spreadRadius: 1)]),
-          ),
-          const SizedBox(width: 6),
-          const Expanded(
-            child: Text('CONFIGURACIÓN MASTER', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, letterSpacing: 0.7, color: amber)),
-          ),
-        ],
+    return InkWell(
+      onTap: onOpenMaster ?? () => MasterSettingsModal.show(context, patchService),
+      borderRadius: BorderRadius.circular(7),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: colors.isDark ? const Color(0xFF0F0F18) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: amber.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: amber, boxShadow: [BoxShadow(color: amber.withValues(alpha: 0.6), blurRadius: 4, spreadRadius: 1)]),
+            ),
+            const SizedBox(width: 6),
+            const Expanded(
+              child: Text('CONFIGURACIÓN MASTER', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, letterSpacing: 0.7, color: amber)),
+            ),
+            Icon(Icons.tune_rounded, size: 12, color: amber.withValues(alpha: 0.7)),
+          ],
+        ),
       ),
     );
   }

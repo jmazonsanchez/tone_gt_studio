@@ -5,7 +5,7 @@ import '../../services/patch_service.dart';
 import '../layout/responsive_breakpoints.dart';
 import '../theme/app_theme.dart';
 import 'assign_editor_modal.dart';
-import 'master_settings_modal.dart';
+import 'master_workbench_view.dart';
 import 'memory_edit_chain_bar.dart';
 import 'mini_pedal_card.dart';
 import 'param_controls.dart';
@@ -48,6 +48,7 @@ class _StageCenterPanelState extends State<StageCenterPanel> {
   Widget build(BuildContext context) {
     final colors = AppTheme.of(context);
     final count = widget.effects.length;
+    final isMaster = _selectedEffectIndex == 999;
     final safeIndex = count > 0 ? _selectedEffectIndex.clamp(0, count - 1) : 0;
     final selectedBlock = count > 0 ? widget.effects[safeIndex] : null;
 
@@ -68,18 +69,23 @@ class _StageCenterPanelState extends State<StageCenterPanel> {
           const SizedBox(height: 8),
           MemoryEditChainBar(
             effects: widget.effects,
-            selectedIndex: safeIndex,
+            selectedIndex: _selectedEffectIndex,
             onSelectIndex: (idx) => setState(() => _selectedEffectIndex = idx),
             onToggle: widget.onToggleEffect,
             onMoveEffect: widget.onMoveEffect,
-            onOpenMaster: () => MasterSettingsModal.show(context, widget.patchService),
+            onOpenMaster: () => setState(() => _selectedEffectIndex = 999),
             onOpenConfig: () => AssignEditorModal.show(context, widget.patchService),
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: liveEffect != null
-                ? _buildActiveWorkbench(context, colors, liveEffect, safeIndex, count)
-                : const SizedBox.shrink(),
+            child: isMaster
+                ? MasterWorkbenchView(
+                    patchService: widget.patchService,
+                    onClose: () => setState(() => _selectedEffectIndex = safeIndex),
+                  )
+                : (liveEffect != null
+                    ? _buildActiveWorkbench(context, colors, liveEffect, safeIndex, count)
+                    : const SizedBox.shrink()),
           ),
         ],
       ),
