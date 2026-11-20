@@ -4,6 +4,7 @@ import '../core/transport/midi_transport.dart';
 import '../protocol/gt_sysex.dart';
 import '../models/effect_block.dart';
 import 'midi/midi_driver.dart';
+import 'storage/app_database.dart';
 
 enum MidiConnectionState {
   disconnected,
@@ -20,6 +21,7 @@ enum ConnectionType {
 /// MIDI Service for Boss GT-1B and GT-1 communication
 class MidiService extends ChangeNotifier implements MidiTransport {
   final MidiDriver _driver = MidiDriver();
+  final AppDatabase? _database;
   final _sysExController = StreamController<Uint8List>.broadcast();
 
   MidiConnectionState _connectionState = MidiConnectionState.disconnected;
@@ -43,6 +45,11 @@ class MidiService extends ChangeNotifier implements MidiTransport {
   set autoReconnect(bool val) {
     _autoReconnect = val;
     if (!val) _cancelReconnectTimer();
+    final db = _database;
+    if (db != null) {
+      final current = db.getDeviceConfig('boss_gt1b');
+      db.saveDeviceConfig(current.copyWith(autoReconnect: val), notify: false);
+    }
   }
   int get reconnectAttempts => _reconnectAttempts;
 
@@ -50,9 +57,20 @@ class MidiService extends ChangeNotifier implements MidiTransport {
   Stream<Uint8List> get onDataReceived => _sysExController.stream;
   Stream<Uint8List> get onSysExReceived => _sysExController.stream;
 
-  MidiService() {
+  MidiService({AppDatabase? database}) : _database = database ?? AppDatabase.instance {
     _driver.setOnDataReceived(_handleIncomingMidi);
     _driver.setOnDisconnected(handleUnexpectedDisconnection);
+    _loadDevicePreferences();
+  }
+
+  void _loadDevicePreferences() {
+    final db = _database;
+    if (db == null) return;
+    final config = db.getDeviceConfig('boss_gt1b');
+    _autoReconnect = config.autoReconnect;
+    _connectionType = config.lastConnectionType == 'bluetoothBle'
+        ? ConnectionType.bluetoothBle
+        : ConnectionType.usbOtg;
   }
 
   @override
@@ -167,6 +185,15 @@ class MidiService extends ChangeNotifier implements MidiTransport {
         _connectedDeviceName = _driver.connectedDeviceName;
         _lastConnectedDevice = _connectedDeviceName;
         _hasHadActiveConnection = true;
+        final db = _database;
+        if (db != null) {
+          final typeStr = type == ConnectionType.bluetoothBle ? 'bluetoothBle' : 'usbOtg';
+          final current = db.getDeviceConfig('boss_gt1b');
+          db.saveDeviceConfig(current.copyWith(
+            lastConnectionType: typeStr,
+            autoReconnect: _autoReconnect,
+          ), notify: false);
+        }
         // Activate Roland Editor Communication Mode for live bidirectional parameter sync
         await sendSysEx(GtSysEx.buildEditorMode(enable: true));
       } else {

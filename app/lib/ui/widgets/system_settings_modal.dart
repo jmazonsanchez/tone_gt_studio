@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/patch_service.dart';
 import '../theme/app_theme.dart';
 import 'system_appearance_tab.dart';
+import 'system_database_tab.dart';
 import 'system_global_tab.dart';
 import 'system_metronome_tab.dart';
 import 'system_usb_tab.dart';
@@ -46,7 +47,7 @@ class SystemSettingsModal extends StatelessWidget {
         ],
       ),
       child: DefaultTabController(
-        length: 4,
+        length: 5,
         child: Column(
           children: [
             // Modal Header
@@ -56,6 +57,8 @@ class SystemSettingsModal extends StatelessWidget {
             Container(
               color: colors.surfaceVariant,
               child: TabBar(
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
                 indicatorColor: colors.primary,
                 indicatorWeight: 3,
                 labelColor: colors.primary,
@@ -66,6 +69,7 @@ class SystemSettingsModal extends StatelessWidget {
                   Tab(icon: Icon(Icons.speed, size: 16), text: 'METRÓNOMO'),
                   Tab(icon: Icon(Icons.usb, size: 16), text: 'USB & HARDWARE'),
                   Tab(icon: Icon(Icons.palette_outlined, size: 16), text: 'APARIENCIA'),
+                  Tab(icon: Icon(Icons.storage_rounded, size: 16), text: 'BASE & PERFILES'),
                 ],
               ),
             ),
@@ -78,6 +82,7 @@ class SystemSettingsModal extends StatelessWidget {
                   SystemMetronomeTab(patchService: patchService),
                   SystemUsbTab(patchService: patchService),
                   const SystemAppearanceTab(),
+                  SystemDatabaseTab(patchService: patchService),
                 ],
               ),
             ),

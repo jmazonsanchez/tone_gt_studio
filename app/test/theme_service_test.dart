@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:tone_gt_studio/models/effect_block.dart';
 import 'package:tone_gt_studio/services/midi_service.dart';
 import 'package:tone_gt_studio/services/patch_service.dart';
+import 'package:tone_gt_studio/services/storage/app_database.dart';
 import 'package:tone_gt_studio/services/theme_service.dart';
 import 'package:tone_gt_studio/ui/theme/app_theme.dart';
 import 'package:tone_gt_studio/ui/widgets/chain_block_chip.dart';
@@ -17,6 +18,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ThemeService & AppTheme Tests', () {
+    setUp(() async {
+      await AppDatabase.instance.saveThemeMode('dark');
+    });
+
     test('Default mode is dark and maps to ThemeMode.dark', () {
       final service = ThemeService();
       expect(service.mode, equals(AppThemeMode.dark));

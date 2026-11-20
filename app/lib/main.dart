@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'services/midi_service.dart';
 import 'services/patch_service.dart';
+import 'services/storage/app_database.dart';
 import 'services/theme_service.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/screens/home_pedalboard_screen.dart';
@@ -14,6 +15,7 @@ void main() async {
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
+  await AppDatabase.instance.init();
   runApp(const ToneGtStudioApp());
 }
 
@@ -24,11 +26,12 @@ class ToneGtStudioApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeService()),
-        ChangeNotifierProvider(create: (_) => MidiService()),
+        ChangeNotifierProvider<AppDatabase>.value(value: AppDatabase.instance),
+        ChangeNotifierProvider(create: (_) => ThemeService(database: AppDatabase.instance)),
+        ChangeNotifierProvider(create: (_) => MidiService(database: AppDatabase.instance)),
         ChangeNotifierProxyProvider<MidiService, PatchService>(
-          create: (ctx) => PatchService(ctx.read<MidiService>()),
-          update: (_, midi, previous) => previous ?? PatchService(midi),
+          create: (ctx) => PatchService(ctx.read<MidiService>(), database: AppDatabase.instance),
+          update: (_, midi, previous) => previous ?? PatchService(midi, database: AppDatabase.instance),
         ),
       ],
       child: Consumer<ThemeService>(

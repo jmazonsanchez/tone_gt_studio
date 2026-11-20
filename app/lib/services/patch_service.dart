@@ -14,9 +14,11 @@ import '../models/system_settings.dart';
 import '../protocol/gt_sysex.dart';
 import '../protocol/gt1b_addresses.dart';
 import 'midi_service.dart';
+import 'storage/app_database.dart';
 
 class PatchService extends ChangeNotifier {
   final MidiService midiService;
+  final AppDatabase? _database;
   StreamSubscription<Uint8List>? _sysExSubscription;
   int _currentPatchIndex = 0;
   bool _isTunerActive = false;
@@ -105,10 +107,26 @@ class PatchService extends ChangeNotifier {
     notifyListeners();
   }
 
-  PatchService(this.midiService) {
+  PatchService(this.midiService, {AppDatabase? database})
+      : _database = database ?? AppDatabase.instance {
+    _loadDeviceConfig();
     _initializeDefaultPatches();
     midiService.addListener(_onMidiStateChanged);
     _sysExSubscription = midiService.onSysExReceived.listen(_handleIncomingHardwareSysEx);
+  }
+
+  void _loadDeviceConfig() {
+    final db = _database;
+    if (db == null) return;
+    final savedPresets = db.getQuickPresets('boss_gt1b');
+    if (savedPresets.isNotEmpty) {
+      _quickPresets.clear();
+      _quickPresets.addAll(savedPresets);
+    }
+  }
+
+  void _persistQuickPresets() {
+    _database?.saveQuickPresets(List.from(_quickPresets), 'boss_gt1b');
   }
 
   @override
@@ -1065,6 +1083,11 @@ class PatchService extends ChangeNotifier {
     if (index < 0 || index >= _patches.length) return;
     _currentPatchIndex = index;
     notifyListeners();
+    final db = _database;
+    if (db != null) {
+      final config = db.getDeviceConfig('boss_gt1b');
+      db.saveDeviceConfig(config.copyWith(lastPatchIndex: index), notify: false);
+    }
     await midiService.changePatch(index);
 
     // Give the GT-1B DSP 150ms to load buffer, then sync all active blocks & WAH
@@ -1345,6 +1368,7 @@ class PatchService extends ChangeNotifier {
       customLabel: label,
       colorValue: colorValue,
     ));
+    _persistQuickPresets();
     notifyListeners();
   }
 
@@ -1364,12 +1388,14 @@ class PatchService extends ChangeNotifier {
       customLabel: customLabel?.trim() ?? current.customLabel,
       colorValue: colorValue ?? current.colorValue,
     );
+    _persistQuickPresets();
     notifyListeners();
   }
 
   /// Remove a quick preset shortcut
   void removeQuickPreset(String id) {
     _quickPresets.removeWhere((p) => p.id == id);
+    _persistQuickPresets();
     notifyListeners();
   }
 
@@ -1380,6 +1406,7 @@ class PatchService extends ChangeNotifier {
     if (newIndex > oldIndex) newIndex -= 1;
     final item = _quickPresets.removeAt(oldIndex);
     _quickPresets.insert(newIndex, item);
+    _persistQuickPresets();
     notifyListeners();
   }
 

@@ -161,3 +161,47 @@ window.toneMidiBridge = {
     }
   }
 };
+
+// Safe LocalStorage Bridge for tone_gt_studio persistence
+window.toneStorageBridge = {
+  getItem: function(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.warn("Storage getItem error:", e);
+      return null;
+    }
+  },
+  setItem: function(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      console.warn("Storage setItem error:", e);
+      return false;
+    }
+  },
+  removeItem: function(key) {
+    try {
+      localStorage.removeItem(key);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+  clear: function() {
+    try {
+      localStorage.clear();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+  getAllKeys: function() {
+    try {
+      return Object.keys(localStorage);
+    } catch (e) {
+      return [];
+    }
+  }
+};

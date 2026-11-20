@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'storage/app_database.dart';
 
 enum AppThemeMode {
   dark,
@@ -7,8 +8,25 @@ enum AppThemeMode {
 }
 
 /// Service managing ToneStudio's visual appearance and theme mode.
+/// Automatically persists user preference in AppDatabase.
 class ThemeService extends ChangeNotifier {
+  final AppDatabase? _database;
   AppThemeMode _mode = AppThemeMode.dark;
+
+  ThemeService({AppDatabase? database}) : _database = database ?? AppDatabase.instance {
+    _loadFromDatabase();
+  }
+
+  void _loadFromDatabase() {
+    final saved = _database?.getThemeMode();
+    if (saved == 'light') {
+      _mode = AppThemeMode.light;
+    } else if (saved == 'system') {
+      _mode = AppThemeMode.system;
+    } else {
+      _mode = AppThemeMode.dark;
+    }
+  }
 
   AppThemeMode get mode => _mode;
 
@@ -30,6 +48,7 @@ class ThemeService extends ChangeNotifier {
   void setThemeMode(AppThemeMode mode) {
     if (_mode == mode) return;
     _mode = mode;
+    _database?.saveThemeMode(mode.name);
     notifyListeners();
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tone_gt_studio/models/quick_preset.dart';
 import 'package:tone_gt_studio/services/midi_service.dart';
 import 'package:tone_gt_studio/services/patch_service.dart';
+import 'package:tone_gt_studio/services/storage/app_database.dart';
 import 'package:tone_gt_studio/ui/theme/app_theme.dart';
 import 'package:tone_gt_studio/ui/widgets/quick_preset_bar.dart';
 
@@ -40,7 +41,8 @@ void main() {
     late MidiService midi;
     late PatchService patchService;
 
-    setUp(() {
+    setUp(() async {
+      await AppDatabase.instance.resetDeviceConfig('boss_gt1b');
       midi = MidiService();
       patchService = PatchService(midi);
     });
@@ -113,7 +115,8 @@ void main() {
     late MidiService midi;
     late PatchService patchService;
 
-    setUp(() {
+    setUp(() async {
+      await AppDatabase.instance.resetDeviceConfig('boss_gt1b');
       midi = MidiService();
       patchService = PatchService(midi);
     });
