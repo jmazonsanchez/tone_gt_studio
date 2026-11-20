@@ -13,7 +13,7 @@ import 'parameter_knob.dart';
 import 'quick_preset_bar.dart';
 
 /// Center stage workstation panel with Live Preset bar, Signal Chain router,
-/// and the Active Boutique Workbench (Option A: compact pedal + direct controls).
+/// and the Active Boutique Workbench (Option A: compact pedal + centered direct controls).
 class StageCenterPanel extends StatefulWidget {
   final PatchService patchService;
   final List<EffectBlock> effects;
@@ -109,7 +109,9 @@ class _StageCenterPanelState extends State<StageCenterPanel> {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 8, 10, 8),
-                  child: MiniPedalCard(effect: effect, onToggle: () => widget.onToggleEffect(effect)),
+                  child: Center(
+                    child: MiniPedalCard(effect: effect, onToggle: () => widget.onToggleEffect(effect)),
+                  ),
                 ),
                 Container(width: 1, margin: const EdgeInsets.symmetric(vertical: 8), color: colors.borderSubtle),
                 Expanded(
@@ -189,68 +191,88 @@ class _StageCenterPanelState extends State<StageCenterPanel> {
         );
     final otherParams = effect.parameters.where((p) => p != typeParam).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (typeParam != null) ...[
-          _buildTypeDropdown(colors, typeParam, accent),
-          const SizedBox(height: 8),
-        ],
-        Expanded(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: otherParams.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Center(child: Text('Sin parámetros adicionales para este bloque.', style: TextStyle(color: colors.textMuted, fontSize: 11))),
-                  )
-                : Center(
-                    child: Wrap(
-                      spacing: 16,
-                      runSpacing: 10,
-                      alignment: WrapAlignment.center,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: otherParams.map((p) {
-                        if (p.isToggle) {
-                          return ToggleParamCard(param: p, accentColor: accent, onChanged: (v) => widget.patchService.updateParameter(p, v));
-                        }
-                        if (p.isEnum) {
-                          return EnumParamDropdown(param: p, accentColor: accent, onChanged: (v) => widget.patchService.updateParameter(p, v));
-                        }
-                        return ParameterKnob(parameter: p, accentColor: accent, onChanged: (v) => widget.patchService.updateParameter(p, v));
-                      }).toList(),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (typeParam != null) ...[
+            _buildTypeDropdown(colors, typeParam, accent),
+            const SizedBox(height: 10),
+          ],
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Center(
+                      child: otherParams.isEmpty
+                          ? Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              child: Text('Sin parámetros adicionales para este bloque.', style: TextStyle(color: colors.textMuted, fontSize: 11)),
+                            )
+                          : Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Wrap(
+                                spacing: 18,
+                                runSpacing: 12,
+                                alignment: WrapAlignment.center,
+                                runAlignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: otherParams.map((p) {
+                                  if (p.isToggle) {
+                                    return ToggleParamCard(param: p, accentColor: accent, onChanged: (v) => widget.patchService.updateParameter(p, v));
+                                  }
+                                  if (p.isEnum) {
+                                    return EnumParamDropdown(param: p, accentColor: accent, onChanged: (v) => widget.patchService.updateParameter(p, v));
+                                  }
+                                  return ParameterKnob(parameter: p, accentColor: accent, onChanged: (v) => widget.patchService.updateParameter(p, v));
+                                }).toList(),
+                              ),
+                            ),
                     ),
                   ),
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildTypeDropdown(AppColorScheme colors, EffectParameter typeParam, Color accent) {
     final options = typeParam.options ?? const <String>[];
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: colors.surfaceVariant, borderRadius: BorderRadius.circular(8), border: Border.all(color: colors.borderSubtle)),
-      child: Row(
-        children: [
-          Icon(Icons.tune_rounded, size: 14, color: accent),
-          const SizedBox(width: 6),
-          Text('TIPO / MODELO:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colors.textSecondary)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<int>(
-                value: typeParam.value.clamp(0, options.isNotEmpty ? options.length - 1 : 0),
-                isDense: true,
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: colors.textPrimary),
-                dropdownColor: colors.surface,
-                items: options.asMap().entries.map((e) => DropdownMenuItem<int>(value: e.key, child: Text(e.value.toUpperCase()))).toList(),
-                onChanged: (v) => v != null ? widget.patchService.updateParameter(typeParam, v) : null,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(color: colors.surfaceVariant, borderRadius: BorderRadius.circular(8), border: Border.all(color: colors.borderSubtle)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.tune_rounded, size: 14, color: accent),
+              const SizedBox(width: 6),
+              Text('TIPO / MODELO:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colors.textSecondary)),
+              const SizedBox(width: 8),
+              Flexible(
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    value: typeParam.value.clamp(0, options.isNotEmpty ? options.length - 1 : 0),
+                    isDense: true,
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: colors.textPrimary),
+                    dropdownColor: colors.surface,
+                    items: options.asMap().entries.map((e) => DropdownMenuItem<int>(value: e.key, child: Text(e.value.toUpperCase()))).toList(),
+                    onChanged: (v) => v != null ? widget.patchService.updateParameter(typeParam, v) : null,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
