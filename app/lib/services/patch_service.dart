@@ -73,9 +73,7 @@ class PatchService extends ChangeNotifier {
   // Phase 6: System Settings & Utilities
   final SystemSettings systemSettings = SystemSettings();
 
-  List<int> _hardwareFxChain = [
-    0, 1, 4, 8, 10, 14, 17, 5, 2, 13, 15, 12, 11, 7, 6, 9, 18, 3, 19, 16
-  ];
+  List<int> _hardwareFxChain = List<int>.from(GtSysEx.defaultHardwareChain);
 
   bool _isSyncing = false;
   bool _isInitialSyncComplete = false;
@@ -783,13 +781,25 @@ class PatchService extends ChangeNotifier {
     if (patchIdx < 0 || patchIdx >= _patches.length) return;
 
     if (patchIdx == _currentPatchIndex) {
-      _hardwareFxChain = List<int>.from(chainIds);
+      if (chainIds.length == 20) {
+        _hardwareFxChain = List<int>.from(chainIds);
+      } else if (chainIds.length == 9) {
+        _hardwareFxChain = List<int>.from(GtSysEx.defaultHardwareChain);
+        for (int i = 0; i < 9; i++) {
+          _hardwareFxChain[7 + i] = chainIds[i];
+        }
+      }
     }
     final patch = _patches[patchIdx];
     final currentEffects = List<EffectBlock>.from(patch.effects);
 
+    // GT-1B authentic 20-slot chain: slots 7..15 hold the 9 movable effects
+    final movableIds = (chainIds.length >= 16)
+        ? chainIds.sublist(7, 16)
+        : chainIds;
+
     final orderedEffects = <EffectBlock>[];
-    for (final id in chainIds) {
+    for (final id in movableIds) {
       final category = GtSysEx.chainIdToCategory[id];
       if (category != null) {
         final effect = currentEffects.where((e) => e.category == category).firstOrNull;
@@ -814,11 +824,13 @@ class PatchService extends ChangeNotifier {
     if (slotIndex >= 0 && slotIndex < _hardwareFxChain.length) {
       _hardwareFxChain[slotIndex] = chainId;
     }
+    // Only movable slots 7..15 correspond to the 9 movable effects on GT-1B
+    if (slotIndex < 7 || slotIndex > 15) return;
+    final targetIdx = slotIndex - 7;
     final category = GtSysEx.chainIdToCategory[chainId];
     if (category == null) return;
     final currentEffects = List<EffectBlock>.from(currentPatch.effects);
     final idx = currentEffects.indexWhere((e) => e.category == category);
-    final targetIdx = slotIndex.clamp(0, currentEffects.length - 1);
     if (idx >= 0 && targetIdx >= 0 && targetIdx < currentEffects.length && idx != targetIdx) {
       final item = currentEffects.removeAt(idx);
       currentEffects.insert(targetIdx, item);
@@ -1449,7 +1461,7 @@ class PatchService extends ChangeNotifier {
     }
     final newHardwareChain = List<int>.from(baseChain);
     for (int i = 0; i < 9 && i < visibleChainIds.length; i++) {
-      newHardwareChain[i] = visibleChainIds[i];
+      newHardwareChain[7 + i] = visibleChainIds[i];
     }
     _hardwareFxChain = newHardwareChain;
 
@@ -1458,9 +1470,11 @@ class PatchService extends ChangeNotifier {
     await midiService.sendSysEx(msg);
 
     // 2. Also update individual slots for any hardware firmware revisions that poll individual slot registers
+    // Movable slots 7..15 correspond to addresses 0x27 to 0x2F
     for (int i = 0; i < 9; i++) {
-      if (i >= oldHardwareChain.length || oldHardwareChain[i] != newHardwareChain[i]) {
-        await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x20 + i], newHardwareChain[i]);
+      final slotIdx = 7 + i;
+      if (slotIdx >= oldHardwareChain.length || oldHardwareChain[slotIdx] != newHardwareChain[slotIdx]) {
+        await midiService.sendParameterValue([0x60, 0x00, 0x07, 0x20 + slotIdx], newHardwareChain[slotIdx]);
         await Future.delayed(const Duration(milliseconds: 8));
       }
     }

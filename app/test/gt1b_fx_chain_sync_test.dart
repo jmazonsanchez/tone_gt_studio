@@ -51,23 +51,38 @@ void main() {
       midi.dispose();
     });
 
-    test('defaultHardwareChain in GtSysEx has authentic GT-1B movable IDs in slots 0..8', () {
+    test('defaultHardwareChain in GtSysEx has authentic GT-1B layout (fixed 0..6, movable 7..15, fixed 16..19)', () {
       const chain = GtSysEx.defaultHardwareChain;
       expect(chain.length, equals(20));
 
-      // Slots 0..8: NS=12, FX1=15, PDL=5, PREAMP=13, FV=11, FX2=7, DELAY=6, REVERB=9, OD/DS=2
-      expect(chain[0], equals(12));
-      expect(chain[1], equals(15));
-      expect(chain[2], equals(5));
-      expect(chain[3], equals(13));
-      expect(chain[4], equals(11));
-      expect(chain[5], equals(7));
-      expect(chain[6], equals(6));
-      expect(chain[7], equals(9));
-      expect(chain[8], equals(2));
+      // Fixed input slots 0..6
+      expect(chain[0], equals(0));
+      expect(chain[1], equals(1));
+      expect(chain[2], equals(4));
+      expect(chain[3], equals(8));
+      expect(chain[4], equals(10));
+      expect(chain[5], equals(14));
+      expect(chain[6], equals(17));
+
+      // Movable slots 7..15: NS=12, FX1=15, PDL=5, PREAMP=13, FV=11, FX2=7, DELAY=6, REVERB=9, OD/DS=2
+      expect(chain[7], equals(12));
+      expect(chain[8], equals(15));
+      expect(chain[9], equals(5));
+      expect(chain[10], equals(13));
+      expect(chain[11], equals(11));
+      expect(chain[12], equals(7));
+      expect(chain[13], equals(6));
+      expect(chain[14], equals(9));
+      expect(chain[15], equals(2));
+
+      // Fixed output slots 16..19
+      expect(chain[16], equals(18));
+      expect(chain[17], equals(3));
+      expect(chain[18], equals(19));
+      expect(chain[19], equals(16));
     });
 
-    test('buildFxChainOrder maps 9 movable IDs directly into slots 0..8', () {
+    test('buildFxChainOrder maps 9 movable IDs directly into slots 7..15', () {
       // Custom 9-effect order: [5, 12, 15, 13, 11, 7, 6, 9, 2] (PDL moved to front)
       final movable = [5, 12, 15, 13, 11, 7, 6, 9, 2];
       final packet = GtSysEx.buildFxChainOrder(movable);
@@ -79,19 +94,34 @@ void main() {
       expect(packet[10], equals(0x07));
       expect(packet[11], equals(0x20)); // Base FX chain address
 
-      // Data bytes start at index 12: slots 0..8 must contain the exact movable order
-      expect(packet[12 + 0], equals(5));
-      expect(packet[12 + 1], equals(12));
-      expect(packet[12 + 2], equals(15));
-      expect(packet[12 + 3], equals(13));
-      expect(packet[12 + 4], equals(11));
-      expect(packet[12 + 5], equals(7));
-      expect(packet[12 + 6], equals(6));
-      expect(packet[12 + 7], equals(9));
-      expect(packet[12 + 8], equals(2));
+      // Data bytes start at index 12: slots 0..6 are fixed input blocks
+      expect(packet[12 + 0], equals(0));
+      expect(packet[12 + 1], equals(1));
+      expect(packet[12 + 2], equals(4));
+      expect(packet[12 + 3], equals(8));
+      expect(packet[12 + 4], equals(10));
+      expect(packet[12 + 5], equals(14));
+      expect(packet[12 + 6], equals(17));
+
+      // Slots 7..15 contain the exact movable order
+      expect(packet[12 + 7], equals(5));
+      expect(packet[12 + 8], equals(12));
+      expect(packet[12 + 9], equals(15));
+      expect(packet[12 + 10], equals(13));
+      expect(packet[12 + 11], equals(11));
+      expect(packet[12 + 12], equals(7));
+      expect(packet[12 + 13], equals(6));
+      expect(packet[12 + 14], equals(9));
+      expect(packet[12 + 15], equals(2));
+
+      // Slots 16..19 are fixed master/output blocks
+      expect(packet[12 + 16], equals(18));
+      expect(packet[12 + 17], equals(3));
+      expect(packet[12 + 18], equals(19));
+      expect(packet[12 + 19], equals(16));
     });
 
-    test('Moving position 3 (PDL) to position 1 reorders effects and sends slots 0..8 to hardware', () async {
+    test('Moving position 3 (PDL) to position 1 reorders effects and sends slots 7..15 to hardware', () async {
       final midi = MidiService();
       final patchService = PatchService(midi);
       patchService.autoSyncOnConnect = false;
@@ -117,10 +147,9 @@ void main() {
       final patchService = PatchService(midi);
       patchService.autoSyncOnConnect = false;
 
-      // Simulate hardware sending single slot update: slot 0 set to DELAY (6)
-      // Address: 60 00 07 20, data: 06
+      // Simulate hardware sending single slot update: slot 7 (first movable effect, address 60 00 07 27) set to DELAY (6)
       final singleSlotPacket = GtSysEx.buildDt1Message(
-        address: [0x60, 0x00, 0x07, 0x20],
+        address: [0x60, 0x00, 0x07, 0x27],
         data: [0x06], // DELAY
       );
 

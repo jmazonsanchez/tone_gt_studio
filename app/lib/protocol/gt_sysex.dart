@@ -148,11 +148,12 @@ class GtSysEx {
   }
 
   /// Default 20-slot authentic hardware chain order of Boss GT-1B (Bass).
-  /// Movable slots 0..8 (authentic 9 blocks): [12, 15, 5, 13, 11, 7, 6, 9, 2]
+  /// Fixed / input routing slots 0..6 (positions 1..7): [0, 1, 4, 8, 10, 14, 17]
+  /// Movable slots 7..15 (positions 8..16, authentic 9 blocks): [12, 15, 5, 13, 11, 7, 6, 9, 2]
   /// (NS=12, FX1=15, PDL=5, PREAMP=13, FV=11, FX2=7, DELAY=6, REVERB=9, OD/DS=2)
-  /// Fixed / internal routing slots 9..19: [0, 1, 3, 4, 8, 10, 14, 16, 17, 18, 19]
+  /// Fixed / output routing slots 16..19 (positions 17..20): [18, 3, 19, 16]
   static const List<int> defaultHardwareChain = [
-    12, 15, 5, 13, 11, 7, 6, 9, 2, 0, 1, 3, 4, 8, 10, 14, 16, 17, 18, 19
+    0, 1, 4, 8, 10, 14, 17, 12, 15, 5, 13, 11, 7, 6, 9, 2, 18, 3, 19, 16
   ];
 
   /// Request Block 1 (EQ, FX1 switch, FX1 algorithm type & parameters) (address 60 00 01 00, size 127 bytes).
@@ -247,24 +248,29 @@ class GtSysEx {
   }
 
   /// Build full FX chain order update (address 60 00 07 20, 20 slot IDs).
-  /// If given 9 movable block IDs, maps them directly into slots 0..8 of the authentic 20-slot chain.
-  /// Replaces any missing positions with authentic valid GT-1B routing IDs (never 0xFF!).
+  /// If given 9 movable block IDs, maps them directly into slots 7..15 of the authentic 20-slot chain.
+  /// Preserves fixed input routing blocks (slots 0..6) and fixed output/master blocks (slots 16..19).
   static Uint8List buildFxChainOrder(List<int> chainIds, {List<int> modelId = modelIdGt1b, int deviceId = defaultDeviceId}) {
     List<int> fullChain;
     if (chainIds.length == 20) {
       fullChain = List<int>.from(chainIds);
     } else if (chainIds.length == 9) {
+      // Exactly 9 movable effect IDs -> map into slots 7..15 of authentic 20-slot chain
       fullChain = List<int>.from(defaultHardwareChain);
       for (int i = 0; i < 9; i++) {
-        fullChain[i] = chainIds[i];
+        fullChain[7 + i] = chainIds[i];
       }
     } else {
+      // Chain starting from slot 0: copy given elements, append remaining from defaultHardwareChain
       fullChain = List<int>.from(chainIds);
       for (final id in defaultHardwareChain) {
         if (fullChain.length >= 20) break;
         if (!fullChain.contains(id)) {
           fullChain.add(id);
         }
+      }
+      while (fullChain.length < 20) {
+        fullChain.add(0);
       }
     }
     return buildDt1Message(
