@@ -13,6 +13,8 @@ class MemoryEditChainBar extends StatefulWidget {
   final VoidCallback? onToggleMemoryEdit;
   final VoidCallback? onOpenMaster;
   final VoidCallback? onOpenConfig;
+  final int? selectedIndex;
+  final Function(int index)? onSelectIndex;
   final bool isExpanded;
 
   const MemoryEditChainBar({
@@ -23,6 +25,8 @@ class MemoryEditChainBar extends StatefulWidget {
     this.onToggleMemoryEdit,
     this.onOpenMaster,
     this.onOpenConfig,
+    this.selectedIndex,
+    this.onSelectIndex,
     this.isExpanded = true,
   });
 
@@ -167,7 +171,8 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
             },
             itemBuilder: (context, index) {
               final effect = widget.effects[index];
-              final isSelected = _selectedBlockIndex == index;
+              final activeSelected = widget.selectedIndex ?? _selectedBlockIndex;
+              final isSelected = activeSelected == index;
               return ReorderableDelayedDragStartListener(
                 key: ValueKey(effect.id),
                 index: index,
@@ -177,7 +182,10 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
                     effect: effect,
                     index: index,
                     isSelected: isSelected,
-                    onTap: () => setState(() => _selectedBlockIndex = (_selectedBlockIndex == index) ? null : index),
+                    onTap: () {
+                      setState(() => _selectedBlockIndex = index);
+                      widget.onSelectIndex?.call(index);
+                    },
                   ),
                 ),
               );
