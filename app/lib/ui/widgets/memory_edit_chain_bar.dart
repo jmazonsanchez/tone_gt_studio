@@ -3,9 +3,9 @@ import '../../models/effect_block.dart';
 import '../theme/app_theme.dart';
 import 'chain_block_chip.dart';
 
-/// Interactive Memory Edit / Signal Chain Widget for Boss GT-1B.
-/// Replicates the hardware [MEMORY EDIT] screen and draggable signal routing:
-/// [INPUT] -> [PEDAL FX] -> [OD] -> [PREAMP] -> [FX1] -> [NS] -> [FV] -> [FX2] -> [DELAY] -> [REVERB] -> [MASTER] -> [OUTPUT]
+/// Minimalist Signal Chain Widget for Boss GT-1B.
+/// Replicates the hardware signal routing with a single continuous rail:
+/// [INPUT] ─────── [9 Draggable Stompboxes] ─────── [OUTPUT]
 class MemoryEditChainBar extends StatefulWidget {
   final List<EffectBlock> effects;
   final Function(EffectBlock effect)? onToggle;
@@ -60,15 +60,21 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFF9800).withValues(alpha: 0.35), width: 1.2),
-        boxShadow: [BoxShadow(color: const Color(0xFFFF9800).withValues(alpha: 0.08), blurRadius: 10, spreadRadius: 1)],
+        border: Border.all(color: colors.borderSubtle, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: colors.isDark ? 0.2 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(colors),
           Divider(height: 1, color: colors.borderSubtle),
-          SizedBox(height: 112, child: _buildDraggableChain(colors)),
+          SizedBox(height: 104, child: _buildDraggableChain(colors)),
           _buildFooter(colors),
         ],
       ),
@@ -82,38 +88,33 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: colors.isDark ? const Color(0xFF2A1C0E) : const Color(0xFFFFF3E0),
+              color: colors.isDark ? const Color(0xFF221E18) : const Color(0xFFFFF7ED),
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: const Color(0xFFFF9800), width: 1.2),
-              boxShadow: [BoxShadow(color: const Color(0xFFFF9800).withValues(alpha: 0.4), blurRadius: 6)],
+              border: Border.all(color: const Color(0xFFFF9800).withValues(alpha: 0.6)),
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.alt_route, size: 13, color: Color(0xFFFF9800)),
-                SizedBox(width: 5),
-                Text('MEMORY EDIT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFFFF9800), letterSpacing: 1.2)),
+                Icon(Icons.alt_route, size: 12, color: Color(0xFFFF9800)),
+                SizedBox(width: 4),
+                Text('MEMORY EDIT', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFFFF9800), letterSpacing: 0.8)),
               ],
             ),
           ),
           const SizedBox(width: 10),
-          Expanded(
-            child: Text('SIGNAL CHAIN • CADENA DE EFECTOS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: colors.textSecondary, letterSpacing: 1.0)),
-          ),
+          Expanded(child: Text('CADENA DE EFECTOS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: colors.textSecondary, letterSpacing: 0.8))),
           IconButton(
-            icon: const Icon(Icons.chevron_left, size: 20, color: Color(0xFFFF9800)),
+            icon: Icon(Icons.chevron_left, size: 18, color: colors.textSecondary),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-            tooltip: 'Desplazar a la izquierda',
             onPressed: () => _scroll(-180),
           ),
           IconButton(
-            icon: const Icon(Icons.chevron_right, size: 20, color: Color(0xFFFF9800)),
+            icon: Icon(Icons.chevron_right, size: 18, color: colors.textSecondary),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-            tooltip: 'Desplazar a la derecha',
             onPressed: () => _scroll(180),
           ),
           const SizedBox(width: 4),
@@ -124,67 +125,97 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
   }
 
   Widget _buildDraggableChain(AppColorScheme colors) {
-    return ScrollConfiguration(
-      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-      child: ReorderableListView.builder(
-        scrollController: _scrollController,
-        scrollDirection: Axis.horizontal,
-        buildDefaultDragHandles: false,
-        cacheExtent: 2500,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        proxyDecorator: (child, index, animation) => Material(
-          color: Colors.transparent,
-          elevation: 8,
-          shadowColor: const Color(0xFFFF9800).withValues(alpha: 0.6),
-          child: child,
+    final railColor = colors.isDark ? const Color(0xFF2C2C3E) : const Color(0xFFCBD5E1);
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Línea única continua en el fondo debajo de los bloques
+        Positioned(
+          left: 20,
+          right: 20,
+          top: 48,
+          child: Container(height: 2.5, decoration: BoxDecoration(borderRadius: BorderRadius.circular(1.5), color: railColor)),
         ),
-        header: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildTerminalNode(colors: colors, title: 'INPUT', icon: Icons.input, color: const Color(0xFF00ADB5), subtitle: 'BASS IN'),
-            _buildCableConnector(colors: colors, isActive: true),
-          ],
-        ),
-        footer: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildTerminalNode(colors: colors, title: 'MASTER', icon: Icons.tune, color: const Color(0xFFFF9800), subtitle: 'LEVEL / EQ', onTap: widget.onOpenMaster),
-            _buildCableConnector(colors: colors, isActive: true),
-            _buildTerminalNode(colors: colors, title: 'OUTPUT', icon: Icons.speaker, color: const Color(0xFF4CAF50), subtitle: 'AMP / PA'),
-            const SizedBox(width: 12),
-            _buildConfigNode(colors),
-          ],
-        ),
-        itemCount: widget.effects.length,
-        onReorder: (int oldIndex, int newIndex) {
-          final targetIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
-          widget.onMoveEffect(oldIndex, targetIndex);
-        },
-        itemBuilder: (context, index) {
-          final effect = widget.effects[index];
-          final isSelected = _selectedBlockIndex == index;
-          return ReorderableDelayedDragStartListener(
-            key: ValueKey(effect.id),
-            index: index,
-            child: Row(
+        // Lista interactiva deslizable
+        ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+          child: ReorderableListView.builder(
+            scrollController: _scrollController,
+            scrollDirection: Axis.horizontal,
+            buildDefaultDragHandles: false,
+            cacheExtent: 2500,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            proxyDecorator: (child, index, animation) => _buildProxyDecorator(child, index, animation, colors),
+            header: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ChainBlockChip(
-                  effect: effect,
-                  index: index,
-                  isSelected: isSelected,
-                  onTap: () {
-                    setState(() {
-                      _selectedBlockIndex = (_selectedBlockIndex == index) ? null : index;
-                    });
-                  },
-                ),
-                _buildCableConnector(colors: colors, isActive: effect.isEnabled),
+                _buildTerminalNode(colors: colors, title: 'INPUT', icon: Icons.input_rounded, color: const Color(0xFF00ADB5), subtitle: 'BASS IN'),
+                const SizedBox(width: 8),
               ],
             ),
-          );
-        },
-      ),
+            footer: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(width: 8),
+                _buildTerminalNode(colors: colors, title: 'OUTPUT', icon: Icons.speaker_rounded, color: const Color(0xFF4CAF50), subtitle: 'AMP / PA'),
+              ],
+            ),
+            itemCount: widget.effects.length,
+            onReorder: (int oldIndex, int newIndex) {
+              final targetIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
+              widget.onMoveEffect(oldIndex, targetIndex);
+            },
+            itemBuilder: (context, index) {
+              final effect = widget.effects[index];
+              final isSelected = _selectedBlockIndex == index;
+              return ReorderableDelayedDragStartListener(
+                key: ValueKey(effect.id),
+                index: index,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: ChainBlockChip(
+                    effect: effect,
+                    index: index,
+                    isSelected: isSelected,
+                    onTap: () => setState(() => _selectedBlockIndex = (_selectedBlockIndex == index) ? null : index),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProxyDecorator(Widget child, int index, Animation<double> animation, AppColorScheme colors) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        final t = Curves.easeOutCubic.transform(animation.value);
+        final effect = index < widget.effects.length ? widget.effects[index] : null;
+        final glowColor = (effect != null && effect.isEnabled) ? effect.accentColor : const Color(0xFF00ADB5);
+
+        return Transform.scale(
+          scale: 1.0 + (0.04 * t),
+          child: Material(
+            color: Colors.transparent,
+            elevation: 4.0 * t,
+            shadowColor: Colors.black.withValues(alpha: colors.isDark ? 0.45 : 0.2),
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(color: glowColor.withValues(alpha: colors.isDark ? 0.35 : 0.2), blurRadius: 10 * t, spreadRadius: 1),
+                ],
+              ),
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: child,
     );
   }
 
@@ -198,68 +229,27 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        width: 60,
-        height: 86,
+        width: 62,
+        height: 82,
         decoration: BoxDecoration(
-          color: colors.isDark ? const Color(0xFF1B1B26) : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: colors.isDark ? 0.4 : 0.6), width: 1.2),
+          color: colors.isDark ? const Color(0xFF191924) : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: colors.isDark ? 0.4 : 0.5)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: colors.isDark ? 0.15 : 0.03), blurRadius: 4, offset: const Offset(0, 1)),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 18, color: color),
             const SizedBox(height: 3),
-            Text(title, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.8)),
+            Text(title, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.6)),
             Text(subtitle, style: TextStyle(fontSize: 7, color: colors.textMuted)),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildConfigNode(AppColorScheme colors) {
-    return InkWell(
-      onTap: widget.onOpenConfig,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: 76,
-        height: 86,
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        decoration: BoxDecoration(
-          color: colors.isDark ? const Color(0xFF1F1C28) : const Color(0xFFE0F7FA),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFF00ADB5).withValues(alpha: 0.6), width: 1.2),
-          boxShadow: [BoxShadow(color: const Color(0xFF00ADB5).withValues(alpha: 0.15), blurRadius: 6)],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.settings_input_component, size: 18, color: Color(0xFF00ADB5)),
-            const SizedBox(height: 3),
-            const Text('CONFIG', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF00ADB5), letterSpacing: 0.8)),
-            Text('CTL/EXP/A1-6', style: TextStyle(fontSize: 7, color: colors.isDark ? Colors.white60 : const Color(0xFF334155))),
-            Text('I/O LEVELS', style: TextStyle(fontSize: 6, color: colors.textMuted)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCableConnector({required AppColorScheme colors, required bool isActive}) {
-    const activeColor = Color(0xFF00ADB5);
-    final inactiveLine = colors.isDark ? Colors.white12 : const Color(0xFFCBD5E1);
-    final inactiveIcon = colors.isDark ? Colors.white24 : const Color(0xFF94A3B8);
-    return SizedBox(
-      width: 16,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(height: 2, color: isActive ? activeColor : inactiveLine),
-          Icon(Icons.chevron_right, size: 12, color: isActive ? activeColor : inactiveIcon),
-        ],
       ),
     );
   }
@@ -269,7 +259,7 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
       decoration: BoxDecoration(
-        color: colors.isDark ? const Color(0xFF0E0E16) : const Color(0xFFE8ECF1),
+        color: colors.isDark ? const Color(0xFF0F0F17) : const Color(0xFFF1F5F9),
         borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(12), bottomRight: Radius.circular(12)),
       ),
       child: Row(
@@ -279,12 +269,12 @@ class _MemoryEditChainBarState extends State<MemoryEditChainBar> {
             children: [
               Icon(Icons.touch_app, size: 11, color: colors.textMuted),
               const SizedBox(width: 5),
-              Text('Mantén presionado para reordenar la cadena • Toca para seleccionar', style: TextStyle(fontSize: 9, color: colors.textMuted)),
+              Text('Mantén presionado para reordenar • Toca para seleccionar', style: TextStyle(fontSize: 9, color: colors.textMuted)),
             ],
           ),
           Text(
             'ROUTING: SERIE',
-            style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: const Color(0xFFFF9800).withValues(alpha: 0.6), letterSpacing: 0.8),
+            style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: const Color(0xFFFF9800).withValues(alpha: 0.7), letterSpacing: 0.8),
           ),
         ],
       ),
