@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../services/patch_service.dart';
+import '../theme/app_theme.dart';
 
 /// Modal dialog for Boss GT-1B Master settings:
 /// Patch Level, Master BPM, Master Key, and Master 4-Band parametric EQ.
 class MasterSettingsModal extends StatelessWidget {
   final PatchService patchService;
 
-  static const List<String> musicalKeys = [
-    'C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'
-  ];
-
+  static const List<String> musicalKeys = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
   static const List<String> midFreqLabels = [
     '100 Hz', '125 Hz', '160 Hz', '200 Hz', '250 Hz', '315 Hz', '400 Hz', '500 Hz',
     '630 Hz', '800 Hz', '1.0 kHz', '1.25 kHz', '1.6 kHz', '2.0 kHz', '2.5 kHz', '3.15 kHz',
     '4.0 kHz', '5.0 kHz', '6.3 kHz', '8.0 kHz', '10.0 kHz'
   ];
-
   static const List<String> midQLabels = ['0.5', '1', '2', '4', '8', '16'];
 
   const MasterSettingsModal({super.key, required this.patchService});
@@ -30,43 +27,41 @@ class MasterSettingsModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+    const amber = Color(0xFFFF9800);
+
     return AnimatedBuilder(
       animation: patchService,
       builder: (context, _) {
         return Dialog(
-          backgroundColor: const Color(0xFF14141E),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFFFF9800), width: 1.5),
-          ),
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: colors.borderSubtle)),
           child: Container(
-            width: 600,
+            width: 580,
             padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: colors.isDark ? 0.4 : 0.08), blurRadius: 16)],
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildHeader(context),
+                _buildHeader(context, colors, amber),
                 const SizedBox(height: 16),
-                _buildLevelAndTempoRow(),
-                const SizedBox(height: 16),
-                const Divider(color: Colors.white12),
-                const SizedBox(height: 8),
-                _buildMasterEqSection(),
+                _buildLevelAndTempoRow(colors),
+                const SizedBox(height: 14),
+                Divider(color: colors.borderSubtle, height: 1),
+                const SizedBox(height: 14),
+                _buildMasterEqSection(colors, amber),
                 const SizedBox(height: 16),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton.icon(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.check, size: 16, color: Color(0xFFFF9800)),
-                    label: const Text(
-                      'CERRAR',
-                      style: TextStyle(
-                        color: Color(0xFFFF9800),
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
+                    icon: const Icon(Icons.check_rounded, size: 16, color: amber),
+                    label: const Text('CERRAR', style: TextStyle(color: amber, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
                   ),
                 ),
               ],
@@ -77,153 +72,135 @@ class MasterSettingsModal extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppColorScheme colors, Color amber) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.tune, color: Color(0xFFFF9800), size: 22),
-            SizedBox(width: 8),
-            Text(
-              'MASTER & GLOBAL EQ',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
-              ),
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: amber, boxShadow: [BoxShadow(color: amber.withValues(alpha: 0.6), blurRadius: 4, spreadRadius: 1)]),
             ),
+            const SizedBox(width: 8),
+            Text('MASTER & GLOBAL EQ', style: TextStyle(color: colors.textPrimary, fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 0.8)),
           ],
         ),
         IconButton(
-          icon: const Icon(Icons.close, color: Colors.white38, size: 18),
+          icon: Icon(Icons.close_rounded, color: colors.textMuted, size: 20),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ],
     );
   }
 
-  Widget _buildLevelAndTempoRow() {
+  Widget _buildLevelAndTempoRow(AppColorScheme colors) {
     return Row(
       children: [
-        // Patch Level
         Expanded(
-          flex: 2,
+          flex: 3,
           child: _buildSliderTile(
+            colors: colors,
             label: 'PATCH LEVEL',
             value: patchService.patchLevel,
             min: 0,
             max: 100,
             displayValue: '${patchService.patchLevel}',
+            accentColor: const Color(0xFFFF9800),
             onChanged: (val) => patchService.updateMasterParameter('patch_level', val),
           ),
         ),
-        const SizedBox(width: 14),
-        // BPM
+        const SizedBox(width: 10),
         Expanded(
+          flex: 2,
           child: _buildSliderTile(
+            colors: colors,
             label: 'BPM',
             value: patchService.masterBpm,
             min: 40,
             max: 250,
             displayValue: '${patchService.masterBpm}',
+            accentColor: const Color(0xFF00ADB5),
             onChanged: (val) => patchService.updateMasterParameter('master_bpm', val),
           ),
         ),
-        const SizedBox(width: 14),
-        // Key
-        Expanded(
-          child: _buildKeySelector(),
-        ),
+        const SizedBox(width: 10),
+        Expanded(flex: 2, child: _buildKeySelector(colors)),
       ],
     );
   }
 
-  Widget _buildKeySelector() {
+  Widget _buildKeySelector(AppColorScheme colors) {
     final keyIdx = patchService.masterKey.clamp(0, musicalKeys.length - 1);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'KEY',
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E1E2C),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: DropdownButtonHideUnderline(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(color: colors.surfaceVariant, borderRadius: BorderRadius.circular(8), border: Border.all(color: colors.borderSubtle)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('KEY', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: colors.textMuted, letterSpacing: 0.4)),
+          DropdownButtonHideUnderline(
             child: DropdownButton<int>(
               value: keyIdx,
               isExpanded: true,
-              dropdownColor: const Color(0xFF1A1A26),
-              style: const TextStyle(color: Color(0xFFFF9800), fontWeight: FontWeight.bold, fontSize: 13),
-              items: List.generate(musicalKeys.length, (idx) {
-                return DropdownMenuItem(value: idx, child: Text(musicalKeys[idx]));
-              }),
-              onChanged: (val) {
-                if (val != null) {
-                  patchService.updateMasterParameter('master_key', val);
-                }
-              },
+              isDense: true,
+              dropdownColor: colors.surface,
+              style: const TextStyle(color: Color(0xFF00ADB5), fontWeight: FontWeight.w900, fontSize: 12),
+              items: List.generate(musicalKeys.length, (idx) => DropdownMenuItem(value: idx, child: Text(musicalKeys[idx]))),
+              onChanged: (val) => val != null ? patchService.updateMasterParameter('master_key', val) : null,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildMasterEqSection() {
+  Widget _buildMasterEqSection(AppColorScheme colors, Color amber) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'MASTER 4-BAND EQ',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.0,
-            color: Color(0xFFFF9800),
-          ),
+        Row(
+          children: [
+            Icon(Icons.equalizer_rounded, size: 14, color: colors.textMuted),
+            const SizedBox(width: 6),
+            Text('MASTER 4-BAND EQ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.8, color: colors.textPrimary)),
+          ],
         ),
         const SizedBox(height: 10),
         Row(
           children: [
+            Expanded(child: _buildEqSliderTile(colors, 'LOW GAIN', patchService.masterEqLow, (v) => patchService.updateMasterParameter('master_eq_low', v))),
+            const SizedBox(width: 8),
+            Expanded(child: _buildEqSliderTile(colors, 'MID GAIN', patchService.masterEqMidGain, (v) => patchService.updateMasterParameter('master_eq_mid_gain', v))),
+            const SizedBox(width: 8),
+            Expanded(child: _buildEqSliderTile(colors, 'HIGH GAIN', patchService.masterEqHigh, (v) => patchService.updateMasterParameter('master_eq_high', v))),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
             Expanded(
-              child: _buildSliderTile(
-                label: 'LOW GAIN',
-                value: patchService.masterEqLow,
-                min: 0,
-                max: 40,
-                displayValue: '${patchService.masterEqLow - 20} dB',
-                onChanged: (val) => patchService.updateMasterParameter('master_eq_low', val),
+              flex: 3,
+              child: _buildDropdownTile(
+                colors: colors,
+                label: 'MID FREQ',
+                valueIndex: patchService.masterEqMidFreq.clamp(0, midFreqLabels.length - 1),
+                items: midFreqLabels,
+                onChanged: (v) => patchService.updateMasterParameter('master_eq_mid_freq', v),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             Expanded(
-              child: _buildSliderTile(
-                label: 'MID GAIN',
-                value: patchService.masterEqMidGain,
-                min: 0,
-                max: 40,
-                displayValue: '${patchService.masterEqMidGain - 20} dB',
-                onChanged: (val) => patchService.updateMasterParameter('master_eq_mid_gain', val),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildSliderTile(
-                label: 'HIGH GAIN',
-                value: patchService.masterEqHigh,
-                min: 0,
-                max: 40,
-                displayValue: '${patchService.masterEqHigh - 20} dB',
-                onChanged: (val) => patchService.updateMasterParameter('master_eq_high', val),
+              flex: 2,
+              child: _buildDropdownTile(
+                colors: colors,
+                label: 'MID Q',
+                valueIndex: patchService.masterEqMidQ.clamp(0, midQLabels.length - 1),
+                items: midQLabels,
+                onChanged: (v) => patchService.updateMasterParameter('master_eq_mid_q', v),
               ),
             ),
           ],
@@ -232,52 +209,65 @@ class MasterSettingsModal extends StatelessWidget {
     );
   }
 
-  Widget _buildSliderTile({
-    required String label,
-    required int value,
-    required int min,
-    required int max,
-    required String displayValue,
-    required ValueChanged<int> onChanged,
-  }) {
+  Widget _buildEqSliderTile(AppColorScheme colors, String label, int value, ValueChanged<int> onChanged) {
+    final delta = value - 20;
+    final color = delta > 0 ? const Color(0xFFFF9800) : (delta < 0 ? const Color(0xFF00ADB5) : colors.textSecondary);
+    final sign = delta > 0 ? '+' : '';
+    return _buildSliderTile(colors: colors, label: label, value: value, min: 0, max: 40, displayValue: '$sign$delta dB', accentColor: color, onChanged: onChanged);
+  }
+
+  Widget _buildDropdownTile({required AppColorScheme colors, required String label, required int valueIndex, required List<String> items, required ValueChanged<int> onChanged}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(color: colors.surfaceVariant, borderRadius: BorderRadius.circular(8), border: Border.all(color: colors.borderSubtle)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: colors.textMuted, letterSpacing: 0.3)),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: valueIndex,
+              isExpanded: true,
+              isDense: true,
+              dropdownColor: colors.surface,
+              style: const TextStyle(color: Color(0xFFFF9800), fontWeight: FontWeight.w900, fontSize: 11),
+              items: List.generate(items.length, (idx) => DropdownMenuItem(value: idx, child: Text(items[idx]))),
+              onChanged: (val) => val != null ? onChanged(val) : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSliderTile({required AppColorScheme colors, required String label, required int value, required int min, required int max, required String displayValue, required Color accentColor, required ValueChanged<int> onChanged}) {
     return Container(
       padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E2A),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white10),
-      ),
+      decoration: BoxDecoration(color: colors.surfaceVariant, borderRadius: BorderRadius.circular(8), border: Border.all(color: colors.borderSubtle)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                label,
-                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white54),
-              ),
-              Text(
-                displayValue,
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF9800)),
+              Text(label, style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: colors.textMuted, letterSpacing: 0.3)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0.5),
+                decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4)),
+                child: Text(displayValue, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: accentColor)),
               ),
             ],
           ),
           SliderTheme(
-            data: const SliderThemeData(
-              trackHeight: 2,
-              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: RoundSliderOverlayShape(overlayRadius: 10),
-              activeTrackColor: Color(0xFFFF9800),
-              inactiveTrackColor: Colors.white10,
-              thumbColor: Color(0xFFFF9800),
+            data: SliderThemeData(
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 8),
+              activeTrackColor: accentColor,
+              inactiveTrackColor: colors.isDark ? Colors.white12 : const Color(0xFFCBD5E1),
+              thumbColor: accentColor,
             ),
-            child: Slider(
-              value: value.clamp(min, max).toDouble(),
-              min: min.toDouble(),
-              max: max.toDouble(),
-              onChanged: (v) => onChanged(v.round()),
-            ),
+            child: Slider(value: value.clamp(min, max).toDouble(), min: min.toDouble(), max: max.toDouble(), onChanged: (v) => onChanged(v.round())),
           ),
         ],
       ),
