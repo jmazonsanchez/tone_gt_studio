@@ -101,9 +101,14 @@ class DeviceConfig {
 
   factory DeviceConfig.fromJson(Map<String, dynamic> json) {
     final rawPresets = json['quickPresets'] as List<dynamic>? ?? [];
-    final presets = rawPresets
-        .map((p) => QuickPreset.fromJson(Map<String, dynamic>.from(p as Map)))
-        .toList();
+    final presets = <QuickPreset>[];
+    for (final p in rawPresets) {
+      if (p is Map) {
+        try {
+          presets.add(QuickPreset.fromJson(Map<String, dynamic>.from(p)));
+        } catch (_) {}
+      }
+    }
 
     return DeviceConfig(
       deviceId: json['deviceId'] as String? ?? 'boss_gt1b',

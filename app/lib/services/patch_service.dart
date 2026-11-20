@@ -104,31 +104,40 @@ class PatchService extends ChangeNotifier {
       : _database = database ?? AppDatabase.instance {
     _loadDeviceConfig();
     _initializeDefaultPatches();
+    _database?.addListener(_onDatabaseChanged);
     midiService.addListener(_onMidiStateChanged);
     _sysExSubscription = midiService.onSysExReceived.listen(_handleIncomingHardwareSysEx);
+  }
+
+  bool _isPersistingQuickPresets = false;
+
+  void _onDatabaseChanged() {
+    if (_isDisposed || _isPersistingQuickPresets) return;
+    _loadDeviceConfig();
+    notifyListeners();
+  }
+
+  /// Reloads quick preset shortcuts from the persistent database
+  void reloadQuickPresets() {
+    _loadDeviceConfig();
+    notifyListeners();
   }
 
   void _loadDeviceConfig() {
     final db = _database;
     if (db == null) return;
     final savedPresets = db.getQuickPresets('boss_gt1b');
-    final isLegacyDefault = savedPresets.length == 4 &&
-        savedPresets[0].id == 'qp_1' &&
-        savedPresets[1].id == 'qp_2' &&
-        savedPresets[2].id == 'qp_3' &&
-        savedPresets[3].id == 'qp_4';
-
-    if (isLegacyDefault) {
-      _quickPresets.clear();
-      _persistQuickPresets();
-    } else {
-      _quickPresets.clear();
-      _quickPresets.addAll(savedPresets);
-    }
+    _quickPresets.clear();
+    _quickPresets.addAll(savedPresets);
   }
 
   void _persistQuickPresets() {
-    _database?.saveQuickPresets(List.from(_quickPresets), 'boss_gt1b');
+    _isPersistingQuickPresets = true;
+    try {
+      _database?.saveQuickPresets(List.from(_quickPresets), 'boss_gt1b');
+    } finally {
+      _isPersistingQuickPresets = false;
+    }
   }
 
   @override
@@ -140,6 +149,7 @@ class PatchService extends ChangeNotifier {
     _tunerPollingTimer?.cancel();
     _demoTunerTimer?.cancel();
     _sysExSubscription?.cancel();
+    _database?.removeListener(_onDatabaseChanged);
     midiService.removeListener(_onMidiStateChanged);
     super.dispose();
   }

@@ -34,9 +34,11 @@ class QuickPreset {
       };
 
   factory QuickPreset.fromJson(Map<String, dynamic> json) => QuickPreset(
-        id: json['id'] as String,
-        patchIndex: json['patchIndex'] as int,
+        id: (json['id'] as String?)?.isNotEmpty == true
+            ? json['id'] as String
+            : 'qp_${DateTime.now().millisecondsSinceEpoch}',
+        patchIndex: (json['patchIndex'] as num?)?.toInt() ?? 0,
         customLabel: json['customLabel'] as String? ?? '',
-        colorValue: json['colorValue'] as int? ?? 0xFF00ADB5,
+        colorValue: (json['colorValue'] as num?)?.toInt() ?? 0xFF00ADB5,
       );
 }

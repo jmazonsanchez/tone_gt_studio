@@ -11,8 +11,16 @@ class AppDatabase extends ChangeNotifier {
 
   final StorageDriver _driver;
   bool _isInitialized = false;
+  bool _isDisposed = false;
 
   bool get isInitialized => _isInitialized;
+  bool get isDisposed => _isDisposed;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
 
   AppDatabase({StorageDriver? driver}) : _driver = driver ?? StorageDriver();
 
@@ -65,7 +73,15 @@ class AppDatabase extends ChangeNotifier {
   Future<void> saveDeviceConfig(DeviceConfig config, {bool notify = true}) async {
     final encoded = jsonEncode(config.toJson());
     await _driver.setString('$keyPrefixDevice${config.deviceId}', encoded);
-    if (notify) {
+    if (config.quickPresets.isEmpty) {
+      await _driver.remove('$keyPrefixQuickPresets${config.deviceId}');
+    } else {
+      try {
+        final rawList = jsonEncode(config.quickPresets.map((p) => p.toJson()).toList());
+        await _driver.setString('$keyPrefixQuickPresets${config.deviceId}', rawList);
+      } catch (_) {}
+    }
+    if (notify && !_isDisposed) {
       notifyListeners();
     }
   }
@@ -93,6 +109,7 @@ class AppDatabase extends ChangeNotifier {
 
   /// Reset a device's settings to factory default
   Future<void> resetDeviceConfig(String deviceId) async {
+    await _driver.remove('$keyPrefixQuickPresets$deviceId');
     if (deviceId == defaultDeviceId) {
       await saveDeviceConfig(DeviceConfig.defaultGt1b());
     } else {
@@ -105,9 +122,23 @@ class AppDatabase extends ChangeNotifier {
   // LIVE QUICK PRESETS (ACCESOS DIRECTOS PARA EL EN VIVO)
   // -------------------------------------------------------------
 
+  static const String keyPrefixQuickPresets = 'tone_quick_presets_';
+
   /// Get live performance quick presets for active device
   List<QuickPreset> getQuickPresets([String deviceId = defaultDeviceId]) {
     final config = getDeviceConfig(deviceId);
+    if (config.quickPresets.isNotEmpty) {
+      return config.quickPresets;
+    }
+    final raw = _driver.getString('$keyPrefixQuickPresets$deviceId');
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw) as List<dynamic>;
+        return decoded
+            .map((p) => QuickPreset.fromJson(Map<String, dynamic>.from(p as Map)))
+            .toList();
+      } catch (_) {}
+    }
     return config.quickPresets;
   }
 
@@ -119,6 +150,10 @@ class AppDatabase extends ChangeNotifier {
       updatedAt: DateTime.now(),
     );
     await saveDeviceConfig(updated);
+    try {
+      final rawList = jsonEncode(presets.map((p) => p.toJson()).toList());
+      await _driver.setString('$keyPrefixQuickPresets$deviceId', rawList);
+    } catch (_) {}
   }
 
   // -------------------------------------------------------------
@@ -133,7 +168,9 @@ class AppDatabase extends ChangeNotifier {
   /// Persist appearance theme mode
   Future<void> saveThemeMode(String mode) async {
     await _driver.setString(keyThemeMode, mode);
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   // -------------------------------------------------------------

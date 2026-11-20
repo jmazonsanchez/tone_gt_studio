@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import 'storage_driver.dart';
 
-/// Platform Storage Driver for Native Mobile, Desktop and VM Unit Tests.
-/// Persists data in an internal JSON file and synchronizes with an in-memory cache.
+/// Platform Storage Driver for Native Mobile (Android/iOS), Desktop and VM Unit Tests.
+/// Persists data in an internal sandboxed JSON file and synchronizes with an in-memory cache.
 class PlatformStorageDriver implements StorageDriver {
   final Map<String, String> _cache = {};
   File? _file;
@@ -14,12 +15,31 @@ class PlatformStorageDriver implements StorageDriver {
   Future<void> init() async {
     if (_initialized) return;
     try {
-      // Determine persistence file path in user or system temp directory
-      final baseDir = Directory.current.path;
-      final storageDir = Directory('$baseDir/.storage');
-      if (!storageDir.existsSync()) {
-        storageDir.createSync(recursive: true);
+      Directory? baseDir;
+      try {
+        baseDir = await getApplicationSupportDirectory();
+      } catch (_) {
+        try {
+          baseDir = await getApplicationDocumentsDirectory();
+        } catch (_) {}
       }
+
+      baseDir ??= Directory(Directory.current.path);
+
+      Directory storageDir;
+      try {
+        storageDir = Directory('${baseDir.path}/.storage');
+        if (!storageDir.existsSync()) {
+          storageDir.createSync(recursive: true);
+        }
+      } catch (e) {
+        debugPrint('Failed to create storageDir in $baseDir: $e, falling back to system temp');
+        storageDir = Directory('${Directory.systemTemp.path}/.tone_storage');
+        if (!storageDir.existsSync()) {
+          storageDir.createSync(recursive: true);
+        }
+      }
+
       _file = File('${storageDir.path}/tone_studio_db.json');
       if (_file!.existsSync()) {
         final content = _file!.readAsStringSync();
@@ -36,10 +56,22 @@ class PlatformStorageDriver implements StorageDriver {
     _initialized = true;
   }
 
+  void _ensureFile() {
+    if (_file != null) return;
+    try {
+      final storageDir = Directory('${Directory.systemTemp.path}/.tone_storage');
+      if (!storageDir.existsSync()) {
+        storageDir.createSync(recursive: true);
+      }
+      _file = File('${storageDir.path}/tone_studio_db.json');
+    } catch (_) {}
+  }
+
   void _persistToFile() {
     try {
+      _ensureFile();
       if (_file != null) {
-        _file!.writeAsStringSync(jsonEncode(_cache));
+        _file!.writeAsStringSync(jsonEncode(_cache), flush: true);
       }
     } catch (e) {
       debugPrint('Error saving storage file: $e');

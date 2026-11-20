@@ -199,6 +199,41 @@ void main() {
       expect(patchService.quickPresets.length, equals(0));
       expect(db.getQuickPresets('boss_gt1b').length, equals(0));
     });
+
+    test('Closing and reopening app (fresh AppDatabase and PatchService instances) restores live quick presets', () async {
+      // 1. User adds live quick presets in vivo
+      patchService.addQuickPreset(patchIndex: 3, customLabel: 'CORO POTENTE', colorValue: 0xFFFF5722);
+      patchService.addQuickPreset(patchIndex: 12, customLabel: 'SOLO DISTORTION', colorValue: 0xFF9C27B0);
+      expect(patchService.quickPresets.length, equals(2));
+
+      // Wait microtask for async save
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      // 2. Simulate app close
+      patchService.dispose();
+      midiService.dispose();
+      themeService.dispose();
+      db.dispose();
+
+      // 3. Simulate app reopen with the same underlying persistent storage
+      final reopenedDb = AppDatabase(driver: memoryDriver);
+      await reopenedDb.init();
+      final reopenedMidi = MidiService(database: reopenedDb);
+      final reopenedPatch = PatchService(reopenedMidi, database: reopenedDb);
+
+      // Verify quick presets were completely restored
+      expect(reopenedPatch.quickPresets.length, equals(2));
+      expect(reopenedPatch.quickPresets[0].customLabel, equals('CORO POTENTE'));
+      expect(reopenedPatch.quickPresets[0].patchIndex, equals(3));
+      expect(reopenedPatch.quickPresets[1].customLabel, equals('SOLO DISTORTION'));
+      expect(reopenedPatch.quickPresets[1].patchIndex, equals(12));
+
+      // Reassign so tearDown can clean up the active instances cleanly
+      patchService = reopenedPatch;
+      midiService = reopenedMidi;
+      db = reopenedDb;
+      themeService = ThemeService(database: reopenedDb);
+    });
   });
 
   group('SystemDatabaseTab UI Widget Tests', () {
