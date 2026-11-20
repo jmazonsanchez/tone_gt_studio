@@ -68,12 +68,24 @@ window.toneMidiBridge = {
   },
 
   _isMatchingPort(portName, target) {
-    if (!target) return true;
-    const lower = (portName || "").toLowerCase();
-    const targetLower = target.toLowerCase();
-    return lower.includes(targetLower) ||
+    if (!portName) return false;
+    const lower = portName.toLowerCase();
+
+    // Explicitly reject virtual/dummy system ports that are not hardware devices
+    if (lower.includes("through") ||
+        lower.includes("wavetable") ||
+        lower.includes("timer") ||
+        lower.includes("announce")) {
+      return false;
+    }
+
+    if (target) {
+      const targetLower = target.toLowerCase();
+      if (lower.includes(targetLower)) return true;
+    }
+
+    return lower.includes("gt-1b") ||
            lower.includes("gt-1") ||
-           lower.includes("gt-1b") ||
            lower.includes("boss") ||
            lower.includes("roland");
   },
@@ -86,7 +98,8 @@ window.toneMidiBridge = {
         return port;
       }
     }
-    return map.values().next().value || null;
+    // Never fallback to an arbitrary port (e.g. Midi Through) when device is not connected!
+    return null;
   },
 
   _bindInput(input) {
@@ -104,15 +117,21 @@ window.toneMidiBridge = {
     this.selectedOutput = this._findMatchingPort(this.midiAccess.outputs, targetName);
     this.selectedInput = this._findMatchingPort(this.midiAccess.inputs, targetName);
 
-    if (this.selectedOutput) {
-      console.log("✅ Connected to MIDI Output:", this.selectedOutput.name);
-    }
-    if (this.selectedInput) {
-      this._bindInput(this.selectedInput);
-      console.log("✅ Connected to MIDI Input:", this.selectedInput.name);
+    if (!this.selectedOutput || !this.selectedInput) {
+      if (this.selectedInput) {
+        this.selectedInput.onmidimessage = null;
+        this.selectedInput = null;
+      }
+      this.selectedOutput = null;
+      console.warn("⚠️ No compatible Boss GT-1B MIDI device found for target:", targetName);
+      return false;
     }
 
-    return this.selectedOutput !== null;
+    console.log("✅ Connected to MIDI Output:", this.selectedOutput.name);
+    this._bindInput(this.selectedInput);
+    console.log("✅ Connected to MIDI Input:", this.selectedInput.name);
+
+    return true;
   },
 
   send(bytes) {

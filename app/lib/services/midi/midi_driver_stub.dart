@@ -9,6 +9,10 @@ class PlatformMidiDriver implements MidiDriver {
   static const MethodChannel _channel = MethodChannel('com.example.tone_gt_studio/midi');
   static const EventChannel _eventChannel = EventChannel('com.example.tone_gt_studio/midi_events');
 
+  /// When true, stub simulates connection success for testing reconnection/session lifecycle.
+  /// Defaults to false so tests and non-native environments default to disconnected.
+  static bool simulateConnectionSuccess = false;
+
   bool _connected = false;
   String _deviceName = '';
   void Function(Uint8List data)? _onData;
@@ -50,7 +54,10 @@ class PlatformMidiDriver implements MidiDriver {
   @override
   Future<bool> connect(String? deviceName) async {
     try {
-      final res = await _channel.invokeMethod('connect', {'deviceName': deviceName});
+      final res = await _channel.invokeMethod('connect', {'deviceName': deviceName}).timeout(
+        const Duration(milliseconds: 300),
+        onTimeout: () => throw MissingPluginException('Timeout connecting to native MIDI driver'),
+      );
       if (res is Map) {
         final success = res['success'] == true;
         if (success) {
@@ -69,9 +76,14 @@ class PlatformMidiDriver implements MidiDriver {
       _deviceName = '';
       return false;
     } on MissingPluginException {
-      _connected = true;
-      _deviceName = deviceName ?? 'Boss GT-1B (Test)';
-      return true;
+      if (simulateConnectionSuccess) {
+        _connected = true;
+        _deviceName = deviceName ?? 'Boss GT-1B (Test)';
+        return true;
+      }
+      _connected = false;
+      _deviceName = '';
+      return false;
     } catch (e) {
       debugPrint('Connection to native MIDI failed: $e');
       _connected = false;

@@ -258,7 +258,10 @@ class UsbMidiDriver(
             if (matched != null) return matched
         }
         return devices.find { it.vendorId == ROLAND_VENDOR_ID }
-            ?: devices.find { findEndpoints(it) != null }
+            ?: devices.find {
+                val name = getDeviceDisplayName(it)
+                (name.contains("Boss", ignoreCase = true) || name.contains("GT-1", ignoreCase = true)) && findEndpoints(it) != null
+            }
     }
 
     private fun findEndpoints(device: UsbDevice): UsbEndpointPair? {

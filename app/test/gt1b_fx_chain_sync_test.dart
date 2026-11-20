@@ -135,7 +135,7 @@ void main() {
     });
   });
 
-  group('GatewayScreen GT-1B Hardware Model Display Tests', () {
+  group('GatewayScreen GT-1B Hardware Model & Connection Gate Tests', () {
     testWidgets('GatewayScreen explicitly displays MODELO: BOSS GT-1B (BASS)', (tester) async {
       final midi = MidiService();
 
@@ -151,6 +151,62 @@ void main() {
 
       expect(find.text('MODELO: BOSS GT-1B (BASS)'), findsOneWidget);
       expect(find.text('Boss GT-1B Bass Studio'), findsOneWidget);
+
+      midi.dispose();
+    });
+
+    testWidgets('Tapping USB OTG button when no pedal is connected shows error message and prevents entering', (tester) async {
+      final midi = MidiService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GatewayScreen(
+            midi: midi,
+            onEnterDemoMode: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Tap CONECTAR POR CABLE USB OTG
+      await tester.tap(find.text('CONECTAR POR CABLE USB OTG'));
+      await tester.pump(); // Start connection
+      await tester.pump(const Duration(milliseconds: 500)); // Process async connect and SnackBar entrance
+
+      // Verify exact error message required by user
+      expect(find.textContaining('No estás conectado a ningún dispositivo MIDI'), findsOneWidget);
+
+      // Verify user is NOT permitted to enter and remains on GatewayScreen
+      expect(midi.isConnected, isFalse);
+      expect(find.text('CONECTAR POR CABLE USB OTG'), findsOneWidget);
+
+      midi.dispose();
+    });
+
+    testWidgets('Tapping Bluetooth BLE button when no pedal is connected shows error message and prevents entering', (tester) async {
+      final midi = MidiService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GatewayScreen(
+            midi: midi,
+            onEnterDemoMode: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Tap CONECTAR VÍA BLUETOOTH BLE
+      await tester.tap(find.text('CONECTAR VÍA BLUETOOTH BLE'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Verify exact error message required by user
+      expect(find.textContaining('No estás conectado a ningún dispositivo MIDI'), findsOneWidget);
+
+      // Verify user is NOT permitted to enter
+      expect(midi.isConnected, isFalse);
+      expect(find.text('CONECTAR VÍA BLUETOOTH BLE'), findsOneWidget);
 
       midi.dispose();
     });

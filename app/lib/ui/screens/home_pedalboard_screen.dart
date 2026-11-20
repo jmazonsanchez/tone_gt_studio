@@ -95,7 +95,10 @@ class _HomePedalboardScreenState extends State<HomePedalboardScreen> {
               subtitle: const Text('Conexión física directa recomendada'),
               onTap: () async {
                 Navigator.pop(ctx);
-                await midi.connect(type: ConnectionType.usbOtg);
+                final ok = await midi.connect(type: ConnectionType.usbOtg);
+                if (!ok && context.mounted) {
+                  _showNotConnectedSnackBar(context, 'cable USB OTG');
+                }
               },
             ),
             const Divider(color: Colors.white12),
@@ -106,11 +109,35 @@ class _HomePedalboardScreenState extends State<HomePedalboardScreen> {
               subtitle: const Text('Puente inalámbrico ESP32 MIDI'),
               onTap: () async {
                 Navigator.pop(ctx);
-                await midi.connect(type: ConnectionType.bluetoothBle);
+                final ok = await midi.connect(type: ConnectionType.bluetoothBle);
+                if (!ok && context.mounted) {
+                  _showNotConnectedSnackBar(context, 'Bluetooth BLE');
+                }
               },
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showNotConnectedSnackBar(BuildContext context, String typeLabel) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'No estás conectado a ningún dispositivo MIDI. Conecta tu Boss GT-1B por $typeLabel y vuelve a intentarlo.',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.deepOrange,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }

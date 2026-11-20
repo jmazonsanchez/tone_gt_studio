@@ -168,7 +168,7 @@ class DisconnectedScreen extends StatelessWidget {
           const Divider(color: Colors.white12, height: 1),
           const SizedBox(height: 18),
           ElevatedButton.icon(
-            onPressed: isConnecting ? null : () => midi.connect(type: ConnectionType.usbOtg),
+            onPressed: isConnecting ? null : () => _reconnect(context, ConnectionType.usbOtg),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00ADB5),
               foregroundColor: Colors.black,
@@ -189,7 +189,7 @@ class DisconnectedScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
-            onPressed: isConnecting ? null : () => midi.connect(type: ConnectionType.bluetoothBle),
+            onPressed: isConnecting ? null : () => _reconnect(context, ConnectionType.bluetoothBle),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.blueAccent,
               side: const BorderSide(color: Colors.blueAccent, width: 1.2),
@@ -244,5 +244,31 @@ class DisconnectedScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _reconnect(BuildContext context, ConnectionType type) async {
+    final ok = await midi.connect(type: type);
+    if (!context.mounted) return;
+    if (!ok) {
+      final typeLabel = type == ConnectionType.usbOtg ? 'cable USB OTG' : 'Bluetooth BLE';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'No estás conectado a ningún dispositivo MIDI. Conecta tu Boss GT-1B por $typeLabel y vuelve a intentarlo.',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.deepOrange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 }

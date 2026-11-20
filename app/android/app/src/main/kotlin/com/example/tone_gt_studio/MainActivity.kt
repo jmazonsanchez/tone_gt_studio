@@ -163,7 +163,7 @@ class MainActivity : FlutterActivity() {
         return devices.find {
             val name = getDeviceDisplayName(it)
             name.contains("Boss", ignoreCase = true) || name.contains("GT-1", ignoreCase = true)
-        } ?: devices.firstOrNull()
+        }
     }
 
     private fun setupOpenedDevice(device: MidiDevice?, target: MidiDeviceInfo, result: MethodChannel.Result) {

@@ -262,16 +262,28 @@ class GatewayScreen extends StatelessWidget {
 
   Future<void> _connect(BuildContext context, ConnectionType type) async {
     final ok = await midi.connect(type: type);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(ok
-              ? '✅ Boss GT-1B conectada. Sincronizando presets y efectos...'
-              : '⚠️ No se detectó la Boss GT-1B. Conecta el cable y reintenta.'),
-          backgroundColor: ok ? Colors.teal : Colors.deepOrange,
-          duration: const Duration(seconds: 4),
+    if (!context.mounted) return;
+    final typeLabel = type == ConnectionType.usbOtg ? 'cable USB OTG' : 'Bluetooth BLE';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(ok ? Icons.check_circle_rounded : Icons.warning_amber_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                ok
+                    ? '✅ Boss GT-1B conectada. Sincronizando presets y efectos...'
+                    : 'No estás conectado a ningún dispositivo MIDI. Conecta tu Boss GT-1B por $typeLabel y vuelve a intentarlo.',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
         ),
-      );
-    }
+        backgroundColor: ok ? Colors.teal : Colors.deepOrange,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 }

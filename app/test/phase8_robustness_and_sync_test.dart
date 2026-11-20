@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tone_gt_studio/services/midi/midi_driver_stub.dart';
 import 'package:tone_gt_studio/services/midi_service.dart';
 import 'package:tone_gt_studio/services/patch_service.dart';
 import 'package:tone_gt_studio/ui/screens/disconnected_screen.dart';
@@ -15,6 +16,7 @@ void main() {
     late PatchService patchService;
 
     setUp(() async {
+      PlatformMidiDriver.simulateConnectionSuccess = true;
       midi = MidiService();
       patchService = PatchService(midi);
       patchService.autoSyncOnConnect = false;
@@ -22,6 +24,7 @@ void main() {
     });
 
     tearDown(() {
+      PlatformMidiDriver.simulateConnectionSuccess = false;
       midi.cancelAutoReconnect();
       midi.dispose();
       patchService.dispose();
