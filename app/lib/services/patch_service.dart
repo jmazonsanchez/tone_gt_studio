@@ -265,42 +265,6 @@ class PatchService extends ChangeNotifier {
   List<EffectBlock> _createDefaultEffects(int patchIdx) {
     return [
       EffectBlock(
-        id: 'ns',
-        name: 'NS',
-        subtitle: 'Noise Suppressor',
-        category: EffectCategory.noiseSuppressor,
-        accentColor: const Color(0xFF607D8B), // Slate Steel
-        isEnabled: true,
-        parameters: _paramsFor(EffectCategory.noiseSuppressor),
-      ),
-      EffectBlock(
-        id: 'fx1',
-        name: 'FX1',
-        subtitle: 'Sub Wah / Filter',
-        category: EffectCategory.fx1,
-        accentColor: const Color(0xFF8E24AA), // Purple
-        isEnabled: false,
-        parameters: Gt1bFxAlgorithms.getParametersFor(EffectCategory.fx1, 3), // SUB WAH
-      ),
-      EffectBlock(
-        id: 'pedal_fx',
-        name: 'PEDAL FX',
-        subtitle: 'Wah / Foot Bend',
-        category: EffectCategory.pedalFx,
-        accentColor: const Color(0xFFFF5722), // Deep Flame Orange
-        isEnabled: false,
-        parameters: _paramsFor(EffectCategory.pedalFx),
-      ),
-      EffectBlock(
-        id: 'preamp',
-        name: 'PREAMP',
-        subtitle: 'Bass Preamp / Amp',
-        category: EffectCategory.preamp,
-        accentColor: const Color(0xFFD81B60), // Crimson Red
-        isEnabled: true,
-        parameters: _paramsFor(EffectCategory.preamp),
-      ),
-      EffectBlock(
         id: 'foot_volume',
         name: 'FOOT VOL',
         subtitle: 'Foot Volume Level',
@@ -319,13 +283,40 @@ class PatchService extends ChangeNotifier {
         parameters: Gt1bFxAlgorithms.getParametersFor(EffectCategory.fx2, 14), // OCTAVE
       ),
       EffectBlock(
-        id: 'delay',
-        name: 'DELAY',
-        subtitle: 'Digital / Analog Delay',
-        category: EffectCategory.delay,
-        accentColor: const Color(0xFF00897B), // Teal
+        id: 'fx1',
+        name: 'FX1',
+        subtitle: 'Sub Wah / Filter',
+        category: EffectCategory.fx1,
+        accentColor: const Color(0xFF8E24AA), // Purple
         isEnabled: false,
-        parameters: _paramsFor(EffectCategory.delay),
+        parameters: Gt1bFxAlgorithms.getParametersFor(EffectCategory.fx1, 3), // SUB WAH
+      ),
+      EffectBlock(
+        id: 'od_ds',
+        name: 'OD/DS',
+        subtitle: 'Bass Overdrive',
+        category: EffectCategory.odDs,
+        accentColor: const Color(0xFFFB8C00), // Amber Gold
+        isEnabled: false,
+        parameters: _paramsFor(EffectCategory.odDs),
+      ),
+      EffectBlock(
+        id: 'pedal_fx',
+        name: 'PEDAL FX',
+        subtitle: 'Wah / Foot Bend',
+        category: EffectCategory.pedalFx,
+        accentColor: const Color(0xFFFF5722), // Deep Flame Orange
+        isEnabled: false,
+        parameters: _paramsFor(EffectCategory.pedalFx),
+      ),
+      EffectBlock(
+        id: 'ns',
+        name: 'NS',
+        subtitle: 'Noise Suppressor',
+        category: EffectCategory.noiseSuppressor,
+        accentColor: const Color(0xFF607D8B), // Slate Steel
+        isEnabled: true,
+        parameters: _paramsFor(EffectCategory.noiseSuppressor),
       ),
       EffectBlock(
         id: 'reverb',
@@ -337,13 +328,22 @@ class PatchService extends ChangeNotifier {
         parameters: _paramsFor(EffectCategory.reverb),
       ),
       EffectBlock(
-        id: 'od_ds',
-        name: 'OD/DS',
-        subtitle: 'Bass Overdrive',
-        category: EffectCategory.odDs,
-        accentColor: const Color(0xFFFB8C00), // Amber Gold
+        id: 'delay',
+        name: 'DELAY',
+        subtitle: 'Digital / Analog Delay',
+        category: EffectCategory.delay,
+        accentColor: const Color(0xFF00897B), // Teal
         isEnabled: false,
-        parameters: _paramsFor(EffectCategory.odDs),
+        parameters: _paramsFor(EffectCategory.delay),
+      ),
+      EffectBlock(
+        id: 'preamp',
+        name: 'PREAMP',
+        subtitle: 'Bass Preamp / Amp',
+        category: EffectCategory.preamp,
+        accentColor: const Color(0xFFD81B60), // Crimson Red
+        isEnabled: true,
+        parameters: _paramsFor(EffectCategory.preamp),
       ),
     ];
   }

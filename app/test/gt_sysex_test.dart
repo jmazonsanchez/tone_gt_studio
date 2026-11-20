@@ -145,7 +145,7 @@ void main() {
       // Mock DT1 reply for 60 00 07 20 with authentic GT-1B 20-slot sequence
       final chainBytes = [
         0, 1, 4, 8, 10, 14, 17, // Fixed routing prefix
-        5, 2, 13, 15, 12, 11, 7, 6, 9, // 9 Authentic movable stompboxes
+        12, 6, 5, 15, 11, 13, 9, 7, 2, // 9 Authentic movable stompboxes (FV, FX2, FX1, OD, PDL, NS, REV, DLY, PREAMP)
         18, 3, 19, 16, // Fixed routing suffix
       ];
       final packet = <int>[
@@ -160,16 +160,16 @@ void main() {
       expect(ordered, isNotNull);
       expect(ordered!.length, equals(20));
       // Slots 7..15 hold the 9 movable stompboxes
-      expect(ordered[7], equals(5));
-      expect(GtSysEx.chainIdToCategory[ordered[7]], equals(EffectCategory.pedalFx));
-      expect(GtSysEx.chainIdToCategory[ordered[8]], equals(EffectCategory.odDs));
-      expect(GtSysEx.chainIdToCategory[ordered[9]], equals(EffectCategory.preamp));
-      expect(GtSysEx.chainIdToCategory[ordered[10]], equals(EffectCategory.fx1));
-      expect(GtSysEx.chainIdToCategory[ordered[11]], equals(EffectCategory.noiseSuppressor));
-      expect(GtSysEx.chainIdToCategory[ordered[12]], equals(EffectCategory.footVolume));
-      expect(GtSysEx.chainIdToCategory[ordered[13]], equals(EffectCategory.fx2));
+      expect(ordered[7], equals(12));
+      expect(GtSysEx.chainIdToCategory[ordered[7]], equals(EffectCategory.footVolume));
+      expect(GtSysEx.chainIdToCategory[ordered[8]], equals(EffectCategory.fx2));
+      expect(GtSysEx.chainIdToCategory[ordered[9]], equals(EffectCategory.fx1));
+      expect(GtSysEx.chainIdToCategory[ordered[10]], equals(EffectCategory.odDs));
+      expect(GtSysEx.chainIdToCategory[ordered[11]], equals(EffectCategory.pedalFx));
+      expect(GtSysEx.chainIdToCategory[ordered[12]], equals(EffectCategory.noiseSuppressor));
+      expect(GtSysEx.chainIdToCategory[ordered[13]], equals(EffectCategory.reverb));
       expect(GtSysEx.chainIdToCategory[ordered[14]], equals(EffectCategory.delay));
-      expect(GtSysEx.chainIdToCategory[ordered[15]], equals(EffectCategory.reverb));
+      expect(GtSysEx.chainIdToCategory[ordered[15]], equals(EffectCategory.preamp));
     });
 
     test('Effect Toggle generates valid DT1 message for Noise Suppressor', () {

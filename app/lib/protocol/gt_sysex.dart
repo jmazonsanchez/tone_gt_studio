@@ -149,11 +149,11 @@ class GtSysEx {
 
   /// Default 20-slot authentic hardware chain order of Boss GT-1B (Bass).
   /// Fixed / input routing slots 0..6 (positions 1..7): [0, 1, 4, 8, 10, 14, 17]
-  /// Movable slots 7..15 (positions 8..16, authentic 9 blocks): [12, 15, 5, 13, 11, 7, 6, 9, 2]
-  /// (NS=12, FX1=15, PDL=5, PREAMP=13, FV=11, FX2=7, DELAY=6, REVERB=9, OD/DS=2)
+  /// Movable slots 7..15 (positions 8..16, authentic 9 blocks): [12, 6, 5, 15, 11, 13, 9, 7, 2]
+  /// (FV=12, FX2=6, FX1=5, OD/DS=15, PDL=11, NS=13, REVERB=9, DELAY=7, PREAMP=2)
   /// Fixed / output routing slots 16..19 (positions 17..20): [18, 3, 19, 16]
   static const List<int> defaultHardwareChain = [
-    0, 1, 4, 8, 10, 14, 17, 12, 15, 5, 13, 11, 7, 6, 9, 2, 18, 3, 19, 16
+    0, 1, 4, 8, 10, 14, 17, 12, 6, 5, 15, 11, 13, 9, 7, 2, 18, 3, 19, 16
   ];
 
   /// Request Block 1 (EQ, FX1 switch, FX1 algorithm type & parameters) (address 60 00 01 00, size 127 bytes).
@@ -283,29 +283,29 @@ class GtSysEx {
 
   /// Mapping from authentic GT-1B hardware FX Chain IDs (0..19) to EffectCategory.
   /// Exactly 9 movable stompboxes exist in GT-1B hardware:
-  /// PDL=5, OD=2, PREAMP=13, FX1=15, NS=12, FV=11, FX2=7, DELAY=6, REVERB=9.
+  /// FV=12, FX2=6, FX1=5, OD/DS=15, PDL=11, NS=13, REVERB=9, DELAY=7, PREAMP=2.
   static const Map<int, EffectCategory> chainIdToCategory = {
-    5: EffectCategory.pedalFx,
-    2: EffectCategory.odDs,
-    13: EffectCategory.preamp,
-    15: EffectCategory.fx1,
-    12: EffectCategory.noiseSuppressor,
-    11: EffectCategory.footVolume,
-    7: EffectCategory.fx2,
-    6: EffectCategory.delay,
+    12: EffectCategory.footVolume,
+    6: EffectCategory.fx2,
+    5: EffectCategory.fx1,
+    15: EffectCategory.odDs,
+    11: EffectCategory.pedalFx,
+    13: EffectCategory.noiseSuppressor,
     9: EffectCategory.reverb,
+    7: EffectCategory.delay,
+    2: EffectCategory.preamp,
   };
 
   static const Map<EffectCategory, int> categoryToChainId = {
-    EffectCategory.pedalFx: 5,
-    EffectCategory.odDs: 2,
-    EffectCategory.preamp: 13,
-    EffectCategory.fx1: 15,
-    EffectCategory.noiseSuppressor: 12,
-    EffectCategory.footVolume: 11,
-    EffectCategory.fx2: 7,
-    EffectCategory.delay: 6,
+    EffectCategory.footVolume: 12,
+    EffectCategory.fx2: 6,
+    EffectCategory.fx1: 5,
+    EffectCategory.odDs: 15,
+    EffectCategory.pedalFx: 11,
+    EffectCategory.noiseSuppressor: 13,
     EffectCategory.reverb: 9,
+    EffectCategory.delay: 7,
+    EffectCategory.preamp: 2,
   };
 
   /// Parse FX Chain order from a DT1 response (60 00 07 20, 10 [idx] 07 20, 20 [idx] 07 20)

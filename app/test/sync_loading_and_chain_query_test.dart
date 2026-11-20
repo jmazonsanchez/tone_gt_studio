@@ -71,9 +71,9 @@ void main() {
       final patchService = PatchService(midi);
       patchService.autoSyncOnConnect = false;
 
-      // In patch index 3 (U04), let's send a chain where DELAY (6) comes before PEDAL FX (5)
-      // Custom movable chain: [6, 5, 2, 13, 15, 12, 11, 7, 9] (Delay first, then Pedal FX, OD, etc.)
-      final customChain = [0, 1, 4, 8, 10, 14, 17, 6, 5, 2, 13, 15, 12, 11, 7, 9, 18, 3, 19, 16];
+      // In patch index 3 (U04), let's send a chain where DELAY (7) comes before PEDAL FX (11)
+      // Custom movable chain: [7, 11, 15, 2, 5, 13, 12, 6, 9] (Delay first, then Pedal FX, OD, etc.)
+      final customChain = [0, 1, 4, 8, 10, 14, 17, 7, 11, 15, 2, 5, 13, 12, 6, 9, 18, 3, 19, 16];
       final dt1 = GtSysEx.buildDt1Message(
         address: [0x10, 0x03, 0x07, 0x20],
         data: customChain,

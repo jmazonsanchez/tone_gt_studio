@@ -19,33 +19,33 @@ void main() {
       final u01Effects = patchService.currentPatch.effects;
       expect(u01Effects.length, equals(9));
 
-      // GT-1B Authentic sequence: NS, FX1, PDL, PREAMP, FV, FX2, DELAY, REVERB, OD/DS
-      expect(u01Effects[0].category, equals(EffectCategory.noiseSuppressor));
-      expect(u01Effects[0].name, equals('NS'));
+      // GT-1B Authentic sequence: FV, FX2, FX1, OD/DS, PDL, NS, REVERB, DELAY, PREAMP
+      expect(u01Effects[0].category, equals(EffectCategory.footVolume));
+      expect(u01Effects[0].name, equals('FOOT VOL'));
 
-      expect(u01Effects[1].category, equals(EffectCategory.fx1));
-      expect(u01Effects[1].name, equals('FX1'));
+      expect(u01Effects[1].category, equals(EffectCategory.fx2));
+      expect(u01Effects[1].name, equals('FX2'));
 
-      expect(u01Effects[2].category, equals(EffectCategory.pedalFx));
-      expect(u01Effects[2].name, equals('PEDAL FX'));
+      expect(u01Effects[2].category, equals(EffectCategory.fx1));
+      expect(u01Effects[2].name, equals('FX1'));
 
-      expect(u01Effects[3].category, equals(EffectCategory.preamp));
-      expect(u01Effects[3].name, equals('PREAMP'));
+      expect(u01Effects[3].category, equals(EffectCategory.odDs));
+      expect(u01Effects[3].name, equals('OD/DS'));
 
-      expect(u01Effects[4].category, equals(EffectCategory.footVolume));
-      expect(u01Effects[4].name, equals('FOOT VOL'));
+      expect(u01Effects[4].category, equals(EffectCategory.pedalFx));
+      expect(u01Effects[4].name, equals('PEDAL FX'));
 
-      expect(u01Effects[5].category, equals(EffectCategory.fx2));
-      expect(u01Effects[5].name, equals('FX2'));
+      expect(u01Effects[5].category, equals(EffectCategory.noiseSuppressor));
+      expect(u01Effects[5].name, equals('NS'));
 
-      expect(u01Effects[6].category, equals(EffectCategory.delay));
-      expect(u01Effects[6].name, equals('DELAY'));
+      expect(u01Effects[6].category, equals(EffectCategory.reverb));
+      expect(u01Effects[6].name, equals('REVERB'));
 
-      expect(u01Effects[7].category, equals(EffectCategory.reverb));
-      expect(u01Effects[7].name, equals('REVERB'));
+      expect(u01Effects[7].category, equals(EffectCategory.delay));
+      expect(u01Effects[7].name, equals('DELAY'));
 
-      expect(u01Effects[8].category, equals(EffectCategory.odDs));
-      expect(u01Effects[8].name, equals('OD/DS'));
+      expect(u01Effects[8].category, equals(EffectCategory.preamp));
+      expect(u01Effects[8].name, equals('PREAMP'));
 
       patchService.dispose();
       midi.dispose();
@@ -64,15 +64,15 @@ void main() {
       expect(chain[5], equals(14));
       expect(chain[6], equals(17));
 
-      // Movable slots 7..15: NS=12, FX1=15, PDL=5, PREAMP=13, FV=11, FX2=7, DELAY=6, REVERB=9, OD/DS=2
+      // Movable slots 7..15: FV=12, FX2=6, FX1=5, OD/DS=15, PDL=11, NS=13, REVERB=9, DELAY=7, PREAMP=2
       expect(chain[7], equals(12));
-      expect(chain[8], equals(15));
+      expect(chain[8], equals(6));
       expect(chain[9], equals(5));
-      expect(chain[10], equals(13));
+      expect(chain[10], equals(15));
       expect(chain[11], equals(11));
-      expect(chain[12], equals(7));
-      expect(chain[13], equals(6));
-      expect(chain[14], equals(9));
+      expect(chain[12], equals(13));
+      expect(chain[13], equals(9));
+      expect(chain[14], equals(7));
       expect(chain[15], equals(2));
 
       // Fixed output slots 16..19
@@ -83,8 +83,8 @@ void main() {
     });
 
     test('buildFxChainOrder maps 9 movable IDs directly into slots 7..15', () {
-      // Custom 9-effect order: [5, 12, 15, 13, 11, 7, 6, 9, 2] (PDL moved to front)
-      final movable = [5, 12, 15, 13, 11, 7, 6, 9, 2];
+      // Custom 9-effect order: [11, 12, 6, 5, 15, 13, 9, 7, 2] (PDL=11 moved to front)
+      final movable = [11, 12, 6, 5, 15, 13, 9, 7, 2];
       final packet = GtSysEx.buildFxChainOrder(movable);
 
       expect(packet[0], equals(0xF0));
@@ -104,14 +104,14 @@ void main() {
       expect(packet[12 + 6], equals(17));
 
       // Slots 7..15 contain the exact movable order
-      expect(packet[12 + 7], equals(5));
+      expect(packet[12 + 7], equals(11));
       expect(packet[12 + 8], equals(12));
-      expect(packet[12 + 9], equals(15));
-      expect(packet[12 + 10], equals(13));
-      expect(packet[12 + 11], equals(11));
-      expect(packet[12 + 12], equals(7));
-      expect(packet[12 + 13], equals(6));
-      expect(packet[12 + 14], equals(9));
+      expect(packet[12 + 9], equals(6));
+      expect(packet[12 + 10], equals(5));
+      expect(packet[12 + 11], equals(15));
+      expect(packet[12 + 12], equals(13));
+      expect(packet[12 + 13], equals(9));
+      expect(packet[12 + 14], equals(7));
       expect(packet[12 + 15], equals(2));
 
       // Slots 16..19 are fixed master/output blocks
@@ -121,7 +121,7 @@ void main() {
       expect(packet[12 + 19], equals(16));
     });
 
-    test('Moving position 3 (PDL) to position 1 reorders effects and sends slots 7..15 to hardware', () async {
+    test('Moving position 3 (FX1) to position 1 reorders effects and sends slots 7..15 to hardware', () async {
       final midi = MidiService();
       final patchService = PatchService(midi);
       patchService.autoSyncOnConnect = false;
@@ -129,14 +129,14 @@ void main() {
       final sentSysEx = <Uint8List>[];
       midi.onSysExReceived.listen((msg) => sentSysEx.add(msg));
 
-      // Initial order: [NS, FX1, PDL, PREAMP, FV, FX2, DELAY, REVERB, OD/DS]
-      // Move index 2 (PDL) to index 0 (front)
+      // Initial order: [FV, FX2, FX1, OD/DS, PDL, NS, REVERB, DELAY, PREAMP]
+      // Move index 2 (FX1) to index 0 (front)
       await patchService.moveEffect(2, 0);
 
       final updatedEffects = patchService.currentPatch.effects;
-      expect(updatedEffects[0].category, equals(EffectCategory.pedalFx)); // PDL is now at position 1!
-      expect(updatedEffects[1].category, equals(EffectCategory.noiseSuppressor)); // NS is position 2
-      expect(updatedEffects[2].category, equals(EffectCategory.fx1)); // FX1 is position 3
+      expect(updatedEffects[0].category, equals(EffectCategory.fx1)); // FX1 is now at position 1!
+      expect(updatedEffects[1].category, equals(EffectCategory.footVolume)); // FV is position 2
+      expect(updatedEffects[2].category, equals(EffectCategory.fx2)); // FX2 is position 3
 
       patchService.dispose();
       midi.dispose();
@@ -147,10 +147,10 @@ void main() {
       final patchService = PatchService(midi);
       patchService.autoSyncOnConnect = false;
 
-      // Simulate hardware sending single slot update: slot 7 (first movable effect, address 60 00 07 27) set to DELAY (6)
+      // Simulate hardware sending single slot update: slot 7 (first movable effect, address 60 00 07 27) set to DELAY (7)
       final singleSlotPacket = GtSysEx.buildDt1Message(
         address: [0x60, 0x00, 0x07, 0x27],
-        data: [0x06], // DELAY
+        data: [0x07], // DELAY
       );
 
       midi.handleIncomingDataForTesting(singleSlotPacket);
