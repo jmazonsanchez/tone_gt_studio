@@ -49,9 +49,9 @@ void main() {
     }
 
     test('AppVersion constants define valid semantic version', () {
-      expect(AppVersion.version, equals('1.0.1'));
-      expect(AppVersion.buildNumber, equals(2));
-      expect(AppVersion.label, equals('v1.0.1'));
+      expect(AppVersion.version, equals('1.0.2'));
+      expect(AppVersion.buildNumber, equals(3));
+      expect(AppVersion.label, equals('v1.0.2'));
     });
 
     testWidgets('HomePedalboardScreen displays version badge in corner', (tester) async {

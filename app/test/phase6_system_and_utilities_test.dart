@@ -6,6 +6,8 @@ import 'package:tone_gt_studio/models/system_settings.dart';
 import 'package:tone_gt_studio/protocol/gt_sysex.dart';
 import 'package:tone_gt_studio/services/midi_service.dart';
 import 'package:tone_gt_studio/services/patch_service.dart';
+import 'package:tone_gt_studio/domain/gt1b_catalog.dart';
+import 'package:tone_gt_studio/ui/widgets/system_global_tab.dart';
 import 'package:tone_gt_studio/ui/widgets/system_settings_modal.dart';
 import 'package:tone_gt_studio/ui/widgets/tuner_modal.dart';
 
@@ -106,6 +108,32 @@ void main() {
 
       await patchService.updateSystemParameter('global_eq_low', 30);
       expect(patchService.systemSettings.eqLowGain, 30);
+
+      await patchService.updateSystemParameter('global_eq_mid_freq', 0);
+      expect(patchService.systemSettings.eqMidFreq, 0);
+
+      await patchService.updateSystemParameter('global_eq_mid_freq', 16);
+      expect(patchService.systemSettings.eqMidFreq, 16);
+
+      await patchService.updateSystemParameter('global_eq_mid_freq', 17);
+      expect(patchService.systemSettings.eqMidFreq, 17);
+
+      await patchService.updateSystemParameter('global_eq_mid_freq', 27);
+      expect(patchService.systemSettings.eqMidFreq, 27);
+    });
+
+    test('Gt1bCatalog and SystemGlobalTab MID Freq contains authentic 28 Boss GT-1B values', () {
+      expect(Gt1bCatalog.eqMidFreqOptions.length, 28);
+      expect(Gt1bCatalog.eqMidFreqOptions.first, '20.0 Hz');
+      expect(Gt1bCatalog.eqMidFreqOptions[16], '800 Hz');
+      expect(Gt1bCatalog.eqMidFreqOptions[17], '1.00 kHz');
+      expect(Gt1bCatalog.eqMidFreqOptions.last, '10.0 kHz');
+
+      expect(SystemGlobalTab.midFreqLabels.length, 28);
+      expect(SystemGlobalTab.midFreqLabels.first, '20.0 Hz');
+      expect(SystemGlobalTab.midFreqLabels[16], '800 Hz');
+      expect(SystemGlobalTab.midFreqLabels[17], '1.00 kHz');
+      expect(SystemGlobalTab.midFreqLabels.last, '10.0 kHz');
     });
 
     testWidgets('TunerModal renders live note, cents gauge, and settings', (tester) async {

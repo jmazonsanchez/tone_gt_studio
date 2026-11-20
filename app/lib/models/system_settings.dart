@@ -9,7 +9,7 @@ class SystemSettings {
   // Global 4-Band Parametric EQ (00 00 00 72..76)
   int eqLowGain; // -20..+20 dB (raw: 0..40, display: val - 20)
   int eqMidGain; // -20..+20 dB (raw: 0..40, display: val - 20)
-  int eqMidFreq; // 0..20 (100 Hz .. 10.0 kHz)
+  int eqMidFreq; // 0..27 (20.0 Hz .. 10.0 kHz)
   int eqMidQ; // 0..5 (0.5 .. 16)
   int eqHighGain; // -20..+20 dB (raw: 0..40, display: val - 20)
 

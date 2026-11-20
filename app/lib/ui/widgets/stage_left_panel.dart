@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../domain/gt1b_catalog.dart';
 import '../../services/patch_service.dart';
 import '../layout/responsive_breakpoints.dart';
 import '../theme/app_theme.dart';
@@ -12,12 +13,8 @@ class StageLeftPanel extends StatelessWidget {
   final VoidCallback? onOpenMaster;
 
   static const List<String> musicalKeys = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
-  static const List<String> midFreqLabels = [
-    '100 Hz', '125 Hz', '160 Hz', '200 Hz', '250 Hz', '315 Hz', '400 Hz', '500 Hz',
-    '630 Hz', '800 Hz', '1.0 kHz', '1.25 kHz', '1.6 kHz', '2.0 kHz', '2.5 kHz', '3.15 kHz',
-    '4.0 kHz', '5.0 kHz', '6.3 kHz', '8.0 kHz', '10.0 kHz'
-  ];
-  static const List<String> midQLabels = ['0.5', '1', '2', '4', '8', '16'];
+  static const List<String> midFreqLabels = Gt1bCatalog.eqMidFreqOptions;
+  static const List<String> midQLabels = Gt1bCatalog.eqMidQOptions;
 
   const StageLeftPanel({
     super.key,

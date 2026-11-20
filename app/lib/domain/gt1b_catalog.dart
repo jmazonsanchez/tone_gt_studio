@@ -106,6 +106,16 @@ class Gt1bCatalog {
     'INPUT', 'NS INPUT', 'FV OUT',
   ];
 
+  // Opciones oficiales de frecuencia para el ecualizador Boss GT-1B (28 valores: 20.0 Hz a 10.0 kHz)
+  static const List<String> eqMidFreqOptions = [
+    '20.0 Hz', '25.0 Hz', '31.5 Hz', '40.0 Hz', '50.0 Hz', '63.0 Hz', '80.0 Hz',
+    '100 Hz', '125 Hz', '160 Hz', '200 Hz', '250 Hz', '315 Hz', '400 Hz',
+    '500 Hz', '630 Hz', '800 Hz', '1.00 kHz', '1.25 kHz', '1.60 kHz', '2.00 kHz',
+    '2.50 kHz', '3.15 kHz', '4.00 kHz', '5.00 kHz', '6.30 kHz', '8.00 kHz', '10.0 kHz',
+  ];
+
+  static const List<String> eqMidQOptions = ['0.5', '1', '2', '4', '8', '16'];
+
   // Catálogo completo de parámetros por bloque
   static const Map<EffectCategory, List<ParamDef>> effectParams = {
     EffectCategory.comp: [
@@ -141,11 +151,11 @@ class Gt1bCatalog {
     ],
     EffectCategory.eq: [
       ParamDef(id: 'eq_low_gain', name: 'Low Gain', address: [0x60, 0x00, 0x01, 0x32], min: 0, max: 40, defaultValue: 20, displayOffset: -20, unit: 'dB'),
-      ParamDef(id: 'eq_low_mid_freq', name: 'Low-Mid Freq', address: [0x60, 0x00, 0x01, 0x33], min: 0, max: 27, defaultValue: 10),
-      ParamDef(id: 'eq_low_mid_q', name: 'Low-Mid Q', address: [0x60, 0x00, 0x01, 0x34], min: 0, max: 5, defaultValue: 1),
+      ParamDef(id: 'eq_low_mid_freq', name: 'Low-Mid Freq', address: [0x60, 0x00, 0x01, 0x33], min: 0, max: 27, defaultValue: 10, options: eqMidFreqOptions),
+      ParamDef(id: 'eq_low_mid_q', name: 'Low-Mid Q', address: [0x60, 0x00, 0x01, 0x34], min: 0, max: 5, defaultValue: 1, options: eqMidQOptions),
       ParamDef(id: 'eq_low_mid_gain', name: 'Low-Mid Gain', address: [0x60, 0x00, 0x01, 0x35], min: 0, max: 40, defaultValue: 20, displayOffset: -20, unit: 'dB'),
-      ParamDef(id: 'eq_high_mid_freq', name: 'High-Mid Freq', address: [0x60, 0x00, 0x01, 0x36], min: 0, max: 27, defaultValue: 18),
-      ParamDef(id: 'eq_high_mid_q', name: 'High-Mid Q', address: [0x60, 0x00, 0x01, 0x37], min: 0, max: 5, defaultValue: 1),
+      ParamDef(id: 'eq_high_mid_freq', name: 'High-Mid Freq', address: [0x60, 0x00, 0x01, 0x36], min: 0, max: 27, defaultValue: 18, options: eqMidFreqOptions),
+      ParamDef(id: 'eq_high_mid_q', name: 'High-Mid Q', address: [0x60, 0x00, 0x01, 0x37], min: 0, max: 5, defaultValue: 1, options: eqMidQOptions),
       ParamDef(id: 'eq_high_mid_gain', name: 'High-Mid Gain', address: [0x60, 0x00, 0x01, 0x38], min: 0, max: 40, defaultValue: 20, displayOffset: -20, unit: 'dB'),
       ParamDef(id: 'eq_high_gain', name: 'High Gain', address: [0x60, 0x00, 0x01, 0x39], min: 0, max: 40, defaultValue: 20, displayOffset: -20, unit: 'dB'),
       ParamDef(id: 'eq_level', name: 'Level', address: [0x60, 0x00, 0x01, 0x3B], min: 0, max: 100, defaultValue: 50),

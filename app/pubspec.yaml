@@ -1,7 +1,7 @@
 name: tone_gt_studio
 description: Open-source patch editor and controller for Boss GT-1B and GT-1 multi-effects pedals.
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.0.2+3
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
