@@ -40,12 +40,7 @@ class DeviceConfig {
       lastConnectionType: 'usbOtg',
       autoReconnect: true,
       lastPatchIndex: 0,
-      quickPresets: const [
-        QuickPreset(id: 'qp_1', patchIndex: 0, customLabel: 'SLAP INTRO', colorValue: 0xFF00ADB5),
-        QuickPreset(id: 'qp_2', patchIndex: 1, customLabel: 'DRIVE VERSO', colorValue: 0xFFFF9800),
-        QuickPreset(id: 'qp_3', patchIndex: 2, customLabel: 'CHORUS CORO', colorValue: 0xFF9C27B0),
-        QuickPreset(id: 'qp_4', patchIndex: 3, customLabel: 'SOLO FUZZ', colorValue: 0xFFE53935),
-      ],
+      quickPresets: const [],
       metronomeBpm: 120,
       metronomeTimeSignature: 4,
       metronomeVisualOnly: true,

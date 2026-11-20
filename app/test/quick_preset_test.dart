@@ -52,10 +52,8 @@ void main() {
       midi.dispose();
     });
 
-    test('Initial state contains default live shortcuts', () {
-      expect(patchService.quickPresets.isNotEmpty, isTrue);
-      expect(patchService.quickPresets.length, greaterThanOrEqualTo(4));
-      expect(patchService.quickPresets.first.customLabel, equals('SLAP INTRO'));
+    test('Initial state starts empty with zero live shortcuts by default', () {
+      expect(patchService.quickPresets.isEmpty, isTrue);
     });
 
     test('addQuickPreset appends new shortcut and notifies listeners', () {
@@ -78,6 +76,11 @@ void main() {
     });
 
     test('updateQuickPreset modifies existing shortcut', () {
+      patchService.addQuickPreset(
+        patchIndex: 2,
+        customLabel: 'ORIGINAL PRESET',
+        colorValue: 0xFF00ADB5,
+      );
       final target = patchService.quickPresets.first;
       patchService.updateQuickPreset(
         target.id,
@@ -93,6 +96,11 @@ void main() {
     });
 
     test('removeQuickPreset deletes shortcut from list', () {
+      patchService.addQuickPreset(
+        patchIndex: 1,
+        customLabel: 'DELETE ME',
+        colorValue: 0xFFE53935,
+      );
       final initialCount = patchService.quickPresets.length;
       final target = patchService.quickPresets.first;
 
@@ -102,6 +110,9 @@ void main() {
     });
 
     test('reorderQuickPresets rearranges shortcuts order', () {
+      patchService.addQuickPreset(patchIndex: 0, customLabel: 'ONE', colorValue: 0xFF00ADB5);
+      patchService.addQuickPreset(patchIndex: 1, customLabel: 'TWO', colorValue: 0xFFFF9800);
+
       final first = patchService.quickPresets[0];
       final second = patchService.quickPresets[1];
 
@@ -138,7 +149,20 @@ void main() {
       );
     }
 
-    testWidgets('Renders QuickPresetBar with EN VIVO badge, preset chips, and AGREGAR button', (tester) async {
+    testWidgets('Renders QuickPresetBar in empty state when no shortcuts exist', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 800));
+      await tester.pumpWidget(createTestApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('EN VIVO'), findsOneWidget);
+      expect(find.text('AGREGAR'), findsOneWidget);
+      expect(find.textContaining('Sin accesos directos'), findsOneWidget);
+    });
+
+    testWidgets('Renders QuickPresetBar with preset chips when shortcuts exist', (tester) async {
+      patchService.addQuickPreset(patchIndex: 0, customLabel: 'SLAP INTRO', colorValue: 0xFF00ADB5);
+      patchService.addQuickPreset(patchIndex: 1, customLabel: 'DRIVE VERSO', colorValue: 0xFFFF9800);
+
       await tester.binding.setSurfaceSize(const Size(1280, 800));
       await tester.pumpWidget(createTestApp());
       await tester.pumpAndSettle();
@@ -147,11 +171,12 @@ void main() {
       expect(find.text('AGREGAR'), findsOneWidget);
       expect(find.text('SLAP INTRO'), findsOneWidget);
       expect(find.text('DRIVE VERSO'), findsOneWidget);
-      expect(find.text('CHORUS CORO'), findsOneWidget);
-      expect(find.text('SOLO FUZZ'), findsOneWidget);
     });
 
     testWidgets('Tapping a quick preset chip switches current patch', (tester) async {
+      patchService.addQuickPreset(patchIndex: 0, customLabel: 'SLAP INTRO', colorValue: 0xFF00ADB5);
+      patchService.addQuickPreset(patchIndex: 1, customLabel: 'DRIVE VERSO', colorValue: 0xFFFF9800);
+
       await tester.binding.setSurfaceSize(const Size(1280, 800));
       await tester.pumpWidget(createTestApp());
       await tester.pumpAndSettle();
@@ -170,7 +195,7 @@ void main() {
       await tester.pumpWidget(createTestApp());
       await tester.pumpAndSettle();
 
-      final initialCount = patchService.quickPresets.length;
+      expect(patchService.quickPresets.isEmpty, isTrue);
 
       // Tap AGREGAR button
       await tester.tap(find.byKey(const Key('add-quick-preset-btn')));
@@ -188,21 +213,23 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('NUEVO ACCESO DIRECTO'), findsNothing);
-      expect(patchService.quickPresets.length, equals(initialCount + 1));
+      expect(patchService.quickPresets.length, equals(1));
       expect(find.text('NUEVO SLAP SHOW'), findsOneWidget);
     });
 
     testWidgets('Editing existing shortcut allows modifying label or deleting it', (tester) async {
+      patchService.addQuickPreset(patchIndex: 0, customLabel: 'SLAP INTRO', colorValue: 0xFF00ADB5);
+
       await tester.binding.setSurfaceSize(const Size(1280, 800));
       await tester.pumpWidget(createTestApp());
       await tester.pumpAndSettle();
 
-      final initialCount = patchService.quickPresets.length;
+      expect(patchService.quickPresets.length, equals(1));
 
-      // Tap edit icon on first chip (SLAP INTRO)
-      final editIcons = find.byIcon(Icons.edit_outlined);
-      expect(editIcons, findsWidgets);
-      await tester.tap(editIcons.first);
+      // Tap tune/edit icon on chip
+      final tuneIcons = find.byIcon(Icons.tune_rounded);
+      expect(tuneIcons, findsWidgets);
+      await tester.tap(tuneIcons.first);
       await tester.pumpAndSettle();
 
       expect(find.text('EDITAR ACCESO DIRECTO'), findsOneWidget);
@@ -213,7 +240,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('EDITAR ACCESO DIRECTO'), findsNothing);
-      expect(patchService.quickPresets.length, equals(initialCount - 1));
+      expect(patchService.quickPresets.isEmpty, isTrue);
       expect(find.text('SLAP INTRO'), findsNothing);
     });
   });

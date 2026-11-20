@@ -13,14 +13,13 @@ import 'package:tone_gt_studio/ui/widgets/system_settings_modal.dart';
 
 void main() {
   group('DeviceConfig Model & Serialization Tests', () {
-    test('DeviceConfig defaultGt1b contains authentic GT-1B settings and live presets', () {
+    test('DeviceConfig defaultGt1b contains authentic GT-1B settings and starts with empty live presets', () {
       final config = DeviceConfig.defaultGt1b();
       expect(config.deviceId, equals('boss_gt1b'));
       expect(config.deviceName, contains('Boss GT-1B'));
       expect(config.autoReconnect, isTrue);
       expect(config.lastConnectionType, equals('usbOtg'));
-      expect(config.quickPresets.length, equals(4));
-      expect(config.quickPresets.first.customLabel, contains('SLAP INTRO'));
+      expect(config.quickPresets.isEmpty, isTrue);
     });
 
     test('DeviceConfig JSON roundtrip preserves all device attributes', () {
@@ -71,7 +70,7 @@ void main() {
       expect(db.isInitialized, isTrue);
       final gt1bConfig = db.getDeviceConfig('boss_gt1b');
       expect(gt1bConfig.deviceId, equals('boss_gt1b'));
-      expect(gt1bConfig.quickPresets, isNotEmpty);
+      expect(gt1bConfig.quickPresets, isEmpty);
       expect(db.getThemeMode(), equals('dark'));
       expect(db.getActiveDeviceId(), equals('boss_gt1b'));
     });
@@ -144,7 +143,7 @@ void main() {
       await db.resetDeviceConfig('boss_gt1b');
       final restored = db.getDeviceConfig('boss_gt1b');
       expect(restored.lastPatchIndex, equals(0));
-      expect(restored.quickPresets, isNotEmpty);
+      expect(restored.quickPresets, isEmpty);
     });
   });
 
@@ -186,19 +185,19 @@ void main() {
     });
 
     test('PatchService quick presets automatically sync with AppDatabase', () {
-      // Initial presets loaded from DB
-      expect(patchService.quickPresets.length, equals(4));
+      // Initial presets loaded from DB starts empty
+      expect(patchService.quickPresets.length, equals(0));
 
       // Add a live shortcut
       patchService.addQuickPreset(patchIndex: 7, customLabel: 'EN VIVO SLAP', colorValue: 0xFF4CAF50);
-      expect(patchService.quickPresets.length, equals(5));
-      expect(db.getQuickPresets('boss_gt1b').length, equals(5));
+      expect(patchService.quickPresets.length, equals(1));
+      expect(db.getQuickPresets('boss_gt1b').length, equals(1));
 
       // Remove a shortcut
       final firstId = patchService.quickPresets.first.id;
       patchService.removeQuickPreset(firstId);
-      expect(patchService.quickPresets.length, equals(4));
-      expect(db.getQuickPresets('boss_gt1b').length, equals(4));
+      expect(patchService.quickPresets.length, equals(0));
+      expect(db.getQuickPresets('boss_gt1b').length, equals(0));
     });
   });
 

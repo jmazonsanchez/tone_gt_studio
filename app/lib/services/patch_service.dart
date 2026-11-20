@@ -44,12 +44,7 @@ class PatchService extends ChangeNotifier {
   bool get isLooperActive => phraseLoopSettings.isEnabled;
 
   // Quick Access Presets (Live Shortcuts)
-  final List<QuickPreset> _quickPresets = [
-    const QuickPreset(id: 'qp_1', patchIndex: 0, customLabel: 'SLAP INTRO', colorValue: 0xFF00ADB5),
-    const QuickPreset(id: 'qp_2', patchIndex: 1, customLabel: 'DRIVE VERSO', colorValue: 0xFFFF9800),
-    const QuickPreset(id: 'qp_3', patchIndex: 2, customLabel: 'CHORUS CORO', colorValue: 0xFF9C27B0),
-    const QuickPreset(id: 'qp_4', patchIndex: 3, customLabel: 'SOLO FUZZ', colorValue: 0xFFE53935),
-  ];
+  final List<QuickPreset> _quickPresets = [];
 
   List<QuickPreset> get quickPresets => List.unmodifiable(_quickPresets);
 
@@ -117,7 +112,16 @@ class PatchService extends ChangeNotifier {
     final db = _database;
     if (db == null) return;
     final savedPresets = db.getQuickPresets('boss_gt1b');
-    if (savedPresets.isNotEmpty) {
+    final isLegacyDefault = savedPresets.length == 4 &&
+        savedPresets[0].id == 'qp_1' &&
+        savedPresets[1].id == 'qp_2' &&
+        savedPresets[2].id == 'qp_3' &&
+        savedPresets[3].id == 'qp_4';
+
+    if (isLegacyDefault) {
+      _quickPresets.clear();
+      _persistQuickPresets();
+    } else {
       _quickPresets.clear();
       _quickPresets.addAll(savedPresets);
     }
