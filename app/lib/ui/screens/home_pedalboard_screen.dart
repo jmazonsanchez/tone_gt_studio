@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/app_version.dart';
 import '../../services/midi_service.dart';
 import '../../services/patch_service.dart';
 import 'disconnected_screen.dart';
@@ -30,9 +31,19 @@ class _HomePedalboardScreenState extends State<HomePedalboardScreen> {
 
     final isUnlocked = midi.isConnected || _isDemoMode;
 
+    final Widget screen;
     if (!isUnlocked) {
       if (midi.hasHadActiveConnection) {
-        return DisconnectedScreen(
+        screen = DisconnectedScreen(
+          midi: midi,
+          onEnterDemoMode: () {
+            setState(() {
+              _isDemoMode = true;
+            });
+          },
+        );
+      } else {
+        screen = GatewayScreen(
           midi: midi,
           onEnterDemoMode: () {
             setState(() {
@@ -41,20 +52,8 @@ class _HomePedalboardScreenState extends State<HomePedalboardScreen> {
           },
         );
       }
-
-      return GatewayScreen(
-        midi: midi,
-        onEnterDemoMode: () {
-          setState(() {
-            _isDemoMode = true;
-          });
-        },
-      );
-    }
-
-    // Pantalla de carga / sincronización bloqueante mientras se lee la pedalera por OTG o Bluetooth
-    if (midi.isConnected && !patchService.isInitialSyncComplete && !_isDemoMode) {
-      return SyncLoadingScreen(
+    } else if (midi.isConnected && !patchService.isInitialSyncComplete && !_isDemoMode) {
+      screen = SyncLoadingScreen(
         midi: midi,
         patchService: patchService,
         onEnterDemoMode: () {
@@ -63,18 +62,62 @@ class _HomePedalboardScreenState extends State<HomePedalboardScreen> {
           });
         },
       );
+    } else {
+      screen = StagePedalboardScreen(
+        midi: midi,
+        patchService: patchService,
+        isDemoMode: _isDemoMode,
+        onExitDemo: () {
+          setState(() {
+            _isDemoMode = false;
+          });
+        },
+        onConnectRequest: () => _showConnectionDialog(context, midi),
+      );
     }
 
-    return StagePedalboardScreen(
-      midi: midi,
-      patchService: patchService,
-      isDemoMode: _isDemoMode,
-      onExitDemo: () {
-        setState(() {
-          _isDemoMode = false;
-        });
-      },
-      onConnectRequest: () => _showConnectionDialog(context, midi),
+    return Stack(
+      children: [
+        screen,
+        Positioned(
+          bottom: 4,
+          right: 6,
+          child: _buildVersionBadge(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVersionBadge() {
+    return IgnorePointer(
+      child: Container(
+        key: const Key('app-version-badge'),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: const Color(0xFF101018).withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: const Color(0xFF00ADB5).withValues(alpha: 0.5),
+            width: 0.8,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black45,
+              blurRadius: 4,
+              offset: Offset(0, 1),
+            ),
+          ],
+        ),
+        child: const Text(
+          AppVersion.label,
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF00ADB5),
+            letterSpacing: 0.8,
+          ),
+        ),
+      ),
     );
   }
 
